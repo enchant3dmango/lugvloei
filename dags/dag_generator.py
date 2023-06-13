@@ -6,7 +6,7 @@ import yaml
 
 from generators import mysql_to_bq, postgres_to_bq
 from plugins.utils.dag_config_reader import get_yaml_config_files
-from plugins.constants.variable import BRONZE, MYSQL_TO_BQ, POSTGRES_TO_BQ, SILVER
+from plugins.constants.miscellaneous import BRONZE, MYSQL_TO_BQ, POSTGRES_TO_BQ, SILVER
 
 
 config_files = get_yaml_config_files(os.getcwd(), '*.yaml')
