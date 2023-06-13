@@ -21,4 +21,7 @@ def generate_task_flow(config, dag_id):
     t_2 = task_2(dag_id)
     t_3 = task_3(config)
 
+    t_1 >> t_2
+    t_2 >> t_3
+
     return [t_1, t_2, t_3]
