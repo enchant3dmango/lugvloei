@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 
 updated_values.yaml
+.vscode
