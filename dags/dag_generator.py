@@ -34,7 +34,7 @@ for config_file in config_files:
     @dag(dag_id=dag_id, start_date=config.get('dag')['start_date'], default_args=default_args)
     def dag_generator():
         if MYSQL_TO_BQ in config.get('dag')['type']:
-            mysql_to_bq.generate_dag(config, dag_id)
-        elif POSTGRES_TO_BQ in config.get('dag')['type']:
-            postgres_to_bq.generate_dag(config, dag_id)
+            mysql_to_bq.dynamic_generated_dag(config, dag_id)
+        # elif POSTGRES_TO_BQ in config.get('dag')['type']:
+        #     postgres_to_bq.dynamic_generated_dag(config, dag_id)
     dag_generator()
