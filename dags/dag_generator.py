@@ -11,7 +11,7 @@ from plugins.constants.miscellaneous import BRONZE, MYSQL_TO_BQ, POSTGRES_TO_BQ,
 
 config_files = get_yaml_config_files(os.getcwd(), '*.yaml')
 
-for config_file in config_files():
+for config_file in config_files:
     with open(config_file) as file:
         config = yaml.safe_load(file)
     if BRONZE in config.get('dag')['type']:
