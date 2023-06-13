@@ -7,7 +7,7 @@ dag:
   behavior:
     schedule_interval: 1 * * * *
     depends_on_past: False
-    catch_up: True
+    catch_up: False
     retry:
       count: 4
       delay: 1
