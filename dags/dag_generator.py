@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 import os
 from airflow.decorators import dag, task
 
@@ -31,7 +31,7 @@ for config_file in config_files:
         'retry_delay': timedelta(minutes=config.get('dag')['retry']['delay']),
     }
 
-    @dag(dag_id=dag_id, start_date=config.get('dag')['start_date'], default_args=default_args)
+    @dag(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args)
     def dag_generator():
         if MYSQL_TO_BQ in config.get('dag')['type']:
             mysql_to_bq.dynamic_generated_dag(config, dag_id)
