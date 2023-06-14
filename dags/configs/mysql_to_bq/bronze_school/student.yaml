@@ -5,15 +5,15 @@ database:
   connection: mysql_school
 dag:
   behavior:
-    schedule_interval: 1 * * * *
-    depends_on_past: False
+    schedule: 1 * * * *
+    depends_on_past: True
     catch_up: False
     retry:
       count: 4
       delay: 1
     email_on_failure: False
     email_on_retry: False
-    concurrency: 1
+    max_active_tasks: 1
   tags:
     - mysql
     - bigquery

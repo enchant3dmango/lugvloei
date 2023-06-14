@@ -1,8 +1,8 @@
 database:
-  name: office
-  table: employee
+  name: school
+  table: teacher
   type: mysql
-  connection: mysql_office
+  connection: mysql_school
 dag:
   behavior:
     schedule: 1 * * * *

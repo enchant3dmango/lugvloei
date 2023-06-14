@@ -7,6 +7,7 @@ import os
 import yaml
 
 from airflow.operators.python import PythonOperator
+from airflow.decorators import dag, task
 
 config_files = get_yaml_config_files(f'{os.environ["PYTHONPATH"]}/dags/configs', '*.yaml')
 
@@ -25,9 +26,9 @@ for config_file in config_files:
     depend_on_past = behavior['depends_on_past']
     email_on_failure = behavior['email_on_failure']
     email_on_retry = behavior['email_on_retry']
-    schedule_interval = behavior['schedule_interval']
+    schedule = behavior['schedule']
     catchup = behavior['catch_up']
-    concurrency = behavior['concurrency']
+    max_active_tasks = behavior['max_active_tasks']
     retries = behavior['retry']['count']
     retry_delay = timedelta(minutes=behavior['retry']['delay'])
 
@@ -43,18 +44,17 @@ for config_file in config_files:
     
     print(config)
 
-    with DAG(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args, catchup=catchup,
-             concurrency=concurrency, schedule_interval=schedule_interval) as dag:
-
-        if MYSQL_TO_BQ in config.get('dag')['type']:
+    @dag(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args, catchup=catchup, max_active_tasks=max_active_tasks, schedule=schedule)
+    def dynamic_generated_dag():
+            @task
             def print_me(message):
                 print(message)
 
-            task = PythonOperator(
-                task_id=f"submit_task_{config.get('database')['name']}_{config.get('database')['table']}",
-                python_callable=print_me,
-                op_kwargs={'message': config},
-                dag=dag
-            )
+            @task
+            def say_hello():
+                print('Hello')
 
-            task
+            print_me(config) >> say_hello()
+
+    dynamic_generated_dag()
+            
