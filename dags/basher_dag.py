@@ -16,7 +16,7 @@ with DAG(
     
     task = BashOperator(
         task_id='task',
-        bash_command='pip list | grep airflow'
+        bash_command='echo $AIRFLOW_HOME'
     )
     
     task
