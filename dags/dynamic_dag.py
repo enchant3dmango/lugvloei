@@ -1,3 +1,4 @@
+from airflow import DAG
 from plugins.constants.miscellaneous import BRONZE, MYSQL_TO_BQ, POSTGRES_TO_BQ, SILVER
 from plugins.utils.dag_config_reader import get_yaml_config_files
 from datetime import timedelta, datetime
@@ -43,11 +44,9 @@ for config_file in config_files:
         'retry_delay': retry_delay,
     }
 
-    @dag(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args, catchup=catchup, concurrency=concurrency, schedule_interval=schedule_interval)
-    def dynamic_generated_dag():
+    with DAG(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args, catchup=catchup, concurrency=concurrency, schedule_interval=schedule_interval) as dag:
         if MYSQL_TO_BQ in config.get('dag')['type']:
-            @task
+            @task(task_id=f"submit_task_{config.get('dabatase')['name']}_{config.get('database')['table']}")
             def print_me(message):
                 print(message)
             print_me(config)
-    dynamic_generated_dag()
