@@ -3,13 +3,10 @@ from plugins.constants.miscellaneous import BRONZE, MYSQL_TO_BQ, POSTGRES_TO_BQ,
 from plugins.utils.dag_config_reader import get_yaml_config_files
 from datetime import timedelta, datetime
 import os
-import sys
 
 import yaml
 
 from airflow.operators.python import PythonOperator
-
-sys.path.append(os.environ['AIRFLOW_HOME'])
 
 config_files = get_yaml_config_files(f'{os.getcwd()}/configs', '*.yaml')
 
@@ -55,7 +52,7 @@ for config_file in config_files:
                 task_id=f"submit_task_{config.get('database')['name']}_{config.get('database')['table']}",
                 python_callable=print_me,
                 op_kwargs={'message': config},
-                dag=dag  # Add the 'dag' parameter
+                dag=dag
             )
 
-            task  # Add the task to the DAG
+            task
