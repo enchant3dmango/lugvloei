@@ -4,7 +4,7 @@ import datetime
 import pendulum
 
 from airflow import DAG
-from airflow.operators import BashOperator
+from airflow.operators.bash import BashOperator
 
 with DAG(
     dag_id="basher",
