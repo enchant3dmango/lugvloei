@@ -11,7 +11,7 @@ from airflow.operators.python import PythonOperator
 
 sys.path.append(os.environ['AIRFLOW_HOME'])
 
-config_files = get_yaml_config_files(f'{os.getcwd()}\configs', '*.yaml')
+config_files = get_yaml_config_files(f'{os.getcwd()}/configs', '*.yaml')
 
 for config_file in config_files:
     with open(config_file) as file:
