@@ -1,3 +1,5 @@
+from plugins.constants.miscellaneous import BRONZE, MYSQL_TO_BQ, POSTGRES_TO_BQ, SILVER
+from plugins.utils.dag_config_reader import get_yaml_config_files
 from datetime import timedelta, datetime
 import os
 import sys
@@ -7,12 +9,8 @@ import yaml
 
 sys.path.append(os.environ['AIRFLOW_HOME'])
 
-from plugins.utils.dag_config_reader import get_yaml_config_files
-from plugins.constants.miscellaneous import BRONZE, MYSQL_TO_BQ, POSTGRES_TO_BQ, SILVER
-
 
 config_files = get_yaml_config_files(f'{os.getcwd()}\configs', '*.yaml')
-generated_dags = []  # List to store the generated DAGs
 
 for config_file in config_files:
     with open(config_file) as file:
@@ -34,7 +32,7 @@ for config_file in config_files:
     concurrency = behavior['concurrency']
     retries = behavior['retry']['count']
     retry_delay = timedelta(minutes=behavior['retry']['delay'])
-    
+
     default_args = {
         'owner': owner,
         'depend_on_past': depend_on_past,

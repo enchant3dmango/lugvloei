@@ -6,6 +6,9 @@ RUN  apt-get update -y && apt-get install -y \
     procps \
     vim
 COPY dags $AIRFLOW_HOME/dags
+COPY plugins $AIRFLOW_HOME/plugins
+COPY templates $AIRFLOW_HOME/templates
+
 COPY requirements.txt requirements.txt
 
 USER airflow
