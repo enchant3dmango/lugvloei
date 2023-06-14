@@ -40,9 +40,13 @@ for config_file in config_files:
         'email_on_retry': email_on_retry,
         'retries': retries,
         'retry_delay': retry_delay,
+        'catchup': catchup,
+        'max_active_tasks': max_active_tasks,
+        'schedule': schedule,
+        'timezone': 'Asia/Jakarta'
     }
 
-    @dag(dag_id=dag_id, start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), default_args=default_args, catchup=catchup, max_active_tasks=max_active_tasks, schedule=schedule)
+    @dag(dag_id=dag_id, start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), default_args=default_args)
     def dynamic_generated_dag():
             @task
             def print_me(message):
