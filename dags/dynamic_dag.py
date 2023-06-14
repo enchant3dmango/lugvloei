@@ -8,6 +8,9 @@ from airflow.decorators import dag, task
 
 import yaml
 
+from airflow.operators.python import PythonOperator
+
+
 sys.path.append(os.environ['AIRFLOW_HOME'])
 
 
@@ -46,7 +49,15 @@ for config_file in config_files:
 
     with DAG(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args, catchup=catchup, concurrency=concurrency, schedule_interval=schedule_interval) as dag:
         if MYSQL_TO_BQ in config.get('dag')['type']:
-            @task(task_id=f"submit_task_{config.get('dabatase')['name']}_{config.get('database')['table']}")
+            
             def print_me(message):
                 print(message)
-            print_me(config)
+            
+            task = PythonOperator(
+                task_id=f"submit_task_{config.get('dabatase')['name']}_{config.get('database')['table']}",
+                python_callable=print_me,
+                op_kwargs={'message': config}
+            )
+            
+            task
+            
