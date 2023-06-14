@@ -6,6 +6,7 @@ database:
 dag:
   behavior:
     schedule: 1 * * * *
+    start_date: 2023, 6, 10
     depends_on_past: True
     catch_up: False
     retry:

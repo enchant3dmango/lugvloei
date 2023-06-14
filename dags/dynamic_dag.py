@@ -1,12 +1,11 @@
-from airflow import DAG
-from plugins.constants.miscellaneous import BRONZE, MYSQL_TO_BQ, POSTGRES_TO_BQ, SILVER
+from plugins.constants.miscellaneous import BRONZE, SILVER
 from plugins.utils.dag_config_reader import get_yaml_config_files
-from datetime import timedelta, datetime
+from datetime import timedelta
 import os
 
 import yaml
+import pendulum
 
-from airflow.operators.python import PythonOperator
 from airflow.decorators import dag, task
 
 config_files = get_yaml_config_files(f'{os.environ["PYTHONPATH"]}/dags/configs', '*.yaml')
@@ -24,6 +23,7 @@ for config_file in config_files:
     owner = config.get('dag')['owner']
     email = config.get('dag')['email']
     depend_on_past = behavior['depends_on_past']
+    start_date = tuple(map(int, behavior['start_date'].split(',')))
     email_on_failure = behavior['email_on_failure']
     email_on_retry = behavior['email_on_retry']
     schedule = behavior['schedule']
@@ -41,10 +41,8 @@ for config_file in config_files:
         'retries': retries,
         'retry_delay': retry_delay,
     }
-    
-    print(config)
 
-    @dag(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args, catchup=catchup, max_active_tasks=max_active_tasks, schedule=schedule)
+    @dag(dag_id=dag_id, start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), default_args=default_args, catchup=catchup, max_active_tasks=max_active_tasks, schedule=schedule)
     def dynamic_generated_dag():
             @task
             def print_me(message):
