@@ -40,6 +40,8 @@ for config_file in config_files:
         'retries': retries,
         'retry_delay': retry_delay,
     }
+    
+    print(config)
 
     with DAG(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args, catchup=catchup,
              concurrency=concurrency, schedule_interval=schedule_interval) as dag:
