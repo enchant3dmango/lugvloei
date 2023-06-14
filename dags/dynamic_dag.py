@@ -4,10 +4,8 @@ from airflow.decorators import dag, task
 
 import yaml
 
-from generators import mysql_to_bq, postgres_to_bq
 from plugins.utils.dag_config_reader import get_yaml_config_files
 from plugins.constants.miscellaneous import BRONZE, MYSQL_TO_BQ, POSTGRES_TO_BQ, SILVER
-from generators.mysql_to_bq import task_1, task_2, task_3
 
 
 config_files = get_yaml_config_files(os.getcwd(), '*.yaml')
@@ -20,24 +18,35 @@ for config_file in config_files:
     elif SILVER in config.get('dag')['type']:
         dag_id = f'{SILVER}_{config.get("database")["name"]}.{config.get("database")["table"]}'
 
+    owner = config.get('dag')['owner']
+    depend_on_past = config.get('dag')['depends_on_past']
+    email = config.get('dag')['email']
+    email_on_failure = config.get('dag')['email_on_failure']
+    email_on_retry = config.get('dag')['email_on_retry']
+    schedule_interval = config.get('dag')['schedule_interval']
+    catchup = config.get('dag')['catchup']
+    concurrency = config.get('dag')['concurrency']
+    retries = config.get('dag')['retry']['count']
+    retry_delay = timedelta(minutes=config.get('dag')['retry']['delay'])
+
     default_args = {
-        'owner': config.get('dag')['owner'],
-        'depend_on_past': config.get('dag')['depends_on_past'],
-        'email': config.get('dag')['email'],
-        'email_on_failure': config.get('dag')['email_on_failure'],
-        'email_on_retry': config.get('dag')['email_on_retry'],
-        'schedule_interval': config.get('dag')['schedule_interval'],
-        'catchup': config.get('dag')['catchup'],
-        'concurrency': config.get('dag')['concurrency'],
-        'retries': config.get('dag')['retry']['count'],
-        'retry_delay': timedelta(minutes=config.get('dag')['retry']['delay']),
+        'owner': owner,
+        'depend_on_past': depend_on_past,
+        'email': email,
+        'email_on_failure': email_on_failure,
+        'email_on_retry': email_on_retry,
+        'schedule_interval': schedule_interval,
+        'catchup': catchup,
+        'concurrency': concurrency,
+        'retries': retries,
+        'retry_delay': timedelta(minutes=retry_delay),
     }
 
     @dag(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args)
     def generator():
         if MYSQL_TO_BQ in config.get('dag')['type']:
-            task_1(dag_id) >> task_2(dag_id) >> task_3(config)
-            # mysql_to_bq.generate_task_flow(config, dag_id)
-        # elif POSTGRES_TO_BQ in config.get('dag')['type']:
-        #     postgres_to_bq.dynamic_generated_dag(config, dag_id)
+            @task
+            def print_me(message):
+                print(message)
+            print_me(config)
     generator()
