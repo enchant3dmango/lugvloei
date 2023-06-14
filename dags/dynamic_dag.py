@@ -44,8 +44,7 @@ for config_file in config_files:
         'retry_delay': retry_delay,
         'catchup': catchup,
         'max_active_tasks': max_active_tasks,
-        'schedule': schedule,
-        'timezone': 'Asia/Jakarta'
+        'schedule': schedule
     }
 
     @dag(dag_id=dag_id, start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), default_args=default_args)
