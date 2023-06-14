@@ -8,7 +8,7 @@ import yaml
 
 from airflow.operators.python import PythonOperator
 
-config_files = get_yaml_config_files(f'{os.getcwd()}/configs', '*.yaml')
+config_files = get_yaml_config_files(f'{os.environ["PYTHONPATH"]}/dags/configs', '*.yaml')
 
 for config_file in config_files:
     with open(config_file) as file:
