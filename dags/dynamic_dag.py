@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from plugins.constants.miscellaneous import BRONZE, SILVER
 from plugins.utils.dag_config_reader import get_yaml_config_files
 from datetime import timedelta
