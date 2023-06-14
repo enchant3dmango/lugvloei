@@ -41,22 +41,15 @@ for config_file in config_files:
         'email': email,
         'email_on_failure': email_on_failure,
         'email_on_retry': email_on_retry,
-        'schedule_interval': schedule_interval,
-        'catchup': catchup,
-        'concurrency': concurrency,
         'retries': retries,
         'retry_delay': retry_delay,
     }
 
-    @dag(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args)
+    @dag(dag_id=dag_id, start_date=datetime(2023, 6, 10), default_args=default_args, catchup=catchup, concurrency=concurrency, schedule_interval=schedule_interval)
     def dynamic_generated_dag():
         if MYSQL_TO_BQ in config.get('dag')['type']:
             @task
             def print_me(message):
                 print(message)
             print_me(config)
-    generated_dags.append(dynamic_generated_dag)  # Add the generator function to the list
-
-# Now you can execute the generated DAGs
-for dag_generator in generated_dags:
-    dag_generator()
+    dynamic_generated_dag()
