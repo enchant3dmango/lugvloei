@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from plugins.constants.miscellaneous import RDBMS_TO_BQ
-from plugins.utils.dag_config_reader import get_yaml_config_files
+from plugins.dag_config_reader import get_yaml_config_files
 from datetime import timedelta
 import os
 
@@ -47,7 +47,7 @@ for config_file in config_files:
         if task_type in RDBMS_TO_BQ:
             task_flow = rdbms_to_bq.generate_task_flow()
         # TODO: Add other task_type generator here
-        
-        # Add the task flow to dag 
+
+        # Add the task flow to dag
         task_flow
     dynamic_generated_dag()

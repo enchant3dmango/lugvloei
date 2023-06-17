@@ -249,12 +249,12 @@ allowPodLaunching: true
 
 # Environment variables for all airflow containers
 env:
- - name: PYTHONPATH
-   value: "/opt/airflow/dags/repo"
- - name: AIRFLOW__CORE__DEFAULT_TIMEZONE
-   value: "Asia/Jakarta"
- - name: AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE
-   value: "Asia/Jakarta"
+  - name: PYTHONPATH
+    value: "/opt/airflow/dags/repo"
+  - name: AIRFLOW__CORE__DEFAULT_TIMEZONE
+    value: "Asia/Jakarta"
+  - name: AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE
+    value: "Asia/Jakarta"
 
 # Volumes for all airflow containers
 volumes: []
@@ -669,20 +669,20 @@ scheduler:
     failureThreshold: 5
     periodSeconds: 60
     command:
-    - python
-    - -Wignore
-    - -c
-    - |
-      import os
-      os.environ['AIRFLOW__CORE__LOGGING_LEVEL'] = 'ERROR'
-      os.environ['AIRFLOW__LOGGING__LOGGING_LEVEL'] = 'ERROR'
+      - python
+      - -Wignore
+      - -c
+      - |
+        import os
+        os.environ['AIRFLOW__CORE__LOGGING_LEVEL'] = 'ERROR'
+        os.environ['AIRFLOW__LOGGING__LOGGING_LEVEL'] = 'ERROR'
 
-      from airflow.jobs.scheduler_job import SchedulerJob
-      from airflow.utils.db import create_session
-      from airflow.utils.net import get_hostname
-      import sys
+        from airflow.jobs.scheduler_job import SchedulerJob
+        from airflow.utils.db import create_session
+        from airflow.utils.net import get_hostname
+        import sys
 
-      sys.exit(0)
+        sys.exit(0)
   # Airflow 2.0 allows users to run multiple schedulers,
   # However this feature is only recommended for MySQL 8+ and Postgres
   replicas: 1
@@ -1794,7 +1794,12 @@ cleanup:
   # Command to use when running the cleanup cronjob (templated).
   command: ~
   # Args to use when running the cleanup cronjob (templated).
-  args: ["bash", "-c", "exec airflow kubernetes cleanup-pods --namespace={{ .Release.Namespace }}"]
+  args:
+    [
+      "bash",
+      "-c",
+      "exec airflow kubernetes cleanup-pods --namespace={{ .Release.Namespace }}",
+    ]
 
   # jobAnnotations are annotations on the cleanup CronJob
   jobAnnotations: {}
@@ -1866,25 +1871,25 @@ config:
   core:
     dags_folder: '{{ include "airflow_dags" . }}'
     # This is ignored when used with the official Docker image
-    load_examples: 'False'
-    executor: '{{ .Values.executor }}'
+    load_examples: "False"
+    executor: "{{ .Values.executor }}"
     # For Airflow 1.10, backward compatibility; moved to [logging] in 2.0
-    colored_console_log: 'False'
+    colored_console_log: "False"
     remote_logging: '{{- ternary "True" "False" .Values.elasticsearch.enabled }}'
   logging:
     remote_logging: '{{- ternary "True" "False" .Values.elasticsearch.enabled }}'
-    colored_console_log: 'False'
+    colored_console_log: "False"
   metrics:
     statsd_on: '{{ ternary "True" "False" .Values.statsd.enabled }}'
     statsd_port: 9125
     statsd_prefix: airflow
     statsd_host: '{{ printf "%s-statsd" .Release.Name }}'
   webserver:
-    enable_proxy_fix: 'True'
+    enable_proxy_fix: "True"
     # For Airflow 1.10
-    rbac: 'True'
+    rbac: "True"
   celery:
-    flower_url_prefix: '{{ .Values.ingress.flower.path }}'
+    flower_url_prefix: "{{ .Values.ingress.flower.path }}"
     worker_concurrency: 16
   scheduler:
     standalone_dag_processor: '{{ ternary "True" "False" .Values.dagProcessor.enabled }}'
@@ -1896,36 +1901,36 @@ config:
     # `run_duration` included for Airflow 1.10 backward compatibility; removed in 2.0.
     run_duration: 41460
   elasticsearch:
-    json_format: 'True'
+    json_format: "True"
     log_id_template: "{dag_id}_{task_id}_{execution_date}_{try_number}"
   elasticsearch_configs:
     max_retries: 3
     timeout: 30
-    retry_timeout: 'True'
+    retry_timeout: "True"
   kerberos:
-    keytab: '{{ .Values.kerberos.keytabPath }}'
-    reinit_frequency: '{{ .Values.kerberos.reinitFrequency }}'
-    principal: '{{ .Values.kerberos.principal }}'
-    ccache: '{{ .Values.kerberos.ccacheMountPath }}/{{ .Values.kerberos.ccacheFileName }}'
+    keytab: "{{ .Values.kerberos.keytabPath }}"
+    reinit_frequency: "{{ .Values.kerberos.reinitFrequency }}"
+    principal: "{{ .Values.kerberos.principal }}"
+    ccache: "{{ .Values.kerberos.ccacheMountPath }}/{{ .Values.kerberos.ccacheFileName }}"
   celery_kubernetes_executor:
-    kubernetes_queue: 'kubernetes'
+    kubernetes_queue: "kubernetes"
   # The `kubernetes` section is deprecated in Airflow >= 2.5.0 due to an airflow.cfg schema change.
   # The `kubernetes` section can be removed once the helm chart no longer supports Airflow < 2.5.0.
   kubernetes:
-    namespace: '{{ .Release.Namespace }}'
+    namespace: "{{ .Release.Namespace }}"
     # The following `airflow_` entries are for Airflow 1, and can be removed when it is no longer supported.
     airflow_configmap: '{{ include "airflow_config" . }}'
     airflow_local_settings_configmap: '{{ include "airflow_config" . }}'
     pod_template_file: '{{ include "airflow_pod_template_file" . }}/pod_template_file.yaml'
-    worker_container_repository: '{{ .Values.images.airflow.repository | default .Values.defaultAirflowRepository }}'
-    worker_container_tag: '{{ .Values.images.airflow.tag | default .Values.defaultAirflowTag }}'
+    worker_container_repository: "{{ .Values.images.airflow.repository | default .Values.defaultAirflowRepository }}"
+    worker_container_tag: "{{ .Values.images.airflow.tag | default .Values.defaultAirflowTag }}"
     multi_namespace_mode: '{{ ternary "True" "False" .Values.multiNamespaceMode }}'
   # The `kubernetes_executor` section duplicates the `kubernetes` section in Airflow >= 2.5.0 due to an airflow.cfg schema change.
   kubernetes_executor:
-    namespace: '{{ .Release.Namespace }}'
+    namespace: "{{ .Release.Namespace }}"
     pod_template_file: '{{ include "airflow_pod_template_file" . }}/pod_template_file.yaml'
-    worker_container_repository: '{{ .Values.images.airflow.repository | default .Values.defaultAirflowRepository }}'
-    worker_container_tag: '{{ .Values.images.airflow.tag | default .Values.defaultAirflowTag }}'
+    worker_container_repository: "{{ .Values.images.airflow.repository | default .Values.defaultAirflowRepository }}"
+    worker_container_tag: "{{ .Values.images.airflow.tag | default .Values.defaultAirflowTag }}"
     multi_namespace_mode: '{{ ternary "True" "False" .Values.multiNamespaceMode }}'
 # yamllint enable rule:line-length
 
@@ -2063,4 +2068,3 @@ logs:
     storageClassName:
     ## the name of an existing PVC to use
     existingClaim:
-
