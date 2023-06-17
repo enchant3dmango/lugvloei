@@ -50,4 +50,4 @@ for config_file in config_files:
 
         # Add the task flow to dag
         task_flow
-    dynamic_generated_dag()
+    dynamic_generated_dag(task_type=task_type)
