@@ -44,7 +44,7 @@ for config_file in config_files:
 
     @dag(dag_id=dag_id, start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), default_args=default_args)
     def dynamic_generated_dag(task_type):
-        task_flow = None
+        # task_flow = None
 
         if task_type in RDBMS_TO_BQ.__members__:
             @task
@@ -55,5 +55,5 @@ for config_file in config_files:
         # TODO: Add other task_type generator here
 
         # Add the task flow to dag
-        task_flow
+        # task_flow
     dynamic_generated_dag(task_type=task_type)
