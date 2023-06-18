@@ -10,4 +10,4 @@ from plugins.constants.miscellaneous import MYSQL_TO_BQ, POSTGRES_TO_BQ, RDBMS_T
 
 def generate_task(dag_id, task_config):
     if MYSQL_TO_BQ in RDBMS_TO_BQ.__members__ or POSTGRES_TO_BQ in RDBMS_TO_BQ.__members__:
-        return EmptyOperator(dag_id=dag_id, task_id=SUBMIT_SPARK_JOB)
+        return EmptyOperator(task_id=SUBMIT_SPARK_JOB)
