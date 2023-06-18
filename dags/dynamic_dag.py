@@ -50,10 +50,10 @@ for config_file in config_files:
             @task
             def print_me(message):
                 print(message)
-            print_me(task_type)
             # task_flow = rdbms_to_bq.generate_task_flow()
         # TODO: Add other task_type generator here
 
+        print_me(task_type)
         # Add the task flow to dag
         # task_flow
     dynamic_generated_dag(task_type=task_type)
