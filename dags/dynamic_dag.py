@@ -20,8 +20,9 @@ for config_file in config_files:
 
     dag_id = cfg.get('dag')['name']
     dag_behavior = cfg.get('dag')['behavior']
+    dag_tags = cfg.get('dag')['tags']
+    dag_owner = cfg.get('dag')['owner']
 
-    owner = cfg.get('dag')['owner']
     depend_on_past = dag_behavior['depends_on_past']
     start_date = tuple(map(int, dag_behavior['start_date'].split(',')))
     schedule_interval = dag_behavior['schedule_interval']
@@ -32,16 +33,15 @@ for config_file in config_files:
     task_type = cfg.get('task')['type']
 
     default_args = {
-        'owner': owner,
+        'owner': dag_owner,
         'email': ['data.engineer@sirclo.com'],
         'depend_on_past': depend_on_past,
         'retries': retries,
-        'retry_delay': retry_delay,
-        'catchup': catchup,
-        'schedule_interval': schedule_interval
+        'retry_delay': retry_delay
     }
 
-    @dag(dag_id=dag_id, start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), default_args=default_args)
+    @dag(catchup=catchup, dag_id=dag_id, default_args=default_args, schedule_interval=schedule_interval,
+         start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), tags=dag_tags)
     def dynamic_generated_dag(config):
         generate_task(dag_id=dag_id, task_config=config)
     dynamic_generated_dag(config=cfg.get('task'))
