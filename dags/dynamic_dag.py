@@ -24,7 +24,7 @@ for config_file in config_files:
     owner = cfg.get('dag')['owner']
     depend_on_past = dag_behavior['depends_on_past']
     start_date = tuple(map(int, dag_behavior['start_date'].split(',')))
-    schedule = dag_behavior['schedule']
+    schedule_interval = dag_behavior['schedule_interval']
     catchup = dag_behavior['catch_up']
     retries = dag_behavior['retry']['count']
     retry_delay = timedelta(minutes=dag_behavior['retry']['delay_in_minute'])
@@ -38,7 +38,7 @@ for config_file in config_files:
         'retries': retries,
         'retry_delay': retry_delay,
         'catchup': catchup,
-        'schedule': schedule
+        'schedule_interval': schedule_interval
     }
 
     @dag(dag_id=dag_id, start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), default_args=default_args)
