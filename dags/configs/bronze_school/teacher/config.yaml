@@ -1,7 +1,7 @@
 dag:
   name: bronze_school.teacher
   behavior:
-    schedule: 1 * * * *
+    schedule_interval: 1 * * * *
     start_date: 2023, 6, 14
     depends_on_past: True
     catch_up: False
