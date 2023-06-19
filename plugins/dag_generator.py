@@ -1,27 +1,26 @@
 from __future__ import annotations
 
-from plugins.dag_config_reader import get_yaml_config_files
-from plugins.dag_task_generator import generate_task
-from datetime import timedelta
 import os
+from datetime import timedelta
 
-
-import yaml
 import pendulum
-
+import yaml
 from airflow.decorators import dag
 
-job_config_files = get_yaml_config_files(
+from plugins.dag_config_reader import get_yaml_config_files
+from plugins.dag_task_generator import generate_task
+
+dag_config_files = get_yaml_config_files(
     f'{os.environ["PYTHONPATH"]}/dags', '*.yaml')
 
-for config_file in job_config_files:
-    with open(config_file) as file:
-        cfg = yaml.safe_load(file)
+for dag_config_file in dag_config_files:
+    with open(dag_config_file) as file:
+        dag_config = yaml.safe_load(file)
 
-    dag_id = cfg.get('dag')['name']
-    dag_behavior = cfg.get('dag')['behavior']
-    dag_tags = cfg.get('dag')['tags']
-    dag_owner = cfg.get('dag')['owner']
+    dag_id = dag_config.get('dag')['name']
+    dag_behavior = dag_config.get('dag')['behavior']
+    dag_tags = dag_config.get('dag')['tags']
+    dag_owner = dag_config.get('dag')['owner']
 
     depend_on_past = dag_behavior['depends_on_past']
     start_date = tuple(map(int, dag_behavior['start_date'].split(',')))
@@ -30,7 +29,7 @@ for config_file in job_config_files:
     retries = dag_behavior['retry']['count']
     retry_delay = timedelta(minutes=dag_behavior['retry']['delay_in_minute'])
 
-    task_type = cfg.get('task')['type']
+    task_type = dag_config.get('task')['type']
 
     default_args = {
         'owner': dag_owner,
@@ -44,4 +43,4 @@ for config_file in job_config_files:
          start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), tags=dag_tags)
     def dynamic_generated_dag(config):
         generate_task(dag_id=dag_id, task_config=config)
-    dynamic_generated_dag(config=cfg.get('task'))
+    dynamic_generated_dag(config=dag_config.get('task'))
