@@ -12,7 +12,7 @@ import pendulum
 from airflow.decorators import dag
 
 config_files = get_yaml_config_files(
-    f'{os.environ["PYTHONPATH"]}/dags/configs', '*.yaml')
+    f'{os.environ["PYTHONPATH"]}/jobs', '*.yaml')
 
 for config_file in config_files:
     with open(config_file) as file:
