@@ -4,8 +4,8 @@ from airflow.decorators import task
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
-
-from plugins.constants.miscellaneous import MYSQL_TO_BQ, POSTGRES_TO_BQ, RDBMS_TO_BQ, SUBMIT_SPARK_JOB
+from plugins.constants.miscellaneous import (MYSQL_TO_BQ, POSTGRES_TO_BQ,
+                                             RDBMS_TO_BQ, SUBMIT_SPARK_JOB)
 
 
 def generate_task(dag_id, task_config):
