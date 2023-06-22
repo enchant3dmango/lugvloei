@@ -76,7 +76,7 @@ class RdbmsToBq:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f'{timestamp_key} >= {{ data_interval_start }} AND {timestamp_key} < {{ data_interval_end }}'
+                    f'{timestamp_key} >=  {kwargs["data_interval_start"]} AND {timestamp_key} < {kwargs["data_interval_end"]}'
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
