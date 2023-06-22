@@ -76,8 +76,8 @@ class RdbmsToBq:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f'{timestamp_key} >=  ' + '{{ macros.ds_add(data_interval_start.astimezone(dag.timezone), -1, "days").replace(hour=0, minute=0, second=0, microsecond=0) }}' 
-                    + f' AND {timestamp_key} < ' + '{{ macros.ds_add(data_interval_end.astimezone(dag.timezone), -1, "days").replace(hour=23, minute=59, second=59, microsecond=999999) }}'
+                    f'{timestamp_key} >=  ' + '{{ (ts - macros.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0) }}'
+                    + f' AND {timestamp_key} < ' + '{{ ts.replace(hour=0, minute=0, second=0, microsecond=0) }}'
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
