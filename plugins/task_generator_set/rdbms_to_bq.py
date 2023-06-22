@@ -14,7 +14,8 @@ class RdbmsToBq:
         super().__init__(**kwargs)
         self.dag_id                      : str = dag_id
         self.task_type                   : str = config['type']
-        self.source_connection           : str = config['source']['connection']
+        self.source_host                 : str = config['source']['host']
+        self.source_port                 : str = config['source']['port']
         self.source_schema               : str = config['source']['schema']
         self.source_table                : str = config['source']['table']
         self.source_timestamp_keys       : str = config['source']['timestamp_keys']
@@ -32,7 +33,6 @@ class RdbmsToBq:
             schema = json.load(file)
             file.close()
 
-        # print(schema)
         fields = [schema_detail["name"] for schema_detail in schema]
         schema.extend(
             [
@@ -83,9 +83,12 @@ class RdbmsToBq:
             query += f" WHERE {condition}"
 
         return query
-
-    def generate_schema(self) -> list:
-        return self.__generate_schema()
+    
+    def __generate_jdbc_url(self, **kwargs) -> str:
+        if self.task_type == POSTGRES_TO_BQ:
+            return f'jdbc:postgresql://{self.source_host}:{self.source_port}/{self.source_schema}'
+        if self.task_type == MYSQL_TO_BQ:
+            return f'jdbc:mysql://{self.source_host}:{self.source_port}/{self.source_schema}'
     
     def generate_task(self) -> SparkSubmitOperator:
         print(self.__generate_query(schema=self.__generate_schema()))
@@ -94,6 +97,7 @@ class RdbmsToBq:
             application_args = [
                 '--query', self.__generate_query(schema=self.__generate_schema()),
                 '--type', self.task_type,
+                '--jdbc_url', self.__generate_jdbc_url(),
             ],
             conn_id = "",
             name    = f'{SPARK_JDBC_TASK}_',

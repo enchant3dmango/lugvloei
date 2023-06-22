@@ -16,7 +16,8 @@ dag:
 task:
   type: mysql_to_bq
   source:
-    connection: mysql_school
+    host: mysql_school
+    port: 3306
     schema: school
     table: student
     timestamp_keys:
