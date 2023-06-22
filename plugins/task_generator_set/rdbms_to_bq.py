@@ -95,7 +95,8 @@ class RdbmsToBq:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f'{timestamp_key} >= AND {pendulum.DateTime._start_of_hour(interval_start).subtract(hours=1)} < {pendulum.DateTime._end_of_hour(interval_end).subtract(hours=1)}'
+                    f'''{timestamp_key} >= AND {pendulum.DateTime._start_of_hour(pendulum.parse(interval_start)).subtract(hours=1)} 
+                    < {pendulum.DateTime._end_of_hour(pendulum.parse(interval_end)).subtract(hours=1)}'''
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
