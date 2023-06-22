@@ -89,6 +89,9 @@ class RdbmsToBq:
             # If scheduled hourly. TODO: Add if statement here
             interval_start = '{{ data_interval_start.astimezone(dag.timezone) }}'
             interval_end   = '{{ data_interval_end.astimezone(dag.timezone) }}'
+            
+            print('#####')
+            print(interval_start, interval_end)
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
