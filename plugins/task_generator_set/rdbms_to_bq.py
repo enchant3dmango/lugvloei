@@ -1,6 +1,7 @@
 import json
 import os
 
+import pendulum
 from airflow.providers.apache.spark.operators.spark_submit import \
     SparkSubmitOperator
 
@@ -8,7 +9,7 @@ from plugins.constants.miscellaneous import (EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                              POSTGRES_TO_BQ, SPARK_JDBC_TASK,
                                              SUBMIT_SPARK_JOB, WRITE_APPEND)
 
-
+from pendulum import DateTime
 class RdbmsToBq: 
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None: 
         super().__init__(**kwargs)
@@ -73,13 +74,29 @@ class RdbmsToBq:
 
         # Generate query filter based on write_disposition
         if self.target_bq_write_disposition == WRITE_APPEND:
+            
+            # If scheduled daily. TODO: Add if statement here
+            interval_start = '{{ data_interval_start.astimezone(dag.timezone) }}'
+            interval_end   = '{{ data_interval_end.astimezone(dag.timezone) }}'
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f'{timestamp_key} >= ' + '{{ data_interval_start.astimezone(dag.timezone) }}' + f' AND {timestamp_key} < ' + '{{ data_interval_end.astimezone(dag.timezone) }}'
+                    f'{timestamp_key} >= AND {pendulum.DateTime._start_of_day(interval_start).subtract(days=1)} < {pendulum.DateTime._end_of_day(interval_end).subtract(days=1)}'
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
+            
+            # If scheduled hourly. TODO: Add if statement here
+            interval_start = '{{ data_interval_start.astimezone(dag.timezone) }}'
+            interval_end   = '{{ data_interval_end.astimezone(dag.timezone) }}'
+            # Create the condition for filtering based on timestamp_keys
+            condition = ' OR '.join(
+                [
+                    f'{timestamp_key} >= AND {pendulum.DateTime._start_of_hour(interval_start).subtract(hours=1)} < {pendulum.DateTime._end_of_hour(interval_end).subtract(hours=1)}'
+                    for timestamp_key in self.source_timestamp_keys
+                ]
+            )
+            
             query += f" WHERE {condition}"
 
         return query
