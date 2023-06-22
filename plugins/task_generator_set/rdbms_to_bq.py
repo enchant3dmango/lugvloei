@@ -78,17 +78,6 @@ class RdbmsToBq:
             # If scheduled daily. TODO: Add if statement here
             interval_start = '{{ data_interval_start.astimezone(dag.timezone) }}'
             interval_end   = '{{ data_interval_end.astimezone(dag.timezone) }}'
-            # Create the condition for filtering based on timestamp_keys
-            condition = ' OR '.join(
-                [
-                    f'{timestamp_key} >= AND {pendulum.DateTime._start_of_day(interval_start).subtract(days=1)} < {pendulum.DateTime._end_of_day(interval_end).subtract(days=1)}'
-                    for timestamp_key in self.source_timestamp_keys
-                ]
-            )
-            
-            # If scheduled hourly. TODO: Add if statement here
-            interval_start = '{{ data_interval_start.astimezone(dag.timezone) }}'
-            interval_end   = '{{ data_interval_end.astimezone(dag.timezone) }}'
             
             print('#####')
             print(interval_start, interval_end)
@@ -100,6 +89,8 @@ class RdbmsToBq:
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
+            
+            # If scheduled hourly. TODO: Add if statement here
             
             query += f" WHERE {condition}"
 
