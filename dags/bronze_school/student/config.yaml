@@ -15,14 +15,21 @@ dag:
   owner: data.engineer@sirclo.com
 task:
   type: mysql_to_bq
-  source: 
+  source:
     connection: mysql_school
+    schema: school
+    table: student
+    timestamp_keys:
+      - created_at
+      - updated_at
+    unique_keys:
+      - id
   target:
     bq:
       project:
-      dataset:
-      table:
-      write_disposition:
+      dataset: bronze_school
+      table: student
+      write_disposition: WRITE_APPEND
     gcs:
       project:
       bucket:
