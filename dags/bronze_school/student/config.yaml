@@ -1,7 +1,7 @@
 dag:
   name: bronze_school.student
   behavior:
-    schedule_interval: 1 * * * *
+    schedule: 1 * * * *
     start_date: 2023, 6, 14
     depends_on_past: True
     catch_up: False
@@ -13,16 +13,25 @@ dag:
     - bigquery
     - truncate
   owner: data.engineer@sirclo.com
+  priority_weight: 1
 task:
   type: mysql_to_bq
-  source: 
+  source:
     connection: mysql_school
+    schema: school
+    table: student
+    timestamp_keys:
+      - created_at
+      - updated_at
+    unique_keys:
+      - id
   target:
     bq:
-      project:
-      dataset:
-      table:
-      write_disposition:
+      project: ~
+      dataset: bronze_school
+      table: student
+      write_disposition: WRITE_APPEND
+      partitioned_keys:
     gcs:
       project:
       bucket:

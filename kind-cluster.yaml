@@ -20,10 +20,3 @@ nodes:
         nodeRegistration:
           kubeletExtraArgs:
             node-labels: "has-gpu=true"
-  - role: worker
-    kubeadmConfigPatches:
-      - |
-        kind: JoinConfiguration
-        nodeRegistration:
-          kubeletExtraArgs:
-            node-labels: "has-gpu=true"
