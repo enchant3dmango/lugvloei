@@ -13,11 +13,11 @@ dag:
     - bigquery
     - truncate
   owner: data.engineer@sirclo.com
+  priority_weight: 1
 task:
   type: mysql_to_bq
   source:
-    host: mysql_school
-    port: 3306
+    connection: mysql_school
     schema: school
     table: student
     timestamp_keys:
@@ -27,10 +27,11 @@ task:
       - id
   target:
     bq:
-      project:
+      project: ~
       dataset: bronze_school
       table: student
       write_disposition: WRITE_APPEND
+      partitioned_keys:
     gcs:
       project:
       bucket:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import os
 from datetime import timedelta
 
@@ -22,6 +21,7 @@ for config_file in config_files:
     dag_id = dag_config['name']
     dag_owner = dag_config['owner']
     dag_tags = dag_config['tags']
+    dag_priority_weight = dag_config['priority_weight']
     dag_behavior = dag_config['behavior']
 
     # DAG behavior
@@ -34,6 +34,7 @@ for config_file in config_files:
 
     default_args = {
         'owner': dag_owner,
+        'priority_weight': dag_priority_weight,
         'email': ['data.engineer@sirclo.com'],
         'depend_on_past': depend_on_past,
         'retries': retries,

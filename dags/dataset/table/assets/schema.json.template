@@ -1,0 +1,7 @@
+[
+    {
+        "mode": "REQUIRED",
+        "name": "id",
+        "type": "INTEGER"
+    }
+]
