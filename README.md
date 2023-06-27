@@ -1,1 +1,1 @@
-... Building :hammer_and_wrench:
+... Building. :hammer_and_wrench:
