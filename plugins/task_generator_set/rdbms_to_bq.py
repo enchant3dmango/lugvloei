@@ -111,9 +111,8 @@ class RdbmsToBq:
         # Generate query
         query = "SELECT {selected_fields}, ".format(
             selected_fields=', '.join([self.quoting(field)
-                                      for field in fields])
-        ) + "{{ ts.astimezone(dag.timezone) }} AS load_timestamp" + \
-            " FROM {source_schema}.{source_table_name}".format(
+                                      for field in fields]))
+        " FROM {source_schema}.{source_table_name}".format(
             source_schema=self.quoting(self.source_schema),
             source_table_name=self.quoting(self.source_table),
         )
