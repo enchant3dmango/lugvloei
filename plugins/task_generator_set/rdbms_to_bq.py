@@ -41,11 +41,11 @@ class RdbmsToBq:
             if self.task_type == POSTGRES_TO_BQ:
                 self.sql_hook = PostgresHook(
                     postgres_conn_id=self.source_connection)
-                self.quoting  = lambda text: f'"{text}"'
+                self.quoting  = lambda text: f"'{text}'"
             elif self.task_type == MYSQL_TO_BQ:
                 self.sql_hook = MySqlHook(
                     mysql_conn_id=self.source_connection)
-                self.quoting  = lambda text: f'"{text}"'
+                self.quoting  = lambda text: f'`{text}`'
         except:
             logging.exception('Task type is not supported!')
 

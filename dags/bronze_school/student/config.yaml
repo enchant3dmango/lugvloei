@@ -27,7 +27,7 @@ task:
       - id
   target:
     bq:
-      project: ~
+      project: pocz-389704
       dataset: bronze_school
       table: student
       write_disposition: WRITE_APPEND
