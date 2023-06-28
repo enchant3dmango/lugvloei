@@ -79,7 +79,7 @@ class RdbmsToBq:
                     file.close()
             else:
                 logging.info('Getting table schema from source database')
-                query = '''
+                query = """
                     SELECT
                         column_name AS name, 
                         data_type   AS type,
@@ -88,7 +88,7 @@ class RdbmsToBq:
                     WHERE
                         table_name       = '{}'
                         AND table_schema = '{}'
-                '''.format(self.table.source_table_name, self.table.source_schema)
+                """.format(self.table.source_table_name, self.table.source_schema)
 
                 logging.info(f'Running query: {query}')
                 schema = self.sql_hook.get_pandas_df(query)
@@ -109,11 +109,11 @@ class RdbmsToBq:
         ]
 
         # Generate query
-        query = 'SELECT {selected_fields}, '.format(
+        query = "SELECT {selected_fields}, ".format(
             selected_fields=', '.join([self.quoting(field)
                                       for field in fields])
-        ) + "'{{ ts.astimezone(dag.timezone) }} AS load_timestamp'" + \
-            ' FROM {source_schema}.{source_table_name}'.format(
+        ) + "{{ ts.astimezone(dag.timezone) }} AS load_timestamp" + \
+            " FROM {source_schema}.{source_table_name}".format(
             source_schema=self.quoting(self.source_schema),
             source_table_name=self.quoting(self.source_table),
         )
@@ -123,10 +123,8 @@ class RdbmsToBq:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f'{timestamp_key} >=  ' +
-                        "'{{ data_interval_start.astimezone(dag.timezone) }}'"
-                    + f' AND {timestamp_key} < ' +
-                        "'{{ data_interval_end.astimezone(dag.timezone) }}'"
+                    f"""{timestamp_key} >=  {{{{ data_interval_start.astimezone(dag.timezone) }}}} 
+                    AND {timestamp_key} < {{{{ data_interval_end.astimezone(dag.timezone) }}}}"""
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
@@ -137,7 +135,7 @@ class RdbmsToBq:
         return query
 
     def __generate_upsert_query(self, schema, **kwargs) -> str:
-        query = '''
+        query = """
             MERGE `{target_bq_table}` x
             USING `{target_bq_table_temp}` y
             ON {on_keys}
@@ -145,7 +143,7 @@ class RdbmsToBq:
                 UPDATE SET {merge_fields}
             WHEN NOT MATCHED THEN
                 INSERT ({fields}) VALUES ({fields})
-        '''.format(
+        """.format(
                 target_bq_table='{}.{}.{}'.format(
                     self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
                 target_bq_table_temp='{}.{}.{}'.format(
