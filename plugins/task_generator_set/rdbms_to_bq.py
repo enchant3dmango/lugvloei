@@ -8,6 +8,7 @@ from airflow.providers.apache.spark.operators.spark_submit import \
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from google.cloud import bigquery
+import pendulum
 
 from plugins.constants.miscellaneous import (EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                              POSTGRES_TO_BQ, SPARK_JDBC_TASK,
@@ -41,11 +42,11 @@ class RdbmsToBq:
             if self.task_type == POSTGRES_TO_BQ:
                 self.sql_hook = PostgresHook(
                     postgres_conn_id=self.source_connection)
-                self.quoting  = lambda text: f'"{text}"'
+                self.quoting  = lambda text: f"'{text}'"
             elif self.task_type == MYSQL_TO_BQ:
                 self.sql_hook = MySqlHook(
                     mysql_conn_id=self.source_connection)
-                self.quoting  = lambda text: f'"{text}"'
+                self.quoting  = lambda text: f'`{text}`'
         except:
             logging.exception('Task type is not supported!')
 
@@ -79,7 +80,7 @@ class RdbmsToBq:
                     file.close()
             else:
                 logging.info('Getting table schema from source database')
-                query = '''
+                query = """
                     SELECT
                         column_name AS name, 
                         data_type   AS type,
@@ -88,7 +89,7 @@ class RdbmsToBq:
                     WHERE
                         table_name       = '{}'
                         AND table_schema = '{}'
-                '''.format(self.table.source_table_name, self.table.source_schema)
+                """.format(self.table.source_table_name, self.table.source_schema)
 
                 logging.info(f'Running query: {query}')
                 schema = self.sql_hook.get_pandas_df(query)
@@ -107,15 +108,17 @@ class RdbmsToBq:
             for schema_detail in schema
             if schema_detail["name"] not in extended_fields
         ]
+        
+        load_timestamp = pendulum.now('Asia/Jakarta')
 
         # Generate query
-        query = 'SELECT {selected_fields}'.format(
-            selected_fields=', '.join([self.quoting(field)
-                                      for field in fields])
-        ) + ', {{ ts.astimezone(dag.timezone) }}' + \
-            ' FROM {source_schema}.{source_table_name}'.format(
-            source_schema=self.quoting(self.source_schema),
-            source_table_name=self.quoting(self.source_table),
+        query = """SELECT {selected_fields}, {load_timestamp} AS load_timestamp
+        FROM {source_schema}.{source_table_name}""".format(
+            selected_fields   =', '.join([self.quoting(field)
+                                          for field in fields]),
+            load_timestamp    = load_timestamp,
+            source_schema     = self.quoting(self.source_schema),
+            source_table_name = self.quoting(self.source_table),
         )
 
         # Generate query filter based on write_disposition
@@ -123,10 +126,8 @@ class RdbmsToBq:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f'{timestamp_key} >=  ' +
-                        '{{ data_interval_start.astimezone(dag.timezone) }}'
-                    + f' AND {timestamp_key} < ' +
-                        '{{ data_interval_end.astimezone(dag.timezone) }}'
+                    f"""{timestamp_key} >=  {{{{ data_interval_start.astimezone(dag.timezone) }}}} 
+                    AND {timestamp_key} < {{{{ data_interval_end.astimezone(dag.timezone) }}}}"""
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
@@ -137,7 +138,7 @@ class RdbmsToBq:
         return query
 
     def __generate_upsert_query(self, schema, **kwargs) -> str:
-        query = '''
+        query = """
             MERGE `{target_bq_table}` x
             USING `{target_bq_table_temp}` y
             ON {on_keys}
@@ -145,7 +146,7 @@ class RdbmsToBq:
                 UPDATE SET {merge_fields}
             WHEN NOT MATCHED THEN
                 INSERT ({fields}) VALUES ({fields})
-        '''.format(
+        """.format(
                 target_bq_table='{}.{}.{}'.format(
                     self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
                 target_bq_table_temp='{}.{}.{}'.format(
@@ -164,14 +165,13 @@ class RdbmsToBq:
         return f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
 
     def generate_task(self) -> SparkSubmitOperator:
-        schema = self.__generate_schema()
+        schema        = self.__generate_schema()
 
         application_args = [
             '--write_disposition', self.target_bq_write_disposition,
-            '--extract_query', self.__generate_extract_query(
-                schema=schema),
+            '--extract_query', self.__generate_extract_query(schema=schema),
             '--upsert_query', self.__generate_upsert_query(schema=schema),
-            '--jdbc_url', self.__generate_jdbc_uri(),
+            '--jdbc_uri', self.__generate_jdbc_uri(),
             '--type', self.task_type,
         ]
 

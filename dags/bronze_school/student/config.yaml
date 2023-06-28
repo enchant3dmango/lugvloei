@@ -1,7 +1,7 @@
 dag:
   name: bronze_school.student
   behavior:
-    schedule: 1 * * * *
+    schedule: 0 13 * * *
     start_date: 2023, 6, 14
     depends_on_past: True
     catch_up: False
@@ -27,7 +27,7 @@ task:
       - id
   target:
     bq:
-      project: ~
+      project: pocz-389704
       dataset: bronze_school
       table: student
       write_disposition: WRITE_APPEND

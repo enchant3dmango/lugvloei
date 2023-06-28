@@ -23,7 +23,7 @@ SPARK_JDBC_TASK = 'spark_jdbc_task'
 EXTENDED_SCHEMA = [
     {
         'mode': 'NULLABLE',
-        'name': 'loaded_timestamp',
+        'name': 'load_timestamp',
         'type': 'TIMESTAMP',
     }
 ]
