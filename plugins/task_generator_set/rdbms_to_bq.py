@@ -109,7 +109,7 @@ class RdbmsToBq:
         ]
 
         # Generate query
-        query = """SELECT {selected_fields}, {{{{ ts.astimezone(dag.timezone) }}}} AS load_timestamp
+        query = """SELECT {selected_fields}, {{{{ pendulum.now('Asia/Jakarta') }}}} AS load_timestamp
         FROM {source_schema}.{source_table_name}""".format(
             selected_fields   =', '.join([self.quoting(field)
                                           for field in fields]),
