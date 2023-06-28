@@ -109,10 +109,10 @@ class RdbmsToBq:
         ]
 
         # Generate query
-        query = 'SELECT {selected_fields}'.format(
+        query = 'SELECT {selected_fields}, '.format(
             selected_fields=', '.join([self.quoting(field)
                                       for field in fields])
-        ) + ', {{ ts.astimezone(dag.timezone) }} AS load_timestamp' + \
+        ) + "'{{ ts.astimezone(dag.timezone) }} AS load_timestamp'" + \
             ' FROM {source_schema}.{source_table_name}'.format(
             source_schema=self.quoting(self.source_schema),
             source_table_name=self.quoting(self.source_table),
@@ -124,9 +124,9 @@ class RdbmsToBq:
             condition = ' OR '.join(
                 [
                     f'{timestamp_key} >=  ' +
-                        '{{ data_interval_start.astimezone(dag.timezone) }}'
+                        "'{{ data_interval_start.astimezone(dag.timezone) }}'"
                     + f' AND {timestamp_key} < ' +
-                        '{{ data_interval_end.astimezone(dag.timezone) }}'
+                        "'{{ data_interval_end.astimezone(dag.timezone) }}'"
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
