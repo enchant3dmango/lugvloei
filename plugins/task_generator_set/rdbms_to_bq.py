@@ -166,16 +166,12 @@ class RdbmsToBq:
 
     def generate_task(self) -> SparkSubmitOperator:
         schema        = self.__generate_schema()
-        extract_query = self.__generate_extract_query(schema=schema)
-        upsert_query  = self.__generate_upsert_query(schema=schema)
-        jdbc_url      = self.__generate_jdbc_uri()
-        
 
         application_args = [
             '--write_disposition', self.target_bq_write_disposition,
-            '--extract_query', extract_query,
-            '--upsert_query', upsert_query,
-            '--jdbc_url', jdbc_url,
+            '--extract_query', self.__generate_extract_query(schema=schema),
+            '--upsert_query', self.__generate_upsert_query(schema=schema),
+            '--jdbc_uri', self.__generate_jdbc_uri(),
             '--type', self.task_type,
         ]
 
