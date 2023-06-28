@@ -109,7 +109,7 @@ class RdbmsToBq:
         ]
 
         # Generate query
-        query = """SELECT {selected_fields}, {{{{ ts }}}} AS load_timestamp
+        query = """SELECT {selected_fields}, {{{{ ts.astimezone(dag.timezone) }}}} AS load_timestamp
         FROM {source_schema}.{source_table_name}""".format(
             selected_fields   =', '.join([self.quoting(field)
                                           for field in fields]),
@@ -122,8 +122,8 @@ class RdbmsToBq:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f"""{timestamp_key} >=  {{{{ data_interval_start }}}} 
-                    AND {timestamp_key} < {{{{ data_interval_end }}}}"""
+                    f"""{timestamp_key} >=  {{{{ data_interval_start.astimezone(dag.timezone) }}}} 
+                    AND {timestamp_key} < {{{{ data_interval_end.astimezone(dag.timezone) }}}}"""
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
