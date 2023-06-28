@@ -8,6 +8,7 @@ from airflow.providers.apache.spark.operators.spark_submit import \
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from google.cloud import bigquery
+import pendulum
 
 from plugins.constants.miscellaneous import (EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                              POSTGRES_TO_BQ, SPARK_JDBC_TASK,
@@ -107,12 +108,15 @@ class RdbmsToBq:
             for schema_detail in schema
             if schema_detail["name"] not in extended_fields
         ]
+        
+        load_timestamp = pendulum.now('Asia/Jakarta')
 
         # Generate query
-        query = """SELECT {selected_fields}, {{{{ pendulum.now('Asia/Jakarta') }}}} AS load_timestamp
+        query = """SELECT {selected_fields}, {load_timestamp} AS load_timestamp
         FROM {source_schema}.{source_table_name}""".format(
             selected_fields   =', '.join([self.quoting(field)
                                           for field in fields]),
+            load_timestamp    = load_timestamp,
             source_schema     = self.quoting(self.source_schema),
             source_table_name = self.quoting(self.source_table),
         )
