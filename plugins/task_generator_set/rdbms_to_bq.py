@@ -112,7 +112,7 @@ class RdbmsToBq:
         query = 'SELECT {selected_fields}'.format(
             selected_fields=', '.join([self.quoting(field)
                                       for field in fields])
-        ) + ', {{ ts.astimezone(dag.timezone) }}' + \
+        ) + ', {{ ts.astimezone(dag.timezone) }} AS load_timestamp' + \
             ' FROM {source_schema}.{source_table_name}'.format(
             source_schema=self.quoting(self.source_schema),
             source_table_name=self.quoting(self.source_table),
@@ -164,14 +164,17 @@ class RdbmsToBq:
         return f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
 
     def generate_task(self) -> SparkSubmitOperator:
-        schema = self.__generate_schema()
+        schema        = self.__generate_schema()
+        extract_query = self.__generate_extract_query(schema=schema)
+        upsert_query  = self.__generate_upsert_query(schema=schema)
+        jdbc_url      = self.__generate_jdbc_uri()
+        
 
         application_args = [
             '--write_disposition', self.target_bq_write_disposition,
-            '--extract_query', self.__generate_extract_query(
-                schema=schema),
-            '--upsert_query', self.__generate_upsert_query(schema=schema),
-            '--jdbc_url', self.__generate_jdbc_uri(),
+            '--extract_query', extract_query,
+            '--upsert_query', upsert_query,
+            '--jdbc_url', jdbc_url,
             '--type', self.task_type,
         ]
 
