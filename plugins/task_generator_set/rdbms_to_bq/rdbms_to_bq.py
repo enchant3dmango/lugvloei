@@ -3,20 +3,19 @@ import json
 import logging
 import os
 
-from airflow.providers.apache.spark.operators.spark_submit import \
-    SparkSubmitOperator
+import pendulum
+from airflow.hooks.base import BaseHook
+from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import \
+    SparkKubernetesOperator
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from google.cloud import bigquery
-import pendulum
 
 from plugins.constants.miscellaneous import (EXTENDED_SCHEMA, MYSQL_TO_BQ,
-                                             POSTGRES_TO_BQ, SPARK_JDBC_TASK,
-                                             SUBMIT_SPARK_JOB, WRITE_APPEND,
-                                             WRITE_TRUNCATE)
+                                             POSTGRES_TO_BQ,
+                                             SPARK_KUBERNETES_OPERATOR,
+                                             WRITE_APPEND, WRITE_TRUNCATE)
 from plugins.utils.miscellaneous import get_parsed_schema_type
-
-from airflow.hooks.base import BaseHook
 
 
 class RdbmsToBq:
@@ -164,21 +163,24 @@ class RdbmsToBq:
     def __generate_jdbc_uri(self, **kwargs) -> str:
         return f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
 
-    def generate_task(self) -> SparkSubmitOperator:
+    def generate_task(self):
         schema        = self.__generate_schema()
 
-        application_args = [
-            '--write_disposition', self.target_bq_write_disposition,
-            '--extract_query', self.__generate_extract_query(schema=schema),
-            '--upsert_query', self.__generate_upsert_query(schema=schema),
-            '--jdbc_uri', self.__generate_jdbc_uri(),
-            '--type', self.task_type,
-        ]
-
-        return SparkSubmitOperator(
-            application      = "",
-            application_args = application_args,
-            conn_id          = "",
-            name             = f'{SPARK_JDBC_TASK}_{self.target_bq_dataset}_{self.target_bq_table}',
-            task_id          = SUBMIT_SPARK_JOB,
+        application_args                      = {}
+        application_args['write_disposition'] = self.target_bq_write_disposition
+        application_args['extract_query']     = self.__generate_extract_query(schema=schema)
+        application_args['upsert_query']      = self.__generate_upsert_query(schema=schema)
+        application_args['jdbc_uri']          = self.__generate_jdbc_uri()
+        application_args['type']              = self.task_type
+        
+        
+        
+        spark_kubernetes_operator_task =  SparkKubernetesOperator(
+            task_id          = f'SPARK_KUBERNETES_OPERATOR_{self.dag_id}',
+            application_file = "rdbms_to_bq.yaml",
+            params           = application_args,
+            in_cluster       = True,
+            do_xcom_push     = True
         )
+        
+        return spark_kubernetes_operator_task

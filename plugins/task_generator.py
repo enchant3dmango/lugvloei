@@ -1,6 +1,6 @@
 from plugins.constants.miscellaneous import (MYSQL_TO_BQ, POSTGRES_TO_BQ,
                                              RDBMS_TO_BQ)
-from plugins.task_generator_set.rdbms_to_bq import RdbmsToBq
+from plugins.task_generator_set.rdbms_to_bq.rdbms_to_bq import RdbmsToBq
 
 
 def generate_task(dag_id, config):
