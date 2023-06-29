@@ -19,7 +19,7 @@
 apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
-  name: "{{ task_instance.try_number }}-{{ task_instance.task_id }}-{{ ts }}"
+  name: "spark-{{ ts }}-{{ task_instance.try_number }}"
   namespace: spark
 spec:
   type: Scala
