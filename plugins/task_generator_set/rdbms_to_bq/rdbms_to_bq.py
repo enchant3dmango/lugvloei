@@ -173,8 +173,6 @@ class RdbmsToBq:
         application_args['jdbc_uri']          = self.__generate_jdbc_uri()
         application_args['type']              = self.task_type
         
-        
-        
         spark_kubernetes_operator_task =  SparkKubernetesOperator(
             task_id          = f'{SPARK_KUBERNETES_OPERATOR}_{self.dag_id}',
             application_file = f'{os.environ["PYTHONPATH"]}/dags/resources/rdbms_to_bq.yaml',
