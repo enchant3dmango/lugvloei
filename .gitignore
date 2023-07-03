@@ -162,4 +162,4 @@ cython_debug/
 .vscode
 
 *-updated.yaml
-*-sa.json
+serviceaccount.json

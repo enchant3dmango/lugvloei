@@ -47,3 +47,8 @@ data:
     host: "localhost:${reg_port}"
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
+
+# 6. Create GCP service account
+sa_file_path=serviceaccount.json
+kubectl create ns airflow
+kubectl create secret generic gcp-sa --from-file=${sa_file_path} -n airflow
