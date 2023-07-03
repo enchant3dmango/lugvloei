@@ -19,7 +19,7 @@
 apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
-  name: spark-pi
+  name: "spark-pi-{{ ts_nodash }}-{{ task_instance.try_number }}"
   namespace: spark
 spec:
   type: Scala

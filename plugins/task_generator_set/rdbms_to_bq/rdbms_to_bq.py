@@ -175,7 +175,7 @@ class RdbmsToBq:
 
         spark_kubernetes_operator_task =  SparkKubernetesOperator(
             task_id          = f'{SPARK_KUBERNETES_OPERATOR}',
-            application_file = f'{os.environ["PYTHONPATH"]}/resources/rdbms_to_bq.yaml',
+            application_file = f'{os.environ["PYTHONPATH"]}/resources/rdbms_to_bq.yaml ',
             namespace        = "spark",
             params           = application_args,
             in_cluster       = True,
