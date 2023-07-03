@@ -19,7 +19,7 @@
 apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
-  name: "sparking"
+  name: spark-pi
   namespace: spark
 spec:
   type: Scala
@@ -32,7 +32,7 @@ spec:
   restartPolicy:
     type: Never
   volumes:
-    - name: "tmp"
+    - name: "tmp-volume"
       hostPath:
         path: "/tmp"
         type: Directory
@@ -44,7 +44,7 @@ spec:
       version: 3.3.2
     serviceAccount: spark
     volumeMounts:
-      - name: "tmp"
+      - name: "tmp-volume"
         mountPath: "/tmp"
   executor:
     cores: 1
@@ -53,5 +53,5 @@ spec:
     labels:
       version: 3.3.2
     volumeMounts:
-      - name: "tmp"
+      - name: "tmp-volume"
         mountPath: "/tmp"
