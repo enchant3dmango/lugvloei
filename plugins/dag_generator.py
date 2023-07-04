@@ -42,7 +42,8 @@ for config_file in config_files:
     }
 
     @dag(catchup=catchup, dag_id=dag_id, default_args=default_args, schedule=schedule,
-         start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), tags=dag_tags)
+         start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), tags=dag_tags,
+         template_searchpath=os.environ["PYTHONPATH"])
     def generate_dag():
         generate_task(dag_id=dag_id, config=config.get('task'))
     generate_dag()

@@ -179,10 +179,7 @@ class RdbmsToBq:
             application_file   = f'{os.environ["PYTHONPATH"]}/resources/rdbms_to_bq.yaml ',
             namespace          = 'airflow',
             in_cluster         = True,
-            do_xcom_push       = True,
-            kubernetes_conn_id = 'k8s',
-            api_group          = 'sparkoperator.k8s.io',
-            api_version        = 'v1beta2'
+            do_xcom_push       = True
         )
 
         return spark_kubernetes_operator_task
