@@ -177,7 +177,6 @@ class RdbmsToBq:
             task_id            = f'{SPARK_KUBERNETES_OPERATOR}',
             application_file   = f'{os.environ["PYTHONPATH"]}/resources/rdbms_to_bq.yaml ',
             namespace          = 'spark',
-            params             = application_args,
             in_cluster         = True,
             do_xcom_push       = True,
             kubernetes_conn_id = 'k8s',
