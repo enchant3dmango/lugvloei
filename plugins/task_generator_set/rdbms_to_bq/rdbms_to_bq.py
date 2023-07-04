@@ -176,7 +176,7 @@ class RdbmsToBq:
         spark_kubernetes_operator_task =  SparkKubernetesOperator(
             task_id            = f'{SPARK_KUBERNETES_OPERATOR}',
             application_file   = f'{os.environ["PYTHONPATH"]}/resources/rdbms_to_bq.yaml ',
-            namespace          = 'spark',
+            namespace          = 'spark-operator',
             in_cluster         = True,
             do_xcom_push       = True,
             kubernetes_conn_id = 'k8s',
