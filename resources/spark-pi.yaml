@@ -13,7 +13,7 @@ spec:
   sparkVersion: "3.1.1"
   restartPolicy:
     type: Never
-  timeToLiveSeconds: 30
+  timeToLiveSeconds: 120
   driver:
     cores: 1
     coreLimit: "1200m"
