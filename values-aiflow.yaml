@@ -255,12 +255,19 @@ env:
    value: "Asia/Jakarta"
  - name: AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE
    value: "Asia/Jakarta"
+ - name: GOOGLE_APPLICATION_CREDENTIALS
+   value: /var/secrets/gcp-sa/serviceaccount.json
 
 # Volumes for all airflow containers
-volumes: []
+volumes:
+  - name: gcp-sa
+    secret:
+      secretName: gcp-sa
 
 # VolumeMounts for all airflow containers
-volumeMounts: []
+volumeMounts:
+  - name: gcp-sa
+    mountPath: "/var/secrets/gcp-sa/"
 
 # Secrets for all airflow containers
 secret: []
@@ -385,11 +392,11 @@ data:
 
 # Fernet key settings
 # Note: fernetKey can only be set during install, not upgrade
-fernetKey: ~
+fernetKey: TmlMQlZ6SWN0UUtreE1tQThUOVRCWW16THQyRTJNNjM=
 fernetKeySecretName: ~
 
 # Flask secret key for Airflow Webserver: `[webserver] secret_key` in airflow.cfg
-webserverSecretKey: ~
+webserverSecretKey: 44b07935f0d93c0b0ed3f8b460c0d6e4
 webserverSecretKeySecretName: ~
 
 # In order to use kerberos you need to create secret containing the keytab file
