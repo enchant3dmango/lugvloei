@@ -179,11 +179,11 @@ class RdbmsToBq:
             task_id          = SPARK_KUBERNETES_OPERATOR,
             application_file = 'resources/rdbms_to_bq.yaml',
             namespace        = SPARK_JOB_NAMESPACE,
-            kwargs           = application_args,
+            params           = application_args,
             in_cluster       = True,
             do_xcom_push     = True
         )
-        
+
         spark_kubernetes_sensor_task = SparkKubernetesSensor(
             task_id          = SPARK_KUBERNETES_SENSOR,
             namespace        = SPARK_JOB_NAMESPACE,
