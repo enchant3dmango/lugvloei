@@ -112,8 +112,7 @@ class RdbmsToBq:
         load_timestamp = pendulum.now('Asia/Jakarta')
 
         # Generate query
-        query = """SELECT {selected_fields}, {load_timestamp} AS load_timestamp
-        FROM {source_schema}.{source_table_name}""".format(
+        query = "SELECT {selected_fields}, {load_timestamp} AS load_timestamp FROM {source_schema}.{source_table_name}".format(
             selected_fields   =', '.join([self.quoting(field)
                                           for field in fields]),
             load_timestamp    = load_timestamp,
@@ -126,8 +125,7 @@ class RdbmsToBq:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f"""{timestamp_key} >=  {{{{ data_interval_start.astimezone(dag.timezone) }}}} 
-                    AND {timestamp_key} < {{{{ data_interval_end.astimezone(dag.timezone) }}}}"""
+                    f"{timestamp_key} >=  {{{{ data_interval_start.astimezone(dag.timezone) }}}} AND {timestamp_key} < {{{{ data_interval_end.astimezone(dag.timezone) }}}}"
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
