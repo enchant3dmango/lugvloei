@@ -18,6 +18,7 @@ spec:
       hostPath:
         path: "/tmp"
         type: Directory
+  timeToLiveSeconds: 30
   driver:
     cores: 1
     coreLimit: "1200m"
