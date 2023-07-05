@@ -5,16 +5,17 @@ import os
 
 import pendulum
 from airflow.hooks.base import BaseHook
-from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import \
-    SparkKubernetesOperator
+from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
+from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKubernetesSensor
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from google.cloud import bigquery
 
 from plugins.constants.miscellaneous import (EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                              POSTGRES_TO_BQ,
-                                             SPARK_KUBERNETES_OPERATOR,
+                                             SPARK_KUBERNETES_OPERATOR, SPARK_KUBERNETES_SENSOR,
                                              WRITE_APPEND, WRITE_TRUNCATE)
+from plugins.constants.variable import SPARK_JOB_NAMESPACE
 from plugins.utils.miscellaneous import get_parsed_schema_type
 
 
@@ -111,8 +112,7 @@ class RdbmsToBq:
         load_timestamp = pendulum.now('Asia/Jakarta')
 
         # Generate query
-        query = """SELECT {selected_fields}, {load_timestamp} AS load_timestamp
-        FROM {source_schema}.{source_table_name}""".format(
+        query = "SELECT {selected_fields}, {load_timestamp} AS load_timestamp FROM {source_schema}.{source_table_name}".format(
             selected_fields   =', '.join([self.quoting(field)
                                           for field in fields]),
             load_timestamp    = load_timestamp,
@@ -125,8 +125,7 @@ class RdbmsToBq:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f"""{timestamp_key} >=  {{{{ data_interval_start.astimezone(dag.timezone) }}}} 
-                    AND {timestamp_key} < {{{{ data_interval_end.astimezone(dag.timezone) }}}}"""
+                    f"{timestamp_key} >=  {{{{ data_interval_start.astimezone(dag.timezone) }}}} AND {timestamp_key} < {{{{ data_interval_end.astimezone(dag.timezone) }}}}"
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
@@ -144,18 +143,17 @@ class RdbmsToBq:
             WHEN MATCHED THEN
                 UPDATE SET {merge_fields}
             WHEN NOT MATCHED THEN
-                INSERT ({fields}) VALUES ({fields})
-        """.format(
-                target_bq_table='{}.{}.{}'.format(
-                    self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
-                target_bq_table_temp='{}.{}.{}'.format(
-                    self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp),
-                on_keys=' AND '.join(
-                    [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
-                merge_fields=', '.join(
-                    [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
-                fields=', '.join([f"`{field['name']}`" for field in schema]),
-        )
+                INSERT ({fields}) VALUES ({fields})""".format(
+                    target_bq_table='{}.{}.{}'.format(
+                        self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
+                    target_bq_table_temp='{}.{}.{}'.format(
+                        self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp),
+                    on_keys=' AND '.join(
+                        [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
+                    merge_fields=', '.join(
+                        [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
+                    fields=', '.join([f"`{field['name']}`" for field in schema])
+                )
         logging.info(f'Upsert query: {query}')
 
         return query
@@ -166,20 +164,27 @@ class RdbmsToBq:
     def generate_task(self):
         schema        = self.__generate_schema()
 
-        application_args                      = {}
+        application_args                      = dict()
         application_args['write_disposition'] = self.target_bq_write_disposition
-        application_args['extract_query']     = self.__generate_extract_query(schema=schema)
-        application_args['upsert_query']      = self.__generate_upsert_query(schema=schema)
         application_args['jdbc_uri']          = self.__generate_jdbc_uri()
         application_args['type']              = self.task_type
+        application_args['upsert_query']      = self.__generate_upsert_query(schema=schema)
+        application_args['extract_query']     = self.__generate_extract_query(schema=schema)
 
         spark_kubernetes_operator_task =  SparkKubernetesOperator(
-            task_id          = f'{SPARK_KUBERNETES_OPERATOR}',
-            application_file = f'{os.environ["PYTHONPATH"]}/resources/rdbms_to_bq.yaml',
-            namespace        = "spark",
-            params           = application_args,
+            task_id          = SPARK_KUBERNETES_OPERATOR,
+            application_file = 'resources/spark-pi.yaml',
+            namespace        = SPARK_JOB_NAMESPACE,
             in_cluster       = True,
-            do_xcom_push     = True
+            do_xcom_push     = True,
+            params           = application_args,
         )
 
-        return spark_kubernetes_operator_task
+        spark_kubernetes_sensor_task = SparkKubernetesSensor(
+            task_id          = SPARK_KUBERNETES_SENSOR,
+            namespace        = SPARK_JOB_NAMESPACE,
+            application_name = '{{ task_instance.xcom_pull(task_ids="spark_k8s_operator")["metadata"]["name"] }}',
+            attach_log       = True
+        )
+
+        return spark_kubernetes_operator_task >> spark_kubernetes_sensor_task
