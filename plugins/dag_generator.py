@@ -7,11 +7,12 @@ import pendulum
 import yaml
 from airflow.decorators import dag
 
+from plugins.constants.miscellaneous import PYTHONPATH
 from plugins.task_generator import generate_task
 from plugins.utils.miscellaneous import get_dag_yaml_config_files
 
 config_files = get_dag_yaml_config_files(
-    f'{os.environ["PYTHONPATH"]}/dags', '*.yaml')
+    f'{PYTHONPATH}/dags', '*.yaml')
 
 for config_file in config_files:
     with open(config_file) as file:
@@ -43,7 +44,7 @@ for config_file in config_files:
 
     @dag(catchup=catchup, dag_id=dag_id, default_args=default_args, schedule=schedule,
          start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), tags=dag_tags,
-         template_searchpath=os.environ["PYTHONPATH"])
+         template_searchpath=PYTHONPATH)
     def generate_dag():
         generate_task(dag_id=dag_id, config=config.get('task'))
     generate_dag()
