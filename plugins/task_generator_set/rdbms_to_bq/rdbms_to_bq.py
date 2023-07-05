@@ -178,9 +178,6 @@ class RdbmsToBq:
             in_cluster       = True,
             do_xcom_push     = True,
             params           = application_args,
-            templates_dict   = {
-                'extract_query': self.__generate_extract_query(schema=schema)
-            }
         )
 
         spark_kubernetes_sensor_task = SparkKubernetesSensor(
