@@ -143,18 +143,17 @@ class RdbmsToBq:
             WHEN MATCHED THEN
                 UPDATE SET {merge_fields}
             WHEN NOT MATCHED THEN
-                INSERT ({fields}) VALUES ({fields})
-        """.format(
-                target_bq_table='{}.{}.{}'.format(
-                    self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
-                target_bq_table_temp='{}.{}.{}'.format(
-                    self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp),
-                on_keys=' AND '.join(
-                    [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
-                merge_fields=', '.join(
-                    [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
-                fields=', '.join([f"`{field['name']}`" for field in schema]),
-        )
+                INSERT ({fields}) VALUES ({fields})""".format(
+                    target_bq_table='{}.{}.{}'.format(
+                        self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
+                    target_bq_table_temp='{}.{}.{}'.format(
+                        self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp),
+                    on_keys=' AND '.join(
+                        [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
+                    merge_fields=', '.join(
+                        [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
+                    fields=', '.join([f"`{field['name']}`" for field in schema])
+                )
         logging.info(f'Upsert query: {query}')
 
         return query
