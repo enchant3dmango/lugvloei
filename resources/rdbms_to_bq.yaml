@@ -11,6 +11,8 @@ spec:
   mainClass: org.apache.spark.examples.SparkPi
   mainApplicationFile: "local:///opt/spark/examples/jars/spark-examples_2.12-3.1.1.jar"
   sparkVersion: "3.1.1"
+  arguments:
+    - --extract_query = {{ extract_query }}
   restartPolicy:
     type: Never
   timeToLiveSeconds: 30

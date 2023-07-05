@@ -169,19 +169,20 @@ class RdbmsToBq:
 
         application_args                      = dict()
         application_args['write_disposition'] = self.target_bq_write_disposition
-        application_args['extract_query']     = self.__generate_extract_query(schema=schema)
-        application_args['upsert_query']      = self.__generate_upsert_query(schema=schema)
         application_args['jdbc_uri']          = self.__generate_jdbc_uri()
         application_args['type']              = self.task_type
-
+        application_args['upsert_query']      = self.__generate_upsert_query(schema=schema)
 
         spark_kubernetes_operator_task =  SparkKubernetesOperator(
             task_id          = SPARK_KUBERNETES_OPERATOR,
             application_file = 'resources/rdbms_to_bq.yaml',
             namespace        = SPARK_JOB_NAMESPACE,
-            params           = application_args,
             in_cluster       = True,
-            do_xcom_push     = True
+            do_xcom_push     = True,
+            params           = application_args,
+            templates_dict   = {
+                'extract_query': self.__generate_extract_query(schema=schema)
+            }
         )
 
         spark_kubernetes_sensor_task = SparkKubernetesSensor(
