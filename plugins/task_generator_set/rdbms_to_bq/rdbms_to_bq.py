@@ -5,16 +5,17 @@ import os
 
 import pendulum
 from airflow.hooks.base import BaseHook
-from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import \
-    SparkKubernetesOperator
+from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
+from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKubernetesSensor
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from google.cloud import bigquery
 
 from plugins.constants.miscellaneous import (EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                              POSTGRES_TO_BQ,
-                                             SPARK_KUBERNETES_OPERATOR,
+                                             SPARK_KUBERNETES_OPERATOR, SPARK_KUBERNETES_SENSOR,
                                              WRITE_APPEND, WRITE_TRUNCATE)
+from plugins.constants.variable import SPARK_JOB_NAMESPACE
 from plugins.utils.miscellaneous import get_parsed_schema_type
 
 
@@ -166,7 +167,7 @@ class RdbmsToBq:
     def generate_task(self):
         schema        = self.__generate_schema()
 
-        application_args                      = {}
+        application_args                      = dict()
         application_args['write_disposition'] = self.target_bq_write_disposition
         application_args['extract_query']     = self.__generate_extract_query(schema=schema)
         application_args['upsert_query']      = self.__generate_upsert_query(schema=schema)
@@ -175,11 +176,19 @@ class RdbmsToBq:
 
 
         spark_kubernetes_operator_task =  SparkKubernetesOperator(
-            task_id            = f'{SPARK_KUBERNETES_OPERATOR}',
-            application_file   = 'resources/rdbms_to_bq.yaml',
-            namespace          = 'spark',
-            in_cluster         = True,
-            do_xcom_push       = True
+            task_id          = SPARK_KUBERNETES_OPERATOR,
+            application_file = 'resources/rdbms_to_bq.yaml',
+            namespace        = SPARK_JOB_NAMESPACE,
+            kwargs           = application_args,
+            in_cluster       = True,
+            do_xcom_push     = True
+        )
+        
+        spark_kubernetes_sensor_task = SparkKubernetesSensor(
+            task_id          = SPARK_KUBERNETES_SENSOR,
+            namespace        = SPARK_JOB_NAMESPACE,
+            application_name = '{{ task_instance.xcom_pull(task_ids="spark_k8s_operator")["metadata"]["name"] }}',
+            attach_log       = True
         )
 
-        return spark_kubernetes_operator_task
+        return spark_kubernetes_operator_task >> spark_kubernetes_sensor_task
