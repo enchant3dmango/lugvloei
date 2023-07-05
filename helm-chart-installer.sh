@@ -16,4 +16,4 @@ helm install spark -f values-spark-on-k8s-operator.yaml spark-operator/spark-ope
 
 # Create role binding from Airflow worker service account to spark
 kubectl create role airflow-spark --verb=get,list,watch,create --resource=sparkapplications -n spark
-kubectl create rolebinding airflow-spark-rb --role=airflow-spark --serviceaccount=airflow:airflow-worker -n spark
+kubectl create rolebinding airflow-spark --role=airflow-spark --serviceaccount=airflow:airflow-worker -n spark
