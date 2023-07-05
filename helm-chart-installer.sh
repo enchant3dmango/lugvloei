@@ -12,12 +12,8 @@ helm install airflow -f values-airflow.yaml apache-airflow/airflow --namespace a
 helm install mysql-db -f values-mysql.yaml bitnami/mysql --namespace mysql --create-namespace
 
 # Install Spark-Operator and its prerequisites
-kubectl create ns spark
-helm install spark-operator spark-operator/spark-operator --namespace spark-operator --set sparkJobNamespace=spark --set webhook.enable=true --create-namespace
-kubectl create serviceaccount spark-job -n spark
-kubectl create clusterrolebinding spark-crb --clusterrole=edit --serviceaccount=spark:spark-job -n spark
+helm install spark -f values-spark-on-k8s-operator.yaml spark-operator/spark-operator --namespace spark --create-namespace
 
-# Create role binding
-kubectl create serviceaccount airflow-spark -n airflow
-kubectl create role airflow-spark-role --verb=get,list,watch,create --resource=sparkapplications -n spark
-kubectl create rolebinding airflow-spark-rb --role=airflow-spark-role --serviceaccount=airflow:airflow-spark -n spark
+# Create role binding from Airflow worker service account to spark
+kubectl create role airflow-spark --verb=get,list,watch,create --resource=sparkapplications -n spark
+kubectl create rolebinding airflow-spark-rb --role=airflow-spark --serviceaccount=airflow:airflow-worker -n spark
