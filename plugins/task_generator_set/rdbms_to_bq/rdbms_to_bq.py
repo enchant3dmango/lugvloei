@@ -25,21 +25,21 @@ from plugins.utils.miscellaneous import get_parsed_schema_type
 class RdbmsToBq:
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.dag_id                     : str             = dag_id
-        self.bq_client                  : bigquery.Client = bigquery.Client()
-        self.task_type                  : str             = config['type']
-        self.source_connection          : str             = config['source']['connection']
-        self.source_schema              : str             = config['source']['schema']
-        self.source_table               : str             = config['source']['table']
-        self.source_timestamp_keys      : List[str]       = config['source']['timestamp_keys']
-        self.source_unique_keys         : List[str]       = config['source']['unique_keys']
-        self.target_bq_project          : str             = config['target']['bq']['project']
-        self.target_bq_dataset          : str             = config['target']['bq']['dataset']
-        self.target_bq_table            : str             = config['target']['bq']['table']
-        self.target_bq_write_disposition: str             = config['target']['bq']['write_disposition']
-        self.target_bq_table_temp       : str             = f'{self.target_bq_table}_temp'
-        self.target_gcs_project         : str             = config['target']['gcs']['project']
-        self.target_gcs_bucket          : str             = config['target']['gcs']['bucket']
+        self.dag_id                      : str             = dag_id
+        self.bq_client                   : bigquery.Client = bigquery.Client()
+        self.task_type                   : str             = config['type']
+        self.source_connection           : str             = config['source']['connection']
+        self.source_schema               : str             = config['source']['schema']
+        self.source_table                : str             = config['source']['table']
+        self.source_timestamp_keys       : list            = config['source']['timestamp_keys']
+        self.source_unique_keys          : list            = config['source']['unique_keys']
+        self.target_bq_project           : str             = config['target']['bq']['project']
+        self.target_bq_dataset           : str             = config['target']['bq']['dataset']
+        self.target_bq_table             : str             = config['target']['bq']['table']
+        self.target_bq_write_disposition : str             = config['target']['bq']['write_disposition']
+        self.target_bq_table_temp        : str             = f'{self.target_bq_table}_temp'
+        self.target_gcs_project          : str             = config['target']['gcs']['project']
+        self.target_gcs_bucket           : str             = config['target']['gcs']['bucket']
 
         try:
             if self.task_type == POSTGRES_TO_BQ:
