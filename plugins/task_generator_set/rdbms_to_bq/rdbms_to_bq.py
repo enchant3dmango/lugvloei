@@ -31,12 +31,12 @@ class RdbmsToBq:
         self.source_connection           : str             = config['source']['connection']
         self.source_schema               : str             = config['source']['schema']
         self.source_table                : str             = config['source']['table']
-        self.source_timestamp_keys       : list            = config['source']['timestamp_keys']
-        self.source_unique_keys          : list            = config['source']['unique_keys']
+        self.source_timestamp_keys       : List[str]       = config['source']['timestamp_keys']
+        self.source_unique_keys          : List[str]       = config['source']['unique_keys']
         self.target_bq_project           : str             = config['target']['bq']['project']
         self.target_bq_dataset           : str             = config['target']['bq']['dataset']
         self.target_bq_table             : str             = config['target']['bq']['table']
-        self.target_bq_write_disposition : str             = config['target']['bq']['write_disposition']
+        self.target_bq_write_disposition: str              = config['target']['bq']['write_disposition']
         self.target_bq_table_temp        : str             = f'{self.target_bq_table}_temp'
         self.target_gcs_project          : str             = config['target']['gcs']['project']
         self.target_gcs_bucket           : str             = config['target']['gcs']['bucket']
@@ -116,11 +116,11 @@ class RdbmsToBq:
 
         # Generate query
         query = "SELECT {selected_fields}, {load_timestamp} AS load_timestamp FROM {source_schema}.{source_table_name}".format(
-            selected_fields   =', '.join([self.quoting(field)
-                                          for field in fields]),
-            load_timestamp    = load_timestamp,
-            source_schema     = self.quoting(self.source_schema),
-            source_table_name = self.quoting(self.source_table),
+            selected_fields=', '.join([self.quoting(field)
+                                       for field in fields]),
+            load_timestamp=load_timestamp,
+            source_schema=self.quoting(self.source_schema),
+            source_table_name=self.quoting(self.source_table),
         )
 
         # Generate query filter based on write_disposition
@@ -139,23 +139,22 @@ class RdbmsToBq:
         return query
 
     def __generate_upsert_query(self, schema, **kwargs) -> str:
-        query = """
-            MERGE `{target_bq_table}` x
-            USING `{target_bq_table_temp}` y
-            ON {on_keys}
-            WHEN MATCHED THEN
-                UPDATE SET {merge_fields}
-            WHEN NOT MATCHED THEN
-                INSERT ({fields}) VALUES ({fields})""".format(
-            target_bq_table='{}.{}.{}'.format(
-                self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
-            target_bq_table_temp='{}.{}.{}'.format(
-                self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp),
-            on_keys=' AND '.join(
-                [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
-            merge_fields=', '.join(
-                [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
-            fields=', '.join([f"`{field['name']}`" for field in schema])
+        query = """MERGE `{target_bq_table}` x 
+        USING `{target_bq_table_temp}` y
+        ON {on_keys}
+        WHEN MATCHED THEN
+            UPDATE SET {merge_fields}
+        WHEN NOT MATCHED THEN
+            INSERT ({fields}) VALUES ({fields})""".format(
+                target_bq_table='{}.{}.{}'.format(
+                    self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
+                target_bq_table_temp='{}.{}.{}'.format(
+                    self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp),
+                on_keys=' AND '.join(
+                    [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
+                merge_fields=', '.join(
+                    [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
+                fields=', '.join([f"`{field['name']}`" for field in schema])
         )
         logging.info(f'Upsert query: {query}')
 
