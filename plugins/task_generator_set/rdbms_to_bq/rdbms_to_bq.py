@@ -14,7 +14,7 @@ from google.cloud import bigquery
 import yaml
 
 from plugins.constants.miscellaneous import (EXTENDED_SCHEMA, MYSQL_TO_BQ,
-                                             POSTGRES_TO_BQ,
+                                             POSTGRES_TO_BQ, PYTHONPATH,
                                              SPARK_KUBERNETES_OPERATOR,
                                              SPARK_KUBERNETES_SENSOR,
                                              WRITE_APPEND, WRITE_TRUNCATE)
@@ -175,14 +175,14 @@ class RdbmsToBq:
         application_args['jdbc_uri']              = self.__generate_jdbc_uri()
         application_args['type']                  = self.task_type
 
-        with open('resources/spark-pi.yaml') as f:
+        with open(f'{PYTHONPATH}/resources/spark-pi.yaml') as f:
             fr = yaml.safe_load(f)
 
         fr['spec']['arguments'] = [
             f"--extract_query={application_args['extract_query']}"
         ]
 
-        with open('spark-pi.yaml', 'w') as f:
+        with open(f'{PYTHONPATH}/spark-pi.yaml', 'w') as f:
             yaml.safe_dump(fr, f, default_flow_style=False)
 
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
