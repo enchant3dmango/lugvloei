@@ -170,8 +170,10 @@ class RdbmsToBq:
         with open(f'{PYTHONPATH}/resources/spark-pi.yaml') as f:
             application_file = yaml.safe_load(f)
 
+        source_timestamp_keys = ','.join({self.source_timestamp_keys})
+
         application_file['spec']['arguments'] = [
-            "--source_timestamp_keys", ','.join({self.source_timestamp_keys}),
+            "--source_timestamp_keys", source_timestamp_keys,
             "--write_disposition", {self.target_bq_write_disposition},
             "--extract_query", {self.__generate_extract_query(schema=schema)},
             "--upsert_query", {self.__generate_upsert_query(schema=schema)},
