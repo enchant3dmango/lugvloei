@@ -6,24 +6,30 @@ metadata:
 spec:
   type: Scala
   mode: cluster
-  image: "andresitorusz/spark:3.3.2-scala2.12.15-openjdk17.0.7"
+  image: "gcr.io/spark-operator/spark:v3.1.1"
   imagePullPolicy: Always
   mainClass: org.apache.spark.examples.SparkPi
-  mainApplicationFile: "local:///opt/bitnami/spark/examples/jars/spark-examples_2.12-3.3.2.jar"
-  sparkVersion: "3.3.2"
+  mainApplicationFile: "local:///opt/spark/examples/jars/spark-examples_2.12-3.1.1.jar"
+  sparkVersion: "3.1.1"
   restartPolicy:
     type: Never
   timeToLiveSeconds: 30
   driver:
-    cores: 1
+    cores: 0.1
     coreLimit: "1200m"
-    memory: "512m"
+    memory: "256m"
     labels:
-      version: 3.3.2
+      version: 3.1.1
     serviceAccount: spark-spark
   executor:
-    cores: 1
+    cores: 0.1
     instances: 1
-    memory: "512m"
+    memory: "256m"
     labels:
-      version: 3.3.2
+      version: 3.1.1
+  dynamicAllocation:
+    enabled: True
+    initialExecutors: 1
+    minExecutors: 1
+    maxExecutors: 3
+    shuffleTrackingTimeout: ~
