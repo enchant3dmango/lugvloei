@@ -1,7 +1,7 @@
 apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
-  name: "{{ task_instance.dag_id }}"
+  name: "{{ task.task_id }}-{{ execution_date.strftime('%Y%m%d%H%M%S') }}"
   namespace: spark
 spec:
   type: Scala
