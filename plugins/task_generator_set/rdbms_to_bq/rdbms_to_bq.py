@@ -182,13 +182,10 @@ class RdbmsToBq:
             f"--extract_query={application_args['extract_query']}"
         ]
 
-        with open(f'{PYTHONPATH}/spark-pi.yaml', 'w') as f:
-            yaml.safe_dump(fr, f, default_flow_style=False)
-
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
             task_id          = spark_kubernetes_operator_task_id,
-            application_file = 'resources/spark-pi.yaml',
+            application_file = fr,
             namespace        = SPARK_JOB_NAMESPACE,
             do_xcom_push     = True,
             params           = application_args,
