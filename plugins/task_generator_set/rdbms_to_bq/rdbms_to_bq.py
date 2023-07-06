@@ -158,16 +158,12 @@ class RdbmsToBq:
             application_file = yaml.safe_load(f)
 
         application_file['spec']['arguments'] = [
-            "--source_timestamp_keys", ",".join(self.source_timestamp_keys),
             "--write_disposition", self.target_bq_write_disposition,
             "--extract_query", self.__generate_extract_query(schema=schema),
             "--upsert_query", self.__generate_upsert_query(schema=schema),
             "--jdbc_uri", self.__generate_jdbc_uri(),
             "--type", self.task_type,
         ]
-
-        logging.info('#############')
-        logging.info(yaml.safe_dump(application_file))
 
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
