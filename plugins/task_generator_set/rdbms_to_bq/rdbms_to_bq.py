@@ -183,7 +183,7 @@ class RdbmsToBq:
         spark_kubernetes_sensor_task = SparkKubernetesSensor(
             task_id          = SPARK_KUBERNETES_SENSOR,
             namespace        = SPARK_JOB_NAMESPACE,
-            application_name = '{{ task_instance.xcom_pull(task_ids="spark_k8s_operator")["metadata"]["name"] }}',
+            application_name = "{{ task_instance.xcom_pull(task_ids='spark_k8s_operator')['metadata']['name'] }}",
             attach_log       = True
         )
 
