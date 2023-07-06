@@ -4,8 +4,6 @@ metadata:
   name: "{{ task.task_id }}-{{ ds_nodash }}"
   namespace: spark
 spec:
-  arguments:
-    - "{{ params.extract_query }}"
   type: Scala
   mode: cluster
   image: "gcr.io/spark-operator/spark:v3.1.1"

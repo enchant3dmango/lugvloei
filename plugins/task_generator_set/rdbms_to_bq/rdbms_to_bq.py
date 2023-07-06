@@ -188,7 +188,6 @@ class RdbmsToBq:
             application_file = fr,
             namespace        = SPARK_JOB_NAMESPACE,
             do_xcom_push     = True,
-            params           = application_args,
         )
 
         spark_kubernetes_sensor_task = SparkKubernetesSensor(
