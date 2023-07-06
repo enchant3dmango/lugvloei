@@ -154,21 +154,21 @@ class RdbmsToBq:
     def generate_task(self):
         schema = self.__generate_schema()
 
-        # with open(f'{PYTHONPATH}/resources/spark-pi.yaml') as f:
-        #     application_file = yaml.safe_load(f)
+        with open(f'{PYTHONPATH}/resources/spark-pi.yaml') as f:
+            application_file = yaml.safe_load(f)
 
-        # application_file['spec']['arguments'] = [
-        #     "--write_disposition", self.target_bq_write_disposition,
-        #     "--extract_query", self.__generate_extract_query(schema=schema),
-        #     "--upsert_query", self.__generate_upsert_query(schema=schema),
-        #     "--jdbc_uri", self.__generate_jdbc_uri(),
-        #     "--type", self.task_type,
-        # ]
+        application_file['spec']['arguments'] = [
+            self.target_bq_write_disposition,
+            # "--extract_query", self.__generate_extract_query(schema=schema),
+            # "--upsert_query", self.__generate_upsert_query(schema=schema),
+            # "--jdbc_uri", self.__generate_jdbc_uri(),
+            # "--type", self.task_type,
+        ]
 
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
             task_id          = spark_kubernetes_operator_task_id,
-            application_file = 'resources/spark-pi.yaml',
+            application_file = yaml.safe_dump(application_file),
             namespace        = SPARK_JOB_NAMESPACE,
             do_xcom_push     = True,
         )

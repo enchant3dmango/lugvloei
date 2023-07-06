@@ -11,8 +11,6 @@ spec:
   mainClass: org.apache.spark.examples.SparkPi
   mainApplicationFile: "local:///opt/spark/examples/jars/spark-examples_2.12-3.1.1.jar"
   sparkVersion: "3.1.1"
-  arguments:
-    - "100000"
   restartPolicy:
     type: Never
   timeToLiveSeconds: 30
