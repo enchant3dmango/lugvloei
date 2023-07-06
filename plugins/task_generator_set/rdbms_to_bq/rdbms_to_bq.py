@@ -172,7 +172,7 @@ class RdbmsToBq:
         application_args['extract_query']     = self.__generate_extract_query(schema=schema)
 
         spark_kubernetes_operator_task =  SparkKubernetesOperator(
-            task_id          = f'{self.target_bq_dataset}_{self.target_bq_table}_{SPARK_KUBERNETES_OPERATOR}',
+            task_id          = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}',
             application_file = 'resources/rdbms-to-bq.yaml',
             namespace        = SPARK_JOB_NAMESPACE,
             in_cluster       = True,
