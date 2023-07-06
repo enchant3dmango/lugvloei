@@ -2,6 +2,7 @@ import io
 import json
 import logging
 import os
+from typing import List
 
 import pendulum
 from airflow.hooks.base import BaseHook
@@ -13,7 +14,8 @@ from google.cloud import bigquery
 
 from plugins.constants.miscellaneous import (EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                              POSTGRES_TO_BQ,
-                                             SPARK_KUBERNETES_OPERATOR, SPARK_KUBERNETES_SENSOR,
+                                             SPARK_KUBERNETES_OPERATOR,
+                                             SPARK_KUBERNETES_SENSOR,
                                              WRITE_APPEND, WRITE_TRUNCATE)
 from plugins.constants.variable import SPARK_JOB_NAMESPACE
 from plugins.utils.miscellaneous import get_parsed_schema_type
@@ -28,8 +30,8 @@ class RdbmsToBq:
         self.source_connection          : str             = config['source']['connection']
         self.source_schema              : str             = config['source']['schema']
         self.source_table               : str             = config['source']['table']
-        self.source_timestamp_keys      : str             = config['source']['timestamp_keys']
-        self.source_unique_keys         : str             = config['source']['unique_keys']
+        self.source_timestamp_keys      : List[str]       = config['source']['timestamp_keys']
+        self.source_unique_keys         : List[str]       = config['source']['unique_keys']
         self.target_bq_project          : str             = config['target']['bq']['project']
         self.target_bq_dataset          : str             = config['target']['bq']['dataset']
         self.target_bq_table            : str             = config['target']['bq']['table']
@@ -41,12 +43,12 @@ class RdbmsToBq:
         try:
             if self.task_type == POSTGRES_TO_BQ:
                 self.sql_hook = PostgresHook(
-                    postgres_conn_id=self.source_connection)
-                self.quoting  = lambda text: f"'{text}'"
+                    postgres_conn_id = self.source_connection)
+                self.quoting = lambda text: f"'{text}'"
             elif self.task_type == MYSQL_TO_BQ:
                 self.sql_hook = MySqlHook(
-                    mysql_conn_id=self.source_connection)
-                self.quoting  = lambda text: f'`{text}`'
+                    mysql_conn_id = self.source_connection)
+                self.quoting = lambda text: f'`{text}`'
         except:
             logging.exception('Task type is not supported!')
 
@@ -108,7 +110,7 @@ class RdbmsToBq:
             for schema_detail in schema
             if schema_detail["name"] not in extended_fields
         ]
-        
+
         load_timestamp = pendulum.now('Asia/Jakarta')
 
         # Generate query
@@ -144,16 +146,16 @@ class RdbmsToBq:
                 UPDATE SET {merge_fields}
             WHEN NOT MATCHED THEN
                 INSERT ({fields}) VALUES ({fields})""".format(
-                    target_bq_table='{}.{}.{}'.format(
-                        self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
-                    target_bq_table_temp='{}.{}.{}'.format(
-                        self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp),
-                    on_keys=' AND '.join(
-                        [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
-                    merge_fields=', '.join(
-                        [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
-                    fields=', '.join([f"`{field['name']}`" for field in schema])
-                )
+            target_bq_table='{}.{}.{}'.format(
+                self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
+            target_bq_table_temp='{}.{}.{}'.format(
+                self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp),
+            on_keys=' AND '.join(
+                [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
+            merge_fields=', '.join(
+                [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
+            fields=', '.join([f"`{field['name']}`" for field in schema])
+        )
         logging.info(f'Upsert query: {query}')
 
         return query
@@ -162,28 +164,30 @@ class RdbmsToBq:
         return f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
 
     def generate_task(self):
-        schema        = self.__generate_schema()
+        schema = self.__generate_schema()
 
-        application_args                      = dict()
+        application_args = dict()
+        application_args['source_timestamp_keys'] = self.source_timestamp_keys
         application_args['write_disposition'] = self.target_bq_write_disposition
-        application_args['jdbc_uri']          = self.__generate_jdbc_uri()
-        application_args['type']              = self.task_type
-        application_args['upsert_query']      = self.__generate_upsert_query(schema=schema)
-        application_args['extract_query']     = self.__generate_extract_query(schema=schema)
+        application_args['extract_query'] = self.__generate_extract_query(schema=schema)
+        application_args['upsert_query'] = self.__generate_upsert_query(schema=schema)
+        application_args['jdbc_uri'] = self.__generate_jdbc_uri()
+        application_args['type'] = self.task_type
 
-        spark_kubernetes_operator_task =  SparkKubernetesOperator(
-            task_id          = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}',
-            application_file = 'resources/rdbms-to-bq.yaml',
+        spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
+        spark_kubernetes_operator_task = SparkKubernetesOperator(
+            task_id          = spark_kubernetes_operator_task_id,
+            application_file = 'resources/spark-pi.yaml',
             namespace        = SPARK_JOB_NAMESPACE,
             do_xcom_push     = True,
             params           = application_args,
         )
 
-        # spark_kubernetes_sensor_task = SparkKubernetesSensor(
-        #     task_id          = SPARK_KUBERNETES_SENSOR,
-        #     namespace        = SPARK_JOB_NAMESPACE,
-        #     application_name = "{{ task_instance.xcom_pull(task_ids='spark_k8s_operator')['metadata']['name'] }}",
-        #     attach_log       = True
-        # )
+        spark_kubernetes_sensor_task = SparkKubernetesSensor(
+            task_id          = SPARK_KUBERNETES_SENSOR,
+            namespace        = SPARK_JOB_NAMESPACE,
+            application_name = f"{{{{ task_instance.xcom_pull(task_ids={spark_kubernetes_operator_task_id})['metadata']['name'] }}}}",
+            attach_log       = True
+        )
 
-        return spark_kubernetes_operator_task
+        return spark_kubernetes_operator_task >> spark_kubernetes_sensor_task

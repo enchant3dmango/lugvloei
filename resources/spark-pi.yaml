@@ -1,7 +1,7 @@
 apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
-  name: spark-pi
+  name: "{{ task.task_id }}-{{ ds_nodash }}"
   namespace: spark
 spec:
   type: Scala

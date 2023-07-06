@@ -9,7 +9,7 @@ spec:
   image: "andresitorusz/spark:3.3.2-scala2.12.15-openjdk17.0.7"
   imagePullPolicy: Always
   mainClass: org.apache.spark.examples.SparkPi
-  mainApplicationFile: "local:////opt/bitnami/spark/examples/jars/spark-examples_2.12-3.3.2.jar"
+  mainApplicationFile: "local:///opt/bitnami/spark/examples/jars/spark-examples_2.12-3.3.2.jar"
   sparkVersion: "3.3.2"
   restartPolicy:
     type: Never
