@@ -173,7 +173,7 @@ class RdbmsToBq:
         application_file['spec']['arguments'] = [
             f"--source_timestamp_keys={self.source_timestamp_keys}",
             f"--write_disposition={self.target_bq_write_disposition}",
-            f"--extract_query={self.__generate_extract_query}",
+            f"--extract_query={self.__generate_extract_query(schema=schema)}",
             f"--upsert_query={self.__generate_upsert_query(schema=schema)}",
             f"--jdbc_uri={self.__generate_jdbc_uri()}",
             f"--type={self.task_type}",
