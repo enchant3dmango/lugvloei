@@ -173,18 +173,18 @@ class RdbmsToBq:
 
         spark_kubernetes_operator_task =  SparkKubernetesOperator(
             task_id          = SPARK_KUBERNETES_OPERATOR,
-            application_file = 'resources/spark-pi.yaml',
+            application_file = 'resources/rdbms-to-bq.yaml',
             namespace        = SPARK_JOB_NAMESPACE,
             in_cluster       = True,
             do_xcom_push     = True,
             params           = application_args,
         )
 
-        spark_kubernetes_sensor_task = SparkKubernetesSensor(
-            task_id          = SPARK_KUBERNETES_SENSOR,
-            namespace        = SPARK_JOB_NAMESPACE,
-            application_name = "{{ task_instance.xcom_pull(task_ids='spark_k8s_operator')['metadata']['name'] }}",
-            attach_log       = True
-        )
+        # spark_kubernetes_sensor_task = SparkKubernetesSensor(
+        #     task_id          = SPARK_KUBERNETES_SENSOR,
+        #     namespace        = SPARK_JOB_NAMESPACE,
+        #     application_name = "{{ task_instance.xcom_pull(task_ids='spark_k8s_operator')['metadata']['name'] }}",
+        #     attach_log       = True
+        # )
 
-        return spark_kubernetes_operator_task >> spark_kubernetes_sensor_task
+        return spark_kubernetes_operator_task
