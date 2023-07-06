@@ -18,8 +18,8 @@ BQ_WRITE_DISPOSITION = Enum('BQ_WRITE_DISPOSITION', [WRITE_EMPTY,
                                                      WRITE_APPEND])
 
 # Spark
-SPARK_KUBERNETES_OPERATOR = 'spark_k8s_operator'
-SPARK_KUBERNETES_SENSOR = 'spark_k8s_sensor'
+SPARK_KUBERNETES_OPERATOR = 'operator'
+SPARK_KUBERNETES_SENSOR = 'sensor'
 
 EXTENDED_SCHEMA = [
     {
