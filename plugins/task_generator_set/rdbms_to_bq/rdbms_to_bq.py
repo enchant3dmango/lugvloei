@@ -169,7 +169,7 @@ class RdbmsToBq:
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
             task_id          = spark_kubernetes_operator_task_id,
-            application_file = application_file,
+            application_file = yaml.safe_dump(application_file),
             namespace        = SPARK_JOB_NAMESPACE,
             do_xcom_push     = True,
         )
