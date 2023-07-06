@@ -175,7 +175,6 @@ class RdbmsToBq:
             task_id          = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}',
             application_file = 'resources/rdbms-to-bq.yaml',
             namespace        = SPARK_JOB_NAMESPACE,
-            in_cluster       = True,
             do_xcom_push     = True,
             params           = application_args,
         )
