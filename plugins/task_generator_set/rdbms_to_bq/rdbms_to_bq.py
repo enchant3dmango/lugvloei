@@ -20,8 +20,10 @@ from plugins.constants.miscellaneous import (EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                              SPARK_KUBERNETES_OPERATOR,
                                              SPARK_KUBERNETES_SENSOR,
                                              WRITE_APPEND, WRITE_TRUNCATE)
-from plugins.constants.variables import SPARK_JOB_NAMESPACE
-from plugins.task_generator_set.rdbms_to_bq.types import SOURCE_EXTRACT_QUERY, SOURCE_INFORMATION_SCHEMA_QUERY, UPSERT_QUERY
+from plugins.constants.variables import (RDBMS_TO_BQ_APPLICATION_FILE,
+                                         SPARK_JOB_NAMESPACE)
+from plugins.task_generator_set.rdbms_to_bq.types import (
+    SOURCE_EXTRACT_QUERY, SOURCE_INFORMATION_SCHEMA_QUERY, UPSERT_QUERY)
 from plugins.utils.miscellaneous import get_parsed_schema_type
 
 
@@ -39,7 +41,7 @@ class RdbmsToBq:
         self.target_bq_project           : str             = config['target']['bq']['project']
         self.target_bq_dataset           : str             = config['target']['bq']['dataset']
         self.target_bq_table             : str             = config['target']['bq']['table']
-        self.target_bq_write_disposition: str              = config['target']['bq']['write_disposition']
+        self.target_bq_write_disposition : str             = config['target']['bq']['write_disposition']
         self.target_bq_table_temp        : str             = f'{self.target_bq_table}_temp'
         self.target_gcs_project          : str             = config['target']['gcs']['project']
         self.target_gcs_bucket           : str             = config['target']['gcs']['bucket']
@@ -154,7 +156,7 @@ class RdbmsToBq:
     def generate_task(self):
         schema = self.__generate_schema()
 
-        with open(f'{PYTHONPATH}/resources/spark-pi.yaml') as f:
+        with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
             application_file = yaml.safe_load(f)
 
         application_file['spec']['arguments'] = [
