@@ -166,6 +166,9 @@ class RdbmsToBq:
             "--type", self.task_type,
         ]
 
+        logging.info('#############')
+        logging.info(yaml.safe_dump(application_file))
+
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
             task_id          = spark_kubernetes_operator_task_id,
