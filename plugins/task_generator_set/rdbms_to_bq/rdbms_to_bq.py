@@ -5,20 +5,23 @@ import os
 from typing import List
 
 import pendulum
+import yaml
 from airflow.hooks.base import BaseHook
-from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
-from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKubernetesSensor
+from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import \
+    SparkKubernetesOperator
+from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import \
+    SparkKubernetesSensor
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from google.cloud import bigquery
-import yaml
 
 from plugins.constants.miscellaneous import (EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                              POSTGRES_TO_BQ, PYTHONPATH,
                                              SPARK_KUBERNETES_OPERATOR,
                                              SPARK_KUBERNETES_SENSOR,
                                              WRITE_APPEND, WRITE_TRUNCATE)
-from plugins.constants.variable import SPARK_JOB_NAMESPACE
+from plugins.constants.variables import SPARK_JOB_NAMESPACE
+from plugins.task_generator_set.rdbms_to_bq.types import SOURCE_EXTRACT_QUERY, SOURCE_INFORMATION_SCHEMA_QUERY, UPSERT_QUERY
 from plugins.utils.miscellaneous import get_parsed_schema_type
 
 
@@ -83,16 +86,7 @@ class RdbmsToBq:
                     file.close()
             else:
                 logging.info('Getting table schema from source database')
-                query = """
-                    SELECT
-                        column_name AS name, 
-                        data_type   AS type,
-                        'NULLABLE'  AS mode
-                    FROM information_schema.columns
-                    WHERE
-                        table_name       = '{}'
-                        AND table_schema = '{}'
-                """.format(self.table.source_table_name, self.table.source_schema)
+                query = SOURCE_INFORMATION_SCHEMA_QUERY.format(self.table.source_table_name, self.table.source_schema)
 
                 logging.info(f'Running query: {query}')
                 schema = self.sql_hook.get_pandas_df(query)
@@ -115,7 +109,7 @@ class RdbmsToBq:
         load_timestamp = pendulum.now('Asia/Jakarta')
 
         # Generate query
-        query = "SELECT {selected_fields}, {load_timestamp} AS load_timestamp FROM {source_schema}.{source_table_name}".format(
+        query = SOURCE_EXTRACT_QUERY.format(
             selected_fields=', '.join([self.quoting(field)
                                        for field in fields]),
             load_timestamp=load_timestamp,
@@ -139,13 +133,7 @@ class RdbmsToBq:
         return query
 
     def __generate_upsert_query(self, schema, **kwargs) -> str:
-        query = """MERGE `{target_bq_table}` x 
-        USING `{target_bq_table_temp}` y
-        ON {on_keys}
-        WHEN MATCHED THEN
-            UPDATE SET {merge_fields}
-        WHEN NOT MATCHED THEN
-            INSERT ({fields}) VALUES ({fields})""".format(
+        query = UPSERT_QUERY.format(
                 target_bq_table='{}.{}.{}'.format(
                     self.target_bq_project, self.target_bq_dataset, self.target_bq_table),
                 target_bq_table_temp='{}.{}.{}'.format(
