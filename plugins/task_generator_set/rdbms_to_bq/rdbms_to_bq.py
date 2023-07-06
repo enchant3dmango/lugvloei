@@ -166,13 +166,13 @@ class RdbmsToBq:
     def generate_task(self):
         schema = self.__generate_schema()
 
-        application_args = dict()
+        application_args                          = dict()
         application_args['source_timestamp_keys'] = self.source_timestamp_keys
-        application_args['write_disposition'] = self.target_bq_write_disposition
-        application_args['extract_query'] = self.__generate_extract_query(schema=schema)
-        application_args['upsert_query'] = self.__generate_upsert_query(schema=schema)
-        application_args['jdbc_uri'] = self.__generate_jdbc_uri()
-        application_args['type'] = self.task_type
+        application_args['write_disposition']     = self.target_bq_write_disposition
+        application_args['extract_query']         = self.__generate_extract_query(schema=schema)
+        application_args['upsert_query']          = self.__generate_upsert_query(schema=schema)
+        application_args['jdbc_uri']              = self.__generate_jdbc_uri()
+        application_args['type']                  = self.task_type
 
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
@@ -184,7 +184,7 @@ class RdbmsToBq:
         )
 
         spark_kubernetes_sensor_task = SparkKubernetesSensor(
-            task_id          = SPARK_KUBERNETES_SENSOR,
+            task_id          = f"{self.target_bq_dataset.replace('_', '-')}-{self.target_bq_table.replace('_', '-')}-{SPARK_KUBERNETES_SENSOR}",
             namespace        = SPARK_JOB_NAMESPACE,
             application_name = f"{{{{ task_instance.xcom_pull(task_ids={spark_kubernetes_operator_task_id})['metadata']['name'] }}}}",
             attach_log       = True
