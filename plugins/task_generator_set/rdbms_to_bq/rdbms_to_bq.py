@@ -171,7 +171,7 @@ class RdbmsToBq:
             application_file = yaml.safe_load(f)
 
         application_file['spec']['arguments'] = [
-            "--source_timestamp_keys", {self.source_timestamp_keys},
+            "--source_timestamp_keys", tuple({self.source_timestamp_keys}),
             "--write_disposition", {self.target_bq_write_disposition},
             "--extract_query", {self.__generate_extract_query(schema=schema)},
             "--upsert_query", {self.__generate_upsert_query(schema=schema)},
