@@ -140,47 +140,42 @@ class RdbmsToBq:
     def __generate_merge_query(self, schema, **kwargs) -> str:
         audit_condition = None
         
-        if self.target_bq_load_method == TRUNCATE:
-            query = None
-            logging.info('Merge query is omitted if the load method is TRUNCATE')
+        # Query to get partition_key date list from temp table to be used as audit condition in DELSERT_QUERY
+        if self.target_bq_partition_key is not None:
+            temp_table_partition_date_query = TEMP_TABLE_PARTITION_DATE_QUERY.format(
+                partition_column=self.target_bq_partition_key,
+                target_bq_table_temp='{}.{}.{}'.format(
+                self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp)
+            )
+            logging.info(f'Temp table partition date query: {temp_table_partition_date_query}')
 
-        else:
-            # Query to get partition_key date list from temp table to be used as audit condition in DELSERT_QUERY
-            if self.target_bq_partition_key is not None:
-                temp_table_partition_date_query = TEMP_TABLE_PARTITION_DATE_QUERY.format(
-                    partition_column=self.target_bq_partition_key,
-                    target_bq_table_temp='{}.{}.{}'.format(
-                    self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp)
-                )
-                logging.info(f'Temp table partition date query: {temp_table_partition_date_query}')
+            audit_condition = f"AND DATE(y.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
 
-                audit_condition = f"AND DATE(y.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
+        if self.target_bq_load_method == DELSERT:
+            merge_query = DELSERT_QUERY.format(
+                target_bq_table=self.full_target_bq_table,
+                target_bq_table_temp=self.full_target_bq_table_temp,
+                on_keys=' AND '.join(
+                    [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
+                audit_condition=audit_condition,
+                insert_fields=', '.join([f"`{field['name']}`" for field in schema])
+            )
+            logging.info(f'Merge query (delsert query before concatenated): {query}')
 
-            if self.target_bq_load_method == DELSERT:
-                merge_query = DELSERT_QUERY.format(
-                    target_bq_table=self.full_target_bq_table,
-                    target_bq_table_temp=self.full_target_bq_table_temp,
-                    on_keys=' AND '.join(
-                        [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
-                    audit_condition=audit_condition,
-                    insert_fields=', '.join([f"`{field['name']}`" for field in schema])
-                )
-                logging.info(f'Merge query (delsert query before concatenated): {query}')
+            query = temp_table_partition_date_query + merge_query
+            logging.info(f'Delsert query: {query}')
 
-                query = temp_table_partition_date_query + merge_query
-                logging.info(f'Delsert query: {query}')
-
-            elif self.target_bq_load_method == UPSERT:
-                query = UPSERT_QUERY.format(
-                    target_bq_table=self.full_target_bq_table,
-                    target_bq_table_temp=self.full_target_bq_table_temp,
-                    on_keys=' AND '.join(
-                        [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
-                    update_fields=', '.join(
-                        [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
-                    insert_fields=', '.join([f"`{field['name']}`" for field in schema])
-                )
-                logging.info(f'Upsert query: {query}')
+        elif self.target_bq_load_method == UPSERT:
+            query = UPSERT_QUERY.format(
+                target_bq_table=self.full_target_bq_table,
+                target_bq_table_temp=self.full_target_bq_table_temp,
+                on_keys=' AND '.join(
+                    [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
+                update_fields=', '.join(
+                    [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
+                insert_fields=', '.join([f"`{field['name']}`" for field in schema])
+            )
+            logging.info(f'Upsert query: {query}')
 
         return query
 
@@ -198,10 +193,14 @@ class RdbmsToBq:
             f"--target_bq_load_method={self.target_bq_load_method}",
             f"--partition_key={self.target_bq_partition_key}",
             f"--extract_query={self.__generate_extract_query(schema=schema)}",
-            f"--merge_query={self.__generate_merge_query(schema=schema)}",
             f"--jdbc_uri={self.__generate_jdbc_uri()}",
             f"--type={self.task_type}",
         ]
+
+        if self.target_bq_load_method in (DELSERT, UPSERT):
+            application_file['spec']['arguments'].append(
+                f"--merge_query={self.__generate_merge_query(schema=schema)}",
+            )
 
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
