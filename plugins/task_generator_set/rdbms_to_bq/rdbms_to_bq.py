@@ -15,12 +15,10 @@ from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from google.cloud import bigquery
 
-from plugins.constants.miscellaneous import (DELSERT, EXTENDED_SCHEMA,
-                                             MYSQL_TO_BQ, POSTGRES_TO_BQ,
-                                             PYTHONPATH,
-                                             SPARK_KUBERNETES_OPERATOR,
-                                             SPARK_KUBERNETES_SENSOR, TRUNCATE,
-                                             UPSERT)
+from plugins.constants.types import (DELSERT, EXTENDED_SCHEMA, MYSQL_TO_BQ,
+                                     POSTGRES_TO_BQ, PYTHONPATH,
+                                     SPARK_KUBERNETES_OPERATOR,
+                                     SPARK_KUBERNETES_SENSOR, TRUNCATE, UPSERT)
 from plugins.constants.variables import (RDBMS_TO_BQ_APPLICATION_FILE,
                                          SPARK_JOB_NAMESPACE)
 from plugins.task_generator_set.rdbms_to_bq.types import (
@@ -147,7 +145,7 @@ class RdbmsToBq:
             logging.info('Merge query is omitted if the load method is TRUNCATE')
 
         else:
-            # Get partition_key date list from temp table to be used as audit condition in DELSERT_QUERY
+            # Query to get partition_key date list from temp table to be used as audit condition in DELSERT_QUERY
             if self.target_bq_partition_key is not None:
                 temp_table_partition_date_query = TEMP_TABLE_PARTITION_DATE_QUERY.format(
                     partition_column=self.target_bq_partition_key,
@@ -156,7 +154,7 @@ class RdbmsToBq:
                 )
                 logging.info(f'Temp table partition date query: {temp_table_partition_date_query}')
 
-                audit_condition = f"AND DATE(y.{self.target_bq_partition_key}) UNNEST(formatted_dates)"
+                audit_condition = f"AND DATE(y.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
 
             if self.target_bq_load_method == DELSERT:
                 merge_query = DELSERT_QUERY.format(

@@ -30,7 +30,7 @@ task:
       project: pocz-389704
       dataset: bronze_school
       table: student
-      load_method: DELSERT
+      load_method: delsert
       partition_key: created_at
     gcs:
       project:

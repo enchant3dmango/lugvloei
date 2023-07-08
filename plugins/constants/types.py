@@ -9,9 +9,9 @@ RDBMS_TO_BQ = Enum('RDBMS_TO_BQ', [MYSQL_TO_BQ,
                                    POSTGRES_TO_BQ])
 
 # BigQuery
-DELSERT = 'DELSERT'
-UPSERT = 'UPSERT'
-TRUNCATE = 'TRUNCATE'
+DELSERT = 'delsert'
+UPSERT = 'upsert'
+TRUNCATE = 'truncate'
 
 BQ_LOAD_METHOD = Enum('BQ_LOAD_METHOD', [DELSERT,
                                          UPSERT,

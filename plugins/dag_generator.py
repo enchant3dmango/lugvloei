@@ -7,7 +7,7 @@ import pendulum
 import yaml
 from airflow.decorators import dag
 
-from plugins.constants.miscellaneous import PYTHONPATH
+from plugins.constants.types import PYTHONPATH
 from plugins.task_generator import generate_task
 from plugins.utils.miscellaneous import get_dag_yaml_config_files
 
