@@ -149,14 +149,14 @@ class RdbmsToBq:
             )
             logging.info(f'Temp table partition date query: {temp_table_partition_date_query}')
 
-            audit_condition = f"AND DATE(y.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
+            audit_condition = f"AND DATE(x.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
 
         if self.target_bq_load_method == DELSERT:
             merge_query = DELSERT_QUERY.format(
                 target_bq_table=self.full_target_bq_table,
                 target_bq_table_temp=self.full_target_bq_table_temp,
                 on_keys=' AND '.join(
-                    [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
+                    [f"COALESCE(CAST(x.`{key}` as string), 'NULL') = COALESCE(CAST(y.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
                 audit_condition=audit_condition,
                 insert_fields=', '.join([f"`{field['name']}`" for field in schema])
             )
@@ -170,7 +170,7 @@ class RdbmsToBq:
                 target_bq_table=self.full_target_bq_table,
                 target_bq_table_temp=self.full_target_bq_table_temp,
                 on_keys=' AND '.join(
-                    [f"COALESCE(CAST(T.`{key}` as string), 'NULL') = COALESCE(CAST(S.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
+                    [f"COALESCE(CAST(x.`{key}` as string), 'NULL') = COALESCE(CAST(y.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
                 update_fields=', '.join(
                     [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
                 insert_fields=', '.join([f"`{field['name']}`" for field in schema])
