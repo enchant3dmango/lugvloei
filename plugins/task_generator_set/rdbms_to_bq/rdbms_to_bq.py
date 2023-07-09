@@ -114,7 +114,7 @@ class RdbmsToBq:
         load_timestamp = pendulum.now('Asia/Jakarta')
 
         # Generate query
-        query = SOURCE_EXTRACT_QUERY.format(
+        query = SOURCE_EXTRACT_QUERY.substitute(
             selected_fields=', '.join([self.quoting(field)
                                        for field in fields]),
             load_timestamp=load_timestamp,

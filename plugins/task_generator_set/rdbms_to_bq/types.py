@@ -1,4 +1,6 @@
-# Query
+from string import Template
+
+# Query template
 SOURCE_INFORMATION_SCHEMA_QUERY = """SELECT column_name AS name,
   data_type AS type,
   'NULLABLE' AS mode
@@ -6,9 +8,8 @@ FROM information_schema.columns
   WHERE table_name = '{}'
   AND table_schema = '{}'"""
 
-SOURCE_EXTRACT_QUERY = """SELECT {load_timestamp} AS load_timestamp,
-  {selected_fields}
-FROM {source_schema}.{source_table_name}"""
+SOURCE_EXTRACT_QUERY = Template(
+  """SELECT {load_timestamp} AS load_timestamp, {selected_fields} FROM {source_schema}.{source_table_name}""")
 
 UPSERT_QUERY = """MERGE
   `{target_bq_table}` AS x
