@@ -143,7 +143,7 @@ class RdbmsToBq:
         # Query to get partition_key date list from temp table to be used as audit condition in DELSERT_QUERY
         if self.target_bq_partition_key is not None:
             temp_table_partition_date_query = TEMP_TABLE_PARTITION_DATE_QUERY.format(
-                partition_column=self.target_bq_partition_key,
+                partition_key=self.target_bq_partition_key,
                 target_bq_table_temp='{}.{}.{}'.format(
                 self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp)
             )

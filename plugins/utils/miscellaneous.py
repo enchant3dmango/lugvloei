@@ -16,7 +16,7 @@ def get_parsed_schema_type(schema_type: str) -> str:
     """
 
     # Type of parsing
-    conf = {
+    type = {
         "datetime" : "TIMESTAMP",
         "timestamp": "TIMESTAMP",
         "bool"     : "BOOLEAN",
@@ -30,8 +30,8 @@ def get_parsed_schema_type(schema_type: str) -> str:
     }
 
     # Stored and exchange for specific type and their parsing
-    for key, values in conf.items():
+    for key, value in type.items():
         if key in schema_type:
-            return values
+            return value
     
     return "STRING"
