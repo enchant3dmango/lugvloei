@@ -91,7 +91,8 @@ class RdbmsToBq:
                     file.close()
             else:
                 logging.info('Getting table schema from source database')
-                query = SOURCE_INFORMATION_SCHEMA_QUERY.format(self.table.source_table_name, self.table.source_schema)
+                query = SOURCE_INFORMATION_SCHEMA_QUERY.substitute(source_table=self.source_table,
+                                                                   source_schema=self.source_schema)
 
                 logging.info(f'Running query: {query}')
                 schema = self.sql_hook.get_pandas_df(query)
@@ -142,17 +143,16 @@ class RdbmsToBq:
         
         # Query to get partition_key date list from temp table to be used as audit condition in DELSERT_QUERY
         if self.target_bq_partition_key is not None:
-            temp_table_partition_date_query = TEMP_TABLE_PARTITION_DATE_QUERY.format(
+            temp_table_partition_date_query = TEMP_TABLE_PARTITION_DATE_QUERY.substitute(
                 partition_key=self.target_bq_partition_key,
-                target_bq_table_temp='{}.{}.{}'.format(
-                self.target_bq_project, self.target_bq_dataset, self.target_bq_table_temp)
+                target_bq_table_temp=self.full_target_bq_table_temp
             )
             logging.info(f'Temp table partition date query: {temp_table_partition_date_query}')
 
             audit_condition = f"AND DATE(x.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
 
         if self.target_bq_load_method == DELSERT:
-            merge_query = DELSERT_QUERY.format(
+            merge_query = DELSERT_QUERY.substitute(
                 target_bq_table=self.full_target_bq_table,
                 target_bq_table_temp=self.full_target_bq_table_temp,
                 on_keys=' AND '.join(
@@ -166,7 +166,7 @@ class RdbmsToBq:
             logging.info(f'Delsert query: {query}')
 
         elif self.target_bq_load_method == UPSERT:
-            query = UPSERT_QUERY.format(
+            query = UPSERT_QUERY.substitute(
                 target_bq_table=self.full_target_bq_table,
                 target_bq_table_temp=self.full_target_bq_table_temp,
                 on_keys=' AND '.join(

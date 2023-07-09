@@ -1,36 +1,36 @@
 from string import Template
 
 # Query template
-SOURCE_INFORMATION_SCHEMA_QUERY = """SELECT column_name AS name,
+SOURCE_INFORMATION_SCHEMA_QUERY = Template("""SELECT column_name AS name,
   data_type AS type,
   'NULLABLE' AS mode
 FROM information_schema.columns
-  WHERE table_name = '{}'
-  AND table_schema = '{}'"""
+  WHERE table_name = '$source_table'
+  AND table_schema = '$source_schema'""")
 
 SOURCE_EXTRACT_QUERY = Template(
   "SELECT $load_timestamp AS load_timestamp, $selected_fields FROM $source_schema.$source_table_name")
 
-UPSERT_QUERY = """MERGE
-  `{target_bq_table}` AS x
-USING `{target_bq_table_temp}` AS y
+UPSERT_QUERY = Template("""MERGE
+  `$target_bq_table` AS x
+USING `$target_bq_table_temp` AS y
 ON
-  {on_keys}
+  $on_keys
   WHEN MATCHED THEN
-    UPDATE SET {update_fields}
+    UPDATE SET $update_fields
   WHEN NOT MATCHED THEN
-    INSERT ({insert_fields}) VALUES ({insert_fields})"""
+    INSERT ($insert_fields) VALUES ($insert_fields)""")
 
-DELSERT_QUERY = """MERGE
-  `{target_bq_table}` AS x
-USING `{target_bq_table_temp}` AS y
-  ON {on_keys}
-WHEN MATCHED {audit_condition} THEN
+DELSERT_QUERY = Template("""MERGE
+  `$target_bq_table` AS x
+USING `$target_bq_table_temp` AS y
+  ON $on_keys
+WHEN MATCHED $audit_condition THEN
   DELETE
 WHEN NOT MATCHED THEN
-  INSERT ({insert_fields}) VALUES ({insert_fields})"""
+  INSERT ($insert_fields) VALUES ($insert_fields)""")
 
-TEMP_TABLE_PARTITION_DATE_QUERY = """DECLARE
+TEMP_TABLE_PARTITION_DATE_QUERY = Template("""DECLARE
   formatted_dates ARRAY<DATE>;
 EXECUTE IMMEDIATE
   (
@@ -40,10 +40,10 @@ EXECUTE IMMEDIATE
           CONCAT("DATE '", FORMAT_DATE('%Y-%m-%d', flattened_dates_array), "'")
         FROM (
           SELECT
-            DISTINCT DATE({partition_key}) AS flattened_dates_array
+            DISTINCT DATE($partition_key) AS flattened_dates_array
           FROM
-            `{target_bq_table_temp}` ) AS t
+            `$target_bq_table_temp` ) AS t
         ORDER BY
           flattened_dates_array ), ', '), '] AS formatted_dates') );
 
-"""
+""")
