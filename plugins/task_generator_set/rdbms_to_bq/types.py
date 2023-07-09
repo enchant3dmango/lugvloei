@@ -8,8 +8,9 @@ FROM information_schema.columns
   WHERE table_name = '$source_table'
   AND table_schema = '$source_schema'""")
 
-SOURCE_EXTRACT_QUERY = Template(
-  "SELECT $load_timestamp AS load_timestamp, $selected_fields FROM $source_schema.$source_table_name")
+SOURCE_EXTRACT_QUERY = Template("""SELECT
+  $selected_fields, $load_timestamp AS load_timestamp
+FROM $source_schema.$source_table_name""")
 
 UPSERT_QUERY = Template("""MERGE
   `$target_bq_table` AS x
@@ -45,5 +46,4 @@ EXECUTE IMMEDIATE
             `$target_bq_table_temp` ) AS t
         ORDER BY
           flattened_dates_array ), ', '), '] AS formatted_dates') );
-
 """)

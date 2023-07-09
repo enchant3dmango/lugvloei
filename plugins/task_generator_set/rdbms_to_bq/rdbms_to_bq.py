@@ -147,8 +147,6 @@ class RdbmsToBq:
                 partition_key=self.target_bq_partition_key,
                 target_bq_table_temp=self.full_target_bq_table_temp
             )
-            logging.info(f'Temp table partition date query: {temp_table_partition_date_query}')
-
             audit_condition = f"AND DATE(x.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
 
         if self.target_bq_load_method == DELSERT:
@@ -160,7 +158,6 @@ class RdbmsToBq:
                 audit_condition=audit_condition,
                 insert_fields=', '.join([f"`{field['name']}`" for field in schema])
             )
-            logging.info(f'Merge query (delsert query before concatenated): {merge_query}')
 
             query = temp_table_partition_date_query + merge_query
             logging.info(f'Delsert query: {query}')
