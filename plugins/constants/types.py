@@ -9,13 +9,13 @@ RDBMS_TO_BQ = Enum('RDBMS_TO_BQ', [MYSQL_TO_BQ,
                                    POSTGRES_TO_BQ])
 
 # BigQuery
-WRITE_EMPTY = 'WRITE_EMPTY'
-WRITE_TRUNCATE = 'WRITE_TRUNCATE'
-WRITE_APPEND = 'WRITE_APPEND'
+DELSERT = 'delsert'
+UPSERT = 'upsert'
+TRUNCATE = 'truncate'
 
-BQ_WRITE_DISPOSITION = Enum('BQ_WRITE_DISPOSITION', [WRITE_EMPTY,
-                                                     WRITE_TRUNCATE,
-                                                     WRITE_APPEND])
+BQ_LOAD_METHOD = Enum('BQ_LOAD_METHOD', [DELSERT,
+                                         UPSERT,
+                                         TRUNCATE])
 
 # Spark
 SPARK_KUBERNETES_OPERATOR = 'operator'

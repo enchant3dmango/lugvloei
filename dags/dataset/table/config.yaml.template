@@ -30,8 +30,8 @@ task:
       project: ~
       dataset: ~
       table: ~
-      write_disposition: ~
-      partitioned_keys: ~
+      load_method: ~
+      partition_key: ~
     gcs:
       project: ~
       bucket: ~
