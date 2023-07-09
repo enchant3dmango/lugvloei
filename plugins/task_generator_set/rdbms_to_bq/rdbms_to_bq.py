@@ -160,7 +160,7 @@ class RdbmsToBq:
                 audit_condition=audit_condition,
                 insert_fields=', '.join([f"`{field['name']}`" for field in schema])
             )
-            logging.info(f'Merge query (delsert query before concatenated): {query}')
+            logging.info(f'Merge query (delsert query before concatenated): {merge_query}')
 
             query = temp_table_partition_date_query + merge_query
             logging.info(f'Delsert query: {query}')
