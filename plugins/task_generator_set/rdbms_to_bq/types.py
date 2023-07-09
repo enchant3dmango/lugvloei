@@ -9,7 +9,7 @@ FROM information_schema.columns
   AND table_schema = '{}'"""
 
 SOURCE_EXTRACT_QUERY = Template(
-  """SELECT {load_timestamp} AS load_timestamp, {selected_fields} FROM {source_schema}.{source_table_name}""")
+  "SELECT $load_timestamp AS load_timestamp, $selected_fields FROM $source_schema.$source_table_name")
 
 UPSERT_QUERY = """MERGE
   `{target_bq_table}` AS x
