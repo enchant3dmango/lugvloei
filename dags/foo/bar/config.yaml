@@ -1,5 +1,5 @@
 dag:
-  name: bronze_school.student
+  name: foo.bar
   behavior:
     schedule: 0 0 * * *
     start_date: 2023, 6, 14
@@ -11,15 +11,15 @@ dag:
   tags:
     - mysql
     - bigquery
-    - truncate
-  owner: data.engineer@sirclo.com
+    - delsert
+  owner: example@email.com
   priority_weight: 1
 task:
   type: mysql_to_bq
   source:
-    connection: mysql_school
-    schema: school
-    table: student
+    connection: mysql_foo
+    schema: foo
+    table: bar
     timestamp_keys:
       - created_at
       - updated_at
@@ -28,10 +28,10 @@ task:
   target:
     bq:
       project: pocz-389704
-      dataset: bronze_school
-      table: student
+      dataset: foo
+      table: bar
       load_method: delsert
       partition_key: created_at
     gcs:
-      project:
-      bucket:
+      project: ~
+      bucket: ~
