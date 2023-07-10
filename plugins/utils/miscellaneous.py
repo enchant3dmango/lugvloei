@@ -1,5 +1,6 @@
 import fnmatch
 import os
+import re
 
 
 def get_dag_yaml_config_files(directory, suffix):
@@ -33,5 +34,8 @@ def get_parsed_schema_type(schema_type: str) -> str:
     for key, value in type.items():
         if key in schema_type:
             return value
-    
+
     return "STRING"
+
+def get_onelined_format(string: str) -> str:
+    return re.sub(r'\s+', ' ', string).replace('\n', '')

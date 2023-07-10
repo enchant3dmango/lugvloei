@@ -24,7 +24,8 @@ from plugins.constants.variables import (RDBMS_TO_BQ_APPLICATION_FILE,
 from plugins.task_generator_set.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, SOURCE_INFORMATION_SCHEMA_QUERY,
     TEMP_TABLE_PARTITION_DATE_QUERY, UPSERT_QUERY)
-from plugins.utils.miscellaneous import get_parsed_schema_type
+from plugins.utils.miscellaneous import (get_onelined_format,
+                                         get_parsed_schema_type)
 
 
 class RdbmsToBq:
@@ -136,11 +137,12 @@ class RdbmsToBq:
 
         logging.info(f'Extract query: {query}')
 
-        return query
+        return get_onelined_format(query)
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
-        audit_condition = None
-        
+        audit_condition = ''
+        query = None
+
         # Query to get partition_key date list from temp table to be used as audit condition in DELSERT_QUERY
         if self.target_bq_partition_key is not None:
             temp_table_partition_date_query = TEMP_TABLE_PARTITION_DATE_QUERY.substitute(
@@ -174,10 +176,16 @@ class RdbmsToBq:
             )
             logging.info(f'Upsert query: {query}')
 
-        return query
+        return get_onelined_format(query)
 
     def __generate_jdbc_uri(self, **kwargs) -> str:
         return f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
+
+    def __generate_jdbc_url(self, **kwargs) -> str:
+        return self.__generate_jdbc_uri().split("//")[1].split("@")[1]
+
+    def __generate_jdbc_credential(self, **kwargs) -> List[str]:
+        return self.__generate_jdbc_uri().split("//")[1].split("@")[0]
 
     def generate_task(self):
         schema = self.__generate_schema()
@@ -185,19 +193,18 @@ class RdbmsToBq:
         with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
             application_file = yaml.safe_load(f)
 
+        # TODO: Convert to string json
         application_file['spec']['arguments'] = [
-            f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
             f"--target_bq_load_method={self.target_bq_load_method}",
+            f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
             f"--partition_key={self.target_bq_partition_key}",
             f"--extract_query={self.__generate_extract_query(schema=schema)}",
-            f"--jdbc_uri={self.__generate_jdbc_uri()}",
+            f"--merge_query={self.__generate_merge_query(schema=schema)}",
+            f"--jdbc_credential={self.__generate_jdbc_credential}",
+            f"--jdbc_url={self.__generate_jdbc_url()}",
+            f"--schema-{self.__generate_schema()}",
             f"--type={self.task_type}",
         ]
-
-        if self.target_bq_load_method in (DELSERT, UPSERT):
-            application_file['spec']['arguments'].append(
-                f"--merge_query={self.__generate_merge_query(schema=schema)}",
-            )
 
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
