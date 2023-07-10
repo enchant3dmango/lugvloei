@@ -1,4 +1,3 @@
-import io
 import json
 import logging
 import os
@@ -18,14 +17,13 @@ from google.cloud import bigquery
 from plugins.constants.types import (DELSERT, EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                      POSTGRES_TO_BQ, PYTHONPATH,
                                      SPARK_KUBERNETES_OPERATOR,
-                                     SPARK_KUBERNETES_SENSOR, TRUNCATE, UPSERT)
+                                     SPARK_KUBERNETES_SENSOR, UPSERT)
 from plugins.constants.variables import (RDBMS_TO_BQ_APPLICATION_FILE,
                                          SPARK_JOB_NAMESPACE)
 from plugins.task_generator_set.rdbms_to_bq.types import (
-    DELSERT_QUERY, SOURCE_EXTRACT_QUERY, SOURCE_INFORMATION_SCHEMA_QUERY,
-    TEMP_TABLE_PARTITION_DATE_QUERY, UPSERT_QUERY)
-from plugins.utils.miscellaneous import (get_onelined_format,
-                                         get_parsed_schema_type)
+    DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
+    UPSERT_QUERY)
+from plugins.utils.miscellaneous import get_onelined_format
 
 
 class RdbmsToBq:
@@ -81,26 +79,7 @@ class RdbmsToBq:
                 ]
             )
         except:
-            # TODO: Delete this step, schema file is mandatory in creating new DAG
-            logging.exception(f'No schema file found in {schema_file}')
-            if self.target_bq_load_method is not TRUNCATE:
-                logging.info('Getting table schema from BigQuery')
-                schema = self.bq_client.get_table(self.target_bq_table).schema
-
-                with io.StringIO("") as file:
-                    self.bq_client.schema_to_json(schema, file)
-                    schema = json.loads(file.getvalue())
-                    file.close()
-            else:
-                logging.info('Getting table schema from source database')
-                query = SOURCE_INFORMATION_SCHEMA_QUERY.substitute(source_table=self.source_table,
-                                                                   source_schema=self.source_schema)
-
-                logging.info(f'Running query: {query}')
-                schema = self.sql_hook.get_pandas_df(query)
-                schema['type'] = schema['type'].apply(
-                    lambda dtype: get_parsed_schema_type(dtype))
-                schema = schema.to_dict('records')
+            raise Exception("Failed to generate schema!")
 
         return schema
 
