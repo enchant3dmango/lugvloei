@@ -1,0 +1,37 @@
+dag:
+  name: ~
+  behavior:
+    schedule: ~
+    start_date: ~
+    depends_on_past: ~
+    catch_up: ~
+    retry:
+      count: ~
+      delay_in_minute: ~
+  tags:
+    -
+    -
+    -
+  owner: ~
+  priority_weight: ~
+task:
+  type: ~
+  source: ~
+    connection: ~
+    schema: ~
+    table: ~
+    timestamp_keys:
+      -
+      -
+    unique_keys:
+      -
+  target:
+    bq:
+      project: ~
+      dataset: ~
+      table: ~
+      load_method: ~
+      partition_key: ~
+    gcs:
+      project: ~
+      bucket: ~
