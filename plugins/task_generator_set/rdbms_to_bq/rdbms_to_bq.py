@@ -81,6 +81,7 @@ class RdbmsToBq:
                 ]
             )
         except:
+            # TODO: Delete this step, schema file is mandatory in creating new DAG
             logging.exception(f'No schema file found in {schema_file}')
             if self.target_bq_load_method is not TRUNCATE:
                 logging.info('Getting table schema from BigQuery')
@@ -101,7 +102,7 @@ class RdbmsToBq:
                     lambda dtype: get_parsed_schema_type(dtype))
                 schema = schema.to_dict('records')
 
-        return json.dumps(schema, separators=(',', ':'))
+        return schema
 
     def __generate_extract_query(self, schema: list, **kwargs) -> str:
         # Get all field name and the extended field name
@@ -202,7 +203,7 @@ class RdbmsToBq:
             f"--merge_query={self.__generate_merge_query(schema=schema)}",
             f"--jdbc_credential={self.__generate_jdbc_credential()}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
-            f"--schema={self.__generate_schema()}",
+            f"--schema={json.dumps(self.__generate_schema(), separators=(',', ':'))}",
             f"--type={self.task_type}",
         ]
 
