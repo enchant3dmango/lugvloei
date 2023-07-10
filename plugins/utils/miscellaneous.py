@@ -46,7 +46,4 @@ def get_onelined_format(string: str) -> str:
     Function to convert multi-lined string into one-lined string.
     """
 
-    try:
-        re.sub(r'\s+', ' ', string).replace('\n', '')
-    except:
-        raise Exception("Invalid input!")
+    return re.sub(r'\s+', ' ', string).replace('\n', '')
