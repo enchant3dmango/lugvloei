@@ -200,9 +200,9 @@ class RdbmsToBq:
             f"--partition_key={self.target_bq_partition_key}",
             f"--extract_query={self.__generate_extract_query(schema=schema)}",
             f"--merge_query={self.__generate_merge_query(schema=schema)}",
-            f"--jdbc_credential={self.__generate_jdbc_credential}",
+            f"--jdbc_credential={self.__generate_jdbc_credential()}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
-            f"--schema-{self.__generate_schema()}",
+            f"--schema={self.__generate_schema()}",
             f"--type={self.task_type}",
         ]
 
