@@ -101,7 +101,7 @@ class RdbmsToBq:
                     lambda dtype: get_parsed_schema_type(dtype))
                 schema = schema.to_dict('records')
 
-        return schema
+        return json.dumps(schema, separators=(',', ':'))
 
     def __generate_extract_query(self, schema: list, **kwargs) -> str:
         # Get all field name and the extended field name
