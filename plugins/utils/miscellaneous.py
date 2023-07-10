@@ -4,6 +4,10 @@ import re
 
 
 def get_dag_yaml_config_files(directory, suffix):
+    """
+    Function to read DAG YAML config files.
+    """
+
     matches = []
     for root, _, filenames in os.walk(directory):
         for filename in fnmatch.filter(filenames, f'{suffix}'):
@@ -38,4 +42,11 @@ def get_parsed_schema_type(schema_type: str) -> str:
     return "STRING"
 
 def get_onelined_format(string: str) -> str:
-    return re.sub(r'\s+', ' ', string).replace('\n', '')
+    """
+    Function to convert multi-lined string into one-lined string.
+    """
+
+    try:
+        re.sub(r'\s+', ' ', string).replace('\n', '')
+    except:
+        raise Exception("Invalid input!")
