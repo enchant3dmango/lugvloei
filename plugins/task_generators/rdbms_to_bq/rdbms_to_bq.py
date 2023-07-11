@@ -20,7 +20,7 @@ from plugins.constants.types import (DELSERT, EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                      SPARK_KUBERNETES_SENSOR, UPSERT)
 from plugins.constants.variables import (RDBMS_TO_BQ_APPLICATION_FILE,
                                          SPARK_JOB_NAMESPACE)
-from plugins.task_generator_set.rdbms_to_bq.types import (
+from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
 from plugins.utils.miscellaneous import get_onelined_format
@@ -165,7 +165,9 @@ class RdbmsToBq:
         return self.__generate_jdbc_uri().split("//")[1].split("@")[1]
 
     def __generate_jdbc_credential(self, **kwargs) -> List[str]:
-        return self.__generate_jdbc_uri().split("//")[1].split("@")[0]
+        credential = BaseHook.get_connection(self.source_connection)
+
+        return f'{credential.login}:{credential.password}'
 
     def generate_task(self):
         schema = self.__generate_schema()
