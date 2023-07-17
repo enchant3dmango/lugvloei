@@ -20,7 +20,7 @@ from plugins.constants.types import (DELSERT, EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                      SPARK_KUBERNETES_SENSOR, UPSERT)
 from plugins.constants.variables import (RDBMS_TO_BQ_APPLICATION_FILE,
                                          SPARK_JOB_NAMESPACE)
-from plugins.task_generator_set.rdbms_to_bq.types import (
+from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
 from plugins.utils.miscellaneous import get_onelined_format
@@ -165,7 +165,9 @@ class RdbmsToBq:
         return self.__generate_jdbc_uri().split("//")[1].split("@")[1]
 
     def __generate_jdbc_credential(self, **kwargs) -> List[str]:
-        return self.__generate_jdbc_uri().split("//")[1].split("@")[0]
+        credential = BaseHook.get_connection(self.source_connection)
+
+        return f'{credential.login}:{credential.password}'
 
     def generate_task(self):
         schema = self.__generate_schema()
@@ -173,17 +175,16 @@ class RdbmsToBq:
         with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
             application_file = yaml.safe_load(f)
 
-        # TODO: Convert to string json
         application_file['spec']['arguments'] = [
             f"--target_bq_load_method={self.target_bq_load_method}",
             f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
+            f"--jdbc_credential={self.__generate_jdbc_credential()}",
             f"--partition_key={self.target_bq_partition_key}",
             f"--extract_query={self.__generate_extract_query(schema=schema)}",
             f"--merge_query={self.__generate_merge_query(schema=schema)}",
-            f"--jdbc_credential={self.__generate_jdbc_credential()}",
+            f"--task_type={self.task_type}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
             f"--schema={json.dumps(self.__generate_schema(), separators=(',', ':'))}",
-            f"--type={self.task_type}",
         ]
 
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
