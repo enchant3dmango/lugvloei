@@ -175,8 +175,6 @@ class RdbmsToBq:
         with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
             application_file = yaml.safe_load(f)
 
-        schema_in_string = json.dumps(self.__generate_schema(), separators=(',', ':'))
-
         application_file['spec']['arguments'] = [
             f"--target_bq_load_method={self.target_bq_load_method}",
             f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
@@ -186,7 +184,7 @@ class RdbmsToBq:
             f"--merge_query={self.__generate_merge_query(schema=schema)}",
             f"--task_type={self.task_type}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
-            f"--schema={get_escaped_string(f'"{schema_in_string}"')}",
+            f"--schema={json.dumps(self.__generate_schema(), separators=(',', ':'))}",
         ]
 
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
