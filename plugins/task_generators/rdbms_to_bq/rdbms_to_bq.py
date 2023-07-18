@@ -117,7 +117,7 @@ class RdbmsToBq:
 
         logging.info(f'Extract query: {query}')
 
-        return get_onelined_string(f'"{query}"')
+        return f'"{get_onelined_string(query)}"'
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
         audit_condition = ''
