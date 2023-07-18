@@ -117,7 +117,7 @@ class RdbmsToBq:
 
         logging.info(f'Extract query: {query}')
 
-        return get_escaped_string(query)
+        return get_escaped_string(f'"{query}"')
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
         audit_condition = ''
@@ -156,7 +156,7 @@ class RdbmsToBq:
             )
             logging.info(f'Upsert query: {query}')
 
-        return get_escaped_string(query)
+        return get_escaped_string(f'"{query}"')
 
     def __generate_jdbc_uri(self, **kwargs) -> str:
         return f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
