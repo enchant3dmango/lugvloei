@@ -43,7 +43,14 @@ def get_parsed_schema_type(schema_type: str) -> str:
 
 def get_escaped_string(string: str) -> str:
     """
-    Function to convert multi-lined string into one-lined string.
+    Function to escape and convert multi-lined string into one-lined string.
     """
 
     return re.escape(re.sub(r'\s+', ' ', string).replace('\n', ''))
+
+def get_onelined_string(string: str) -> str:
+    """
+    Function to convert multi-lined string into one-lined string.
+    """
+
+    return re.sub(r'\s+', ' ', string).replace('\n', '')

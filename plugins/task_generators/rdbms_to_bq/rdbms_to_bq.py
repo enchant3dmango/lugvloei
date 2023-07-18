@@ -23,7 +23,7 @@ from plugins.constants.variables import (RDBMS_TO_BQ_APPLICATION_FILE,
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utils.miscellaneous import get_escaped_string
+from plugins.utils.miscellaneous import get_escaped_string, get_onelined_string
 
 
 class RdbmsToBq:
@@ -117,7 +117,7 @@ class RdbmsToBq:
 
         logging.info(f'Extract query: {query}')
 
-        return get_escaped_string(f'"{query}"')
+        return get_onelined_string(f'"{query}"')
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
         audit_condition = ''
@@ -175,6 +175,8 @@ class RdbmsToBq:
         with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
             application_file = yaml.safe_load(f)
 
+        schema_in_string = json.dumps(self.__generate_schema(), separators=(',', ':'))
+
         application_file['spec']['arguments'] = [
             f"--target_bq_load_method={self.target_bq_load_method}",
             f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
@@ -184,7 +186,7 @@ class RdbmsToBq:
             f"--merge_query={self.__generate_merge_query(schema=schema)}",
             f"--task_type={self.task_type}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
-            f"--schema={get_escaped_string(json.dumps(self.__generate_schema(), separators=(',', ':')))}",
+            f"--schema={get_escaped_string(f'"{schema_in_string}"')}",
         ]
 
         spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
