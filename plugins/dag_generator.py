@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import timedelta
-import logging
 
 import pendulum
 import yaml
@@ -12,10 +11,7 @@ from plugins.constants.variables import DAG_GENERATOR_FEATURE_FLAG
 from plugins.task_generator import generate_task
 from plugins.utils.miscellaneous import get_dag_yaml_config_files
 
-logging.error(DAG_GENERATOR_FEATURE_FLAG, type(DAG_GENERATOR_FEATURE_FLAG))
-
 if DAG_GENERATOR_FEATURE_FLAG:
-    logging.error("What the hell?")
     config_files = get_dag_yaml_config_files(
         f'{PYTHONPATH}/dags', '*.yaml')
 
