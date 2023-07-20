@@ -117,7 +117,7 @@ class RdbmsToBq:
 
         logging.info(f'Extract query: {query}')
 
-        return f'"{get_onelined_string(query)}"'
+        return get_onelined_string(f'"{query}"')
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
         audit_condition = ''
@@ -162,7 +162,7 @@ class RdbmsToBq:
         return f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
 
     def __generate_jdbc_url(self, **kwargs) -> str:
-        return self.__generate_jdbc_uri().split("//")[1].split("@")[1]
+        return f'jdbc:{self.__generate_jdbc_uri().split("//")[1].split("@")[1]}'
 
     def __generate_jdbc_credential(self, **kwargs) -> List[str]:
         credential = BaseHook.get_connection(self.source_connection)
@@ -178,6 +178,7 @@ class RdbmsToBq:
         application_file['spec']['arguments'] = [
             f"--target_bq_load_method={self.target_bq_load_method}",
             f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
+            f"--full_target_bq_table={self.full_target_bq_table}",
             f"--jdbc_credential={self.__generate_jdbc_credential()}",
             f"--partition_key={self.target_bq_partition_key}",
             f"--extract_query={self.__generate_extract_query(schema=schema)}",
