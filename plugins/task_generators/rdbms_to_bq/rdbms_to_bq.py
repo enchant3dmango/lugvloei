@@ -99,7 +99,7 @@ class RdbmsToBq:
         source_extract_query = SOURCE_EXTRACT_QUERY.substitute(
             selected_fields=', '.join([self.quoting(field)
                                        for field in fields]),
-            load_timestamp=load_timestamp,
+            load_timestamp=f"'{load_timestamp}'",
             source_schema=self.quoting(self.source_schema),
             source_table_name=self.quoting(self.source_table),
         )
@@ -117,7 +117,7 @@ class RdbmsToBq:
 
         logging.info(f'Extract query: {query}')
 
-        return get_onelined_string(f'"{query}"')
+        return get_escaped_string(f'"({query}) AS cte"')
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
         audit_condition = ''
@@ -162,7 +162,10 @@ class RdbmsToBq:
         return f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
 
     def __generate_jdbc_url(self, **kwargs) -> str:
-        return f'jdbc:{self.__generate_jdbc_uri().split("//")[1].split("@")[1]}'
+        db_type = self.__generate_jdbc_uri().split("://")[0]
+        db_conn = self.__generate_jdbc_uri().split("@")[1]
+
+        return f'{db_type}://{db_conn}'
 
     def __generate_jdbc_credential(self, **kwargs) -> List[str]:
         credential = BaseHook.get_connection(self.source_connection)
@@ -171,6 +174,7 @@ class RdbmsToBq:
 
     def generate_task(self):
         schema = self.__generate_schema()
+        schema_string = f'"{json.dumps(self.__generate_schema(), separators=(",", ":"))}"'
 
         with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
             application_file = yaml.safe_load(f)
@@ -184,11 +188,12 @@ class RdbmsToBq:
             f"--extract_query={self.__generate_extract_query(schema=schema)}",
             f"--merge_query={self.__generate_merge_query(schema=schema)}",
             f"--task_type={self.task_type}",
+            f"--schema={get_escaped_string(schema_string)}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
-            f"--schema={json.dumps(self.__generate_schema(), separators=(',', ':'))}",
         ]
 
-        spark_kubernetes_operator_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}-{SPARK_KUBERNETES_OPERATOR}'
+        spark_kubernetes_base_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}'
+        spark_kubernetes_operator_task_id = f'{spark_kubernetes_base_task_id}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
             task_id          = spark_kubernetes_operator_task_id,
             application_file = yaml.safe_dump(application_file),
@@ -197,7 +202,7 @@ class RdbmsToBq:
         )
 
         spark_kubernetes_sensor_task = SparkKubernetesSensor(
-            task_id          = f"{self.target_bq_dataset.replace('_', '-')}-{self.target_bq_table.replace('_', '-')}-{SPARK_KUBERNETES_SENSOR}",
+            task_id          = f"{spark_kubernetes_base_task_id}-{SPARK_KUBERNETES_SENSOR}",
             namespace        = SPARK_JOB_NAMESPACE,
             application_name = f"{{{{ task_instance.xcom_pull(task_ids={spark_kubernetes_operator_task_id})['metadata']['name'] }}}}",
             attach_log       = True
