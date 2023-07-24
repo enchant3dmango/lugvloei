@@ -23,7 +23,7 @@ from plugins.constants.variables import (RDBMS_TO_BQ_APPLICATION_FILE,
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utils.miscellaneous import get_escaped_string, get_onelined_string
+from plugins.utils.miscellaneous import get_onelined_string
 
 
 class RdbmsToBq:
@@ -100,8 +100,7 @@ class RdbmsToBq:
             selected_fields=', '.join([self.quoting(field)
                                        for field in fields]),
             load_timestamp=f"'{load_timestamp}'",
-            source_schema=self.quoting(self.source_schema),
-            source_table_name=self.quoting(self.source_table),
+            source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
         )
 
         # Generate query filter based on target_bq_load_method
@@ -109,7 +108,7 @@ class RdbmsToBq:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f"{timestamp_key} >=  {{{{ data_interval_start.astimezone(dag.timezone) }}}} AND {timestamp_key} < {{{{ data_interval_end.astimezone(dag.timezone) }}}}"
+                    f"{timestamp_key} >=  '{{{{ data_interval_start.astimezone(dag.timezone) }}}}' AND {timestamp_key} < '{{{{ data_interval_end.astimezone(dag.timezone) }}}}'"
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
@@ -117,7 +116,7 @@ class RdbmsToBq:
 
         logging.info(f'Extract query: {query}')
 
-        return get_escaped_string(f'"({query}) AS cte"')
+        return get_onelined_string(f'"({query}) AS cte"')
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
         audit_condition = ''
@@ -156,10 +155,12 @@ class RdbmsToBq:
             )
             logging.info(f'Upsert query: {query}')
 
-        return get_escaped_string(f'"{query}"')
+        return get_onelined_string(f'"{query}"')
 
     def __generate_jdbc_uri(self, **kwargs) -> str:
-        return f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
+        jdbc_uri = f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
+
+        return (jdbc_uri.replace('postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri)
 
     def __generate_jdbc_url(self, **kwargs) -> str:
         db_type = self.__generate_jdbc_uri().split("://")[0]
@@ -175,6 +176,10 @@ class RdbmsToBq:
     def generate_task(self):
         schema = self.__generate_schema()
         schema_string = f'"{json.dumps(self.__generate_schema(), separators=(",", ":"))}"'
+        onelined_schema_string = get_onelined_string(schema_string)
+
+        extract_query = self.__generate_extract_query(schema=schema)
+        merge_query = self.__generate_merge_query(schema=schema)
 
         with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
             application_file = yaml.safe_load(f)
@@ -185,14 +190,14 @@ class RdbmsToBq:
             f"--full_target_bq_table={self.full_target_bq_table}",
             f"--jdbc_credential={self.__generate_jdbc_credential()}",
             f"--partition_key={self.target_bq_partition_key}",
-            f"--extract_query={self.__generate_extract_query(schema=schema)}",
-            f"--merge_query={self.__generate_merge_query(schema=schema)}",
+            f"--extract_query={extract_query}",
+            f"--merge_query={merge_query}",
             f"--task_type={self.task_type}",
-            f"--schema={get_escaped_string(schema_string)}",
+            f"--schema={onelined_schema_string}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
         ]
 
-        spark_kubernetes_base_task_id = f'{self.target_bq_dataset.replace("_", "-")}-{self.target_bq_table.replace("_", "-")}'
+        spark_kubernetes_base_task_id = f'{self.target_bq_dataset.replace("_", "-")}'
         spark_kubernetes_operator_task_id = f'{spark_kubernetes_base_task_id}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
             task_id          = spark_kubernetes_operator_task_id,
@@ -204,7 +209,7 @@ class RdbmsToBq:
         spark_kubernetes_sensor_task = SparkKubernetesSensor(
             task_id          = f"{spark_kubernetes_base_task_id}-{SPARK_KUBERNETES_SENSOR}",
             namespace        = SPARK_JOB_NAMESPACE,
-            application_name = f"{{{{ task_instance.xcom_pull(task_ids={spark_kubernetes_operator_task_id})['metadata']['name'] }}}}",
+            application_name = f"{{{{ task_instance.xcom_pull(task_ids='{spark_kubernetes_operator_task_id}')['metadata']['name'] }}}}",
             attach_log       = True
         )
 
