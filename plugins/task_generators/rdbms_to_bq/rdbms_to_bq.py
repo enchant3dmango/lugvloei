@@ -197,7 +197,7 @@ class RdbmsToBq:
             f"--jdbc_url={self.__generate_jdbc_url()}",
         ]
 
-        spark_kubernetes_base_task_id = f'{self.target_bq_dataset.replace("_", "-")}'
+        spark_kubernetes_base_task_id = f'{self.target_bq_dataset}-{self.target_bq_table}'.replace('_', '-')
         spark_kubernetes_operator_task_id = f'{spark_kubernetes_base_task_id}-{SPARK_KUBERNETES_OPERATOR}'
         spark_kubernetes_operator_task = SparkKubernetesOperator(
             task_id          = spark_kubernetes_operator_task_id,
