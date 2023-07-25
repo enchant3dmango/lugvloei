@@ -1,6 +1,5 @@
 from string import Template
 
-# Query template
 SOURCE_INFORMATION_SCHEMA_QUERY = Template("""SELECT column_name AS name,
   data_type AS type,
   'NULLABLE' AS mode
