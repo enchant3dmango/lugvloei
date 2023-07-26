@@ -3,7 +3,6 @@ import logging
 import os
 from typing import List
 
-import pendulum
 import yaml
 from airflow.hooks.base import BaseHook
 from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import \
@@ -26,7 +25,7 @@ from plugins.task_generators.rdbms_to_bq.types import (
 from plugins.utils.miscellaneous import get_onelined_string
 
 
-class RdbmsToBq:
+class RDBMSToBQGenerator:
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
         super().__init__(**kwargs)
         self.dag_id                    : str             = dag_id
@@ -92,13 +91,11 @@ class RdbmsToBq:
             if schema_detail["name"] not in extended_fields
         ]
 
-        load_timestamp = pendulum.now('Asia/Jakarta')
-
         # Generate query
         source_extract_query = SOURCE_EXTRACT_QUERY.substitute(
             selected_fields=', '.join([self.quoting(field)
                                        for field in fields]),
-            load_timestamp=f"'{load_timestamp}'",
+            load_timestamp='CURRENT_TIMESTAMP' if self.task_type == POSTGRES_TO_BQ else 'CURRENT_TIMESTAMP()',
             source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
         )
 
@@ -117,7 +114,7 @@ class RdbmsToBq:
 
         logging.info(f'Extract query: {query}')
 
-        return get_onelined_string(f'"({query}) AS cte"')
+        return get_onelined_string(f'({query}) AS cte')
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
         audit_condition = ''
@@ -160,7 +157,7 @@ class RdbmsToBq:
             )
             logging.info(f'Upsert query: {query}')
 
-        return get_onelined_string(f'"{query}"')
+        return get_onelined_string(f'{query}')
 
     def __generate_jdbc_uri(self, **kwargs) -> str:
         jdbc_uri = f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
@@ -180,7 +177,7 @@ class RdbmsToBq:
 
     def generate_task(self):
         schema = self.__generate_schema()
-        schema_string = f'"{json.dumps(self.__generate_schema(), separators=(",", ":"))}"'
+        schema_string = f'{json.dumps(self.__generate_schema(), separators=(",", ":"))}'
         onelined_schema_string = get_onelined_string(schema_string)
 
         extract_query = self.__generate_extract_query(schema=schema)
