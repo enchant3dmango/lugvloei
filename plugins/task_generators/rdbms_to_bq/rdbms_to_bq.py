@@ -3,7 +3,6 @@ import logging
 import os
 from typing import List
 
-import pendulum
 import yaml
 from airflow.hooks.base import BaseHook
 from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import \
@@ -26,7 +25,7 @@ from plugins.task_generators.rdbms_to_bq.types import (
 from plugins.utils.miscellaneous import get_onelined_string
 
 
-class RdbmsToBq:
+class RDBMSToBQGenerator:
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
         super().__init__(**kwargs)
         self.dag_id                    : str             = dag_id
@@ -40,25 +39,22 @@ class RdbmsToBq:
         self.target_bq_project         : str             = config['target']['bq']['project']
         self.target_bq_dataset         : str             = config['target']['bq']['dataset']
         self.target_bq_table           : str             = config['target']['bq']['table']
+        self.target_bq_table_temp      : str             = f'{self.target_bq_table}_temp'
         self.target_bq_load_method     : str             = config['target']['bq']['load_method']
         self.target_bq_partition_key   : str             = config['target']['bq']['partition_key']
-        self.target_bq_table_temp      : str             = f'{self.target_bq_table}_temp'
         self.full_target_bq_table      : str             = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
         self.full_target_bq_table_temp : str             = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table_temp}'
         self.target_gcs_project        : str             = config['target']['gcs']['project']
         self.target_gcs_bucket         : str             = config['target']['gcs']['bucket']
 
-        try:
-            if self.task_type == POSTGRES_TO_BQ:
-                self.sql_hook = PostgresHook(
-                    postgres_conn_id = self.source_connection)
-                self.quoting = lambda text: f"'{text}'"
-            elif self.task_type == MYSQL_TO_BQ:
-                self.sql_hook = MySqlHook(
-                    mysql_conn_id = self.source_connection)
-                self.quoting = lambda text: f'`{text}`'
-        except:
-            logging.exception('Task type is not supported!')
+        if self.task_type == POSTGRES_TO_BQ:
+            self.sql_hook = PostgresHook(postgres_conn_id=self.source_connection)
+            self.quoting = lambda text: f"'{text}'"
+        elif self.task_type == MYSQL_TO_BQ:
+            self.sql_hook = MySqlHook(mysql_conn_id=self.source_connection)
+            self.quoting = lambda text: f'`{text}`'
+        else:
+            raise Exception('Task type is not supported!')
 
     def __generate_schema(self, **kwargs) -> list:
         schema_path = f'{os.environ["PYTHONPATH"]}/dags/{self.target_bq_dataset}/{self.target_bq_table}'
@@ -71,6 +67,8 @@ class RdbmsToBq:
                 file.close()
 
             fields = [schema_detail["name"] for schema_detail in schema]
+
+            # Extend schema from EXTENDED_SCHEMA
             schema.extend(
                 [
                     schema_detail
@@ -93,13 +91,11 @@ class RdbmsToBq:
             if schema_detail["name"] not in extended_fields
         ]
 
-        load_timestamp = pendulum.now('Asia/Jakarta')
-
         # Generate query
         source_extract_query = SOURCE_EXTRACT_QUERY.substitute(
             selected_fields=', '.join([self.quoting(field)
                                        for field in fields]),
-            load_timestamp=f"'{load_timestamp}'",
+            load_timestamp='CURRENT_TIMESTAMP' if self.task_type == POSTGRES_TO_BQ else 'CURRENT_TIMESTAMP()',
             source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
         )
 
@@ -108,15 +104,17 @@ class RdbmsToBq:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f"{timestamp_key} >=  '{{{{ data_interval_start.astimezone(dag.timezone) }}}}' AND {timestamp_key} < '{{{{ data_interval_end.astimezone(dag.timezone) }}}}'"
+                    f"{self.quoting(timestamp_key)} >=  '{{{{ data_interval_start.astimezone(dag.timezone) }}}}' AND {self.quoting(timestamp_key)} < '{{{{ data_interval_end.astimezone(dag.timezone) }}}}'"
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
+
+            # Append extract query condition
             query = source_extract_query + f" WHERE {condition}"
 
         logging.info(f'Extract query: {query}')
 
-        return get_onelined_string(f'"({query}) AS cte"')
+        return get_onelined_string(f'({query}) AS cte')
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
         audit_condition = ''
@@ -130,6 +128,7 @@ class RdbmsToBq:
             )
             audit_condition = f"AND DATE(x.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
 
+        # Construct delsert query
         if self.target_bq_load_method == DELSERT:
             merge_query = DELSERT_QUERY.substitute(
                 target_bq_table=self.full_target_bq_table,
@@ -137,12 +136,14 @@ class RdbmsToBq:
                 on_keys=' AND '.join(
                     [f"COALESCE(CAST(x.`{key}` as string), 'NULL') = COALESCE(CAST(y.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
                 audit_condition=audit_condition,
-                insert_fields=', '.join([f"`{field['name']}`" for field in schema])
+                insert_fields=', '.join(
+                    [f"`{field['name']}`" for field in schema])
             )
 
             query = temp_table_partition_date_query + merge_query
             logging.info(f'Delsert query: {query}')
 
+        # Construct upsert query
         elif self.target_bq_load_method == UPSERT:
             query = UPSERT_QUERY.substitute(
                 target_bq_table=self.full_target_bq_table,
@@ -151,11 +152,12 @@ class RdbmsToBq:
                     [f"COALESCE(CAST(x.`{key}` as string), 'NULL') = COALESCE(CAST(y.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
                 update_fields=', '.join(
                     [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
-                insert_fields=', '.join([f"`{field['name']}`" for field in schema])
+                insert_fields=', '.join(
+                    [f"`{field['name']}`" for field in schema])
             )
             logging.info(f'Upsert query: {query}')
 
-        return get_onelined_string(f'"{query}"')
+        return get_onelined_string(f'{query}')
 
     def __generate_jdbc_uri(self, **kwargs) -> str:
         jdbc_uri = f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
@@ -175,7 +177,7 @@ class RdbmsToBq:
 
     def generate_task(self):
         schema = self.__generate_schema()
-        schema_string = f'"{json.dumps(self.__generate_schema(), separators=(",", ":"))}"'
+        schema_string = f'{json.dumps(self.__generate_schema(), separators=(",", ":"))}'
         onelined_schema_string = get_onelined_string(schema_string)
 
         extract_query = self.__generate_extract_query(schema=schema)
