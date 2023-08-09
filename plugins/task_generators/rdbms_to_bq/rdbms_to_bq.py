@@ -167,13 +167,14 @@ class RDBMSToBQGenerator:
     def __generate_jdbc_url(self, **kwargs) -> str:
         db_type = self.__generate_jdbc_uri().split("://")[0]
         db_conn = self.__generate_jdbc_uri().split("@")[1]
+        db_extras = self.__generate_jdbc_uri().split("?")[1]
 
         return f'{db_type}://{db_conn}'
 
     def __generate_jdbc_credential(self, **kwargs) -> List[str]:
         credential = BaseHook.get_connection(self.source_connection)
 
-        return f'{credential.login}:{credential.password}?{credential.extra}'
+        return f'{credential.login}:{credential.password}'
 
     def generate_task(self):
         schema = self.__generate_schema()
