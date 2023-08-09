@@ -4,6 +4,8 @@ import os
 from typing import List
 
 import yaml
+from google.cloud import bigquery
+
 from airflow.hooks.base import BaseHook
 from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import \
     SparkKubernetesOperator
@@ -11,8 +13,6 @@ from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import \
     SparkKubernetesSensor
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from google.cloud import bigquery
-
 from plugins.constants.types import (DELSERT, EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                      POSTGRES_TO_BQ, PYTHONPATH,
                                      SPARK_KUBERNETES_OPERATOR,
@@ -160,14 +160,14 @@ class RDBMSToBQGenerator:
         return get_onelined_string(f'{query}')
 
     def __generate_jdbc_uri(self, **kwargs) -> str:
-        jdbc_uri = f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
+        jdbc_conn = BaseHook.get_connection(self.source_connection)
+        jdbc_uri = f'jdbc:{jdbc_conn.get_uri().split("?")[0]}' # Exlude extras from jdbc_uri
 
         return (jdbc_uri.replace('postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri)
 
     def __generate_jdbc_url(self, **kwargs) -> str:
         db_type = self.__generate_jdbc_uri().split("://")[0]
         db_conn = self.__generate_jdbc_uri().split("@")[1]
-        db_extras = self.__generate_jdbc_uri().split("?")[1]
 
         return f'{db_type}://{db_conn}'
 
@@ -187,8 +187,6 @@ class RDBMSToBQGenerator:
         with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
             application_file = yaml.safe_load(f)
 
-        dictA = {"useSSL":False}
-
         application_file['spec']['arguments'] = [
             f"--target_bq_load_method={self.target_bq_load_method}",
             f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
@@ -201,7 +199,6 @@ class RDBMSToBQGenerator:
             f"--task_type={self.task_type}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
             f"--schema={onelined_schema_string}",
-            f"--test={BaseHook.get_connection(self.source_connection).extra_dejson == dictA}"
             # TODO: Later, send master url
         ]
 
