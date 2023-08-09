@@ -183,7 +183,8 @@ class RDBMSToBQGenerator:
     def __generate_jdbc_urlencoded_extra(self, **kwargs):
         extras = self.__get_conn().extra
 
-        return urlencode(literal_eval(extras))
+        return extras
+        # return urlencode(literal_eval(extras))
 
     def generate_task(self):
         schema = self.__generate_schema()
@@ -208,6 +209,7 @@ class RDBMSToBQGenerator:
             f"--task_type={self.task_type}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
             f"--schema={onelined_schema_string}",
+            f"--extras={self.__generate_jdbc_urlencoded_extra()}, {type(self.__generate_jdbc_urlencoded_extra())}"
             # TODO: Later, send master url
         ]
 
