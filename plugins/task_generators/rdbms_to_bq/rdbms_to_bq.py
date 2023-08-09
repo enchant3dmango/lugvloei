@@ -1,3 +1,4 @@
+from ast import literal_eval
 import json
 import logging
 import os
@@ -177,7 +178,7 @@ class RDBMSToBQGenerator:
         return f'{credential.login}:{credential.password}'
 
     def __generate_jdbc_urlencoded_extra(self, **kwargs):
-        return urlencode(json.loads(dict(BaseHook.get_connection(self.source_connection).extra)))
+        return urlencode(literal_eval(str(BaseHook.get_connection(self.source_connection).extra)))
 
     def generate_task(self):
         schema = self.__generate_schema()
