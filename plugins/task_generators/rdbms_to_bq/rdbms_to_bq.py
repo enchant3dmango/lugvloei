@@ -163,7 +163,7 @@ class RDBMSToBQGenerator:
         jdbc_conn = BaseHook.get_connection(self.source_connection)
 
         jdbc_uri = f'jdbc:{jdbc_conn.get_uri()}'
-        jdbc_extras = f'{jdbc_conn.get_extra()} {jdbc_conn.extra_dejson}'
+        jdbc_extras = f'@{jdbc_conn.get_extra()} {jdbc_conn.extra_dejson}'
 
         # return (jdbc_uri.replace('postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri)
         return jdbc_extras
