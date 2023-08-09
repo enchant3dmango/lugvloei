@@ -177,7 +177,7 @@ class RDBMSToBQGenerator:
         return f'{credential.login}:{credential.password}'
 
     def __generate_jdbc_urlencoded_extra(self, **kwargs):
-        return BaseHook.get_connection(self.source_connection).extra_dejson
+        return BaseHook.get_connection(self.source_connection).extra
 
     def generate_task(self):
         schema = self.__generate_schema()
