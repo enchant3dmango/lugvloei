@@ -178,7 +178,7 @@ class RDBMSToBQGenerator:
         return f'{credential.login}:{credential.password}'
 
     def __generate_jdbc_urlencoded_extra(self, **kwargs):
-        extras = str(BaseHook.get_connection(self.source_connection).extra)
+        extras = BaseHook.get_connection(self.source_connection).extra
 
         return extras
         # return urlencode(literal_eval(extras))
