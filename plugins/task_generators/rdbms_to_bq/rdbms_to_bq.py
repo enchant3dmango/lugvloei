@@ -187,6 +187,8 @@ class RDBMSToBQGenerator:
         with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
             application_file = yaml.safe_load(f)
 
+        dictA = {"useSSL":False}
+
         application_file['spec']['arguments'] = [
             f"--target_bq_load_method={self.target_bq_load_method}",
             f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
@@ -199,6 +201,7 @@ class RDBMSToBQGenerator:
             f"--task_type={self.task_type}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
             f"--schema={onelined_schema_string}",
+            f"--test={BaseHook.get_connection(self.source_connection).extra_dejson == dictA}"
             # TODO: Later, send master url
         ]
 
