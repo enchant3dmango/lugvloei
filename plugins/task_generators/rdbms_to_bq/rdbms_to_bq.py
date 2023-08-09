@@ -1,7 +1,9 @@
 import json
 import logging
 import os
+from ast import literal_eval
 from typing import List
+from urllib.parse import urlencode
 
 import yaml
 from airflow.hooks.base import BaseHook
@@ -159,21 +161,29 @@ class RDBMSToBQGenerator:
 
         return get_onelined_string(f'{query}')
 
+    def __get_conn(self, **kwargs) -> str:
+        return BaseHook.get_connection(self.source_connection)
+
     def __generate_jdbc_uri(self, **kwargs) -> str:
-        jdbc_uri = f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
+        jdbc_uri = f'jdbc:{self.__get_conn().get_uri()}'
 
         return (jdbc_uri.replace('postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri)
 
     def __generate_jdbc_url(self, **kwargs) -> str:
         db_type = self.__generate_jdbc_uri().split("://")[0]
-        db_conn = self.__generate_jdbc_uri().split("@")[1]
+        db_conn = self.__generate_jdbc_uri().split("@")[1].split("?")[0]
 
-        return f'{db_type}://{db_conn}'
+        return f'{db_type}://{db_conn}?{self.__generate_jdbc_urlencoded_extra()}' if self.__get_conn().extra else f'{db_type}://{db_conn}'
 
     def __generate_jdbc_credential(self, **kwargs) -> List[str]:
-        credential = BaseHook.get_connection(self.source_connection)
+        credential = self.__get_conn()
 
         return f'{credential.login}:{credential.password}'
+
+    def __generate_jdbc_urlencoded_extra(self, **kwargs):
+        extras = self.__get_conn().extra
+
+        return urlencode(literal_eval(extras))
 
     def generate_task(self):
         schema = self.__generate_schema()
@@ -190,13 +200,15 @@ class RDBMSToBQGenerator:
             f"--target_bq_load_method={self.target_bq_load_method}",
             f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
             f"--full_target_bq_table={self.full_target_bq_table}",
+            f"--target_bq_project={self.target_bq_project}",
             f"--jdbc_credential={self.__generate_jdbc_credential()}",
             f"--partition_key={self.target_bq_partition_key}",
             f"--extract_query={extract_query}",
             f"--merge_query={merge_query}",
             f"--task_type={self.task_type}",
-            f"--schema={onelined_schema_string}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
+            f"--schema={onelined_schema_string}",
+            # TODO: Later, send master url
         ]
 
         spark_kubernetes_base_task_id = f'{self.target_bq_dataset}-{self.target_bq_table}'.replace('_', '-')
