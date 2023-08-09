@@ -161,8 +161,11 @@ class RDBMSToBQGenerator:
 
         return get_onelined_string(f'{query}')
 
+    def __get_conn(self, **kwargs) -> str:
+        return BaseHook.get_connection(self.source_connection)
+
     def __generate_jdbc_uri(self, **kwargs) -> str:
-        jdbc_uri = f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
+        jdbc_uri = f'jdbc:{self.__get_conn().get_uri()}'
 
         return (jdbc_uri.replace('postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri)
 
@@ -170,17 +173,16 @@ class RDBMSToBQGenerator:
         db_type = self.__generate_jdbc_uri().split("://")[0]
         db_conn = self.__generate_jdbc_uri().split("@")[1].split("?")[0]
 
-        return f'{db_type}://{db_conn}'
+        return f'{db_type}://{db_conn}?{self.__generate_jdbc_urlencoded_extra()}' if self.__get_conn().extra else f'{db_type}://{db_conn}'
 
     def __generate_jdbc_credential(self, **kwargs) -> List[str]:
-        credential = BaseHook.get_connection(self.source_connection)
+        credential = self.__get_conn()
 
         return f'{credential.login}:{credential.password}'
 
     def __generate_jdbc_urlencoded_extra(self, **kwargs):
-        extras = BaseHook.get_connection(self.source_connection).extra
+        extras = self.__get_conn().extra
 
-        # return extras
         return urlencode(literal_eval(extras))
 
     def generate_task(self):
@@ -206,7 +208,6 @@ class RDBMSToBQGenerator:
             f"--task_type={self.task_type}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
             f"--schema={onelined_schema_string}",
-            f"--extra={self.__generate_jdbc_urlencoded_extra()} {type(self.__generate_jdbc_urlencoded_extra())}"
             # TODO: Later, send master url
         ]
 
