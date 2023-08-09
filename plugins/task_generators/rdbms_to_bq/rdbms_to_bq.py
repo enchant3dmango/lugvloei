@@ -166,7 +166,7 @@ class RDBMSToBQGenerator:
 
     def __generate_jdbc_url(self, **kwargs) -> str:
         db_type = self.__generate_jdbc_uri().split("://")[0]
-        db_conn = self.__generate_jdbc_uri().split("@")[1].split("?")[0]
+        db_conn = self.__generate_jdbc_uri().split("@")[1]
 
         return f'{db_type}://{db_conn}'
 
