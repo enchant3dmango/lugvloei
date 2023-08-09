@@ -160,13 +160,9 @@ class RDBMSToBQGenerator:
         return get_onelined_string(f'{query}')
 
     def __generate_jdbc_uri(self, **kwargs) -> str:
-        jdbc_conn = BaseHook.get_connection(self.source_connection)
+        jdbc_uri = f'jdbc:{BaseHook.get_connection(self.source_connection).get_uri()}'
 
-        jdbc_uri = f'jdbc:{jdbc_conn.get_uri()}'
-        jdbc_extras = f'//@{jdbc_conn.get_extra()} {jdbc_conn.extra_dejson}'
-
-        # return (jdbc_uri.replace('postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri)
-        return jdbc_extras
+        return (jdbc_uri.replace('postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri)
 
     def __generate_jdbc_url(self, **kwargs) -> str:
         db_type = self.__generate_jdbc_uri().split("://")[0]
@@ -177,7 +173,7 @@ class RDBMSToBQGenerator:
     def __generate_jdbc_credential(self, **kwargs) -> List[str]:
         credential = BaseHook.get_connection(self.source_connection)
 
-        return f'{credential.login}:{credential.password}'
+        return f'{credential.login}:{credential.password}?{credential.extra_dejson}'
 
     def generate_task(self):
         schema = self.__generate_schema()
