@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from typing import List
+from urllib.parse import urlencode
 
 import yaml
 from google.cloud import bigquery
@@ -166,7 +167,7 @@ class RDBMSToBQGenerator:
 
     def __generate_jdbc_url(self, **kwargs) -> str:
         db_type = self.__generate_jdbc_uri().split("://")[0]
-        db_conn = self.__generate_jdbc_uri().split("@")[1]
+        db_conn = self.__generate_jdbc_uri().split("@")[1].split("?")[0]
 
         return f'{db_type}://{db_conn}'
 
@@ -174,6 +175,12 @@ class RDBMSToBQGenerator:
         credential = BaseHook.get_connection(self.source_connection)
 
         return f'{credential.login}:{credential.password}'
+
+    def __generate_jdbc_urlencoded_extra(self, **kwargs):
+        return BaseHook.get_connection(self.source_connection).get_extra()
+
+    def __generate_jdbc_urlencoded_extra_1(self, **kwargs):
+        return urlencode(BaseHook.get_connection(self.source_connection).get_extra())
 
     def generate_task(self):
         schema = self.__generate_schema()
@@ -198,6 +205,8 @@ class RDBMSToBQGenerator:
             f"--task_type={self.task_type}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
             f"--schema={onelined_schema_string}",
+            f"--extra={self.__generate_jdbc_urlencoded_extra()}"
+            f"--extra1={self.__generate_jdbc_urlencoded_extra_1()}"
             # TODO: Later, send master url
         ]
 
