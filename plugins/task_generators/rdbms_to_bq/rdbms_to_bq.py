@@ -190,13 +190,15 @@ class RDBMSToBQGenerator:
             f"--target_bq_load_method={self.target_bq_load_method}",
             f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
             f"--full_target_bq_table={self.full_target_bq_table}",
+            f"--target_bq_project={self.target_bq_project}",
             f"--jdbc_credential={self.__generate_jdbc_credential()}",
             f"--partition_key={self.target_bq_partition_key}",
             f"--extract_query={extract_query}",
             f"--merge_query={merge_query}",
             f"--task_type={self.task_type}",
-            f"--schema={onelined_schema_string}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
+            f"--schema={onelined_schema_string}",
+            # TODO: Later, send master url
         ]
 
         spark_kubernetes_base_task_id = f'{self.target_bq_dataset}-{self.target_bq_table}'.replace('_', '-')
