@@ -1,13 +1,11 @@
-from ast import literal_eval
 import json
 import logging
 import os
+from ast import literal_eval
 from typing import List
 from urllib.parse import urlencode
 
 import yaml
-from google.cloud import bigquery
-
 from airflow.hooks.base import BaseHook
 from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import \
     SparkKubernetesOperator
@@ -15,6 +13,8 @@ from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import \
     SparkKubernetesSensor
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from google.cloud import bigquery
+
 from plugins.constants.types import (DELSERT, EXTENDED_SCHEMA, MYSQL_TO_BQ,
                                      POSTGRES_TO_BQ, PYTHONPATH,
                                      SPARK_KUBERNETES_OPERATOR,
@@ -183,8 +183,7 @@ class RDBMSToBQGenerator:
     def __generate_jdbc_urlencoded_extra(self, **kwargs):
         extras = self.__get_conn().extra
 
-        return json.loads(extras)
-        # return urlencode(literal_eval(extras))
+        return urlencode(literal_eval(extras))
 
     def generate_task(self):
         schema = self.__generate_schema()
@@ -209,7 +208,6 @@ class RDBMSToBQGenerator:
             f"--task_type={self.task_type}",
             f"--jdbc_url={self.__generate_jdbc_url()}",
             f"--schema={onelined_schema_string}",
-            f"--extras={self.__generate_jdbc_urlencoded_extra()}, {type(self.__generate_jdbc_urlencoded_extra())}"
             # TODO: Later, send master url
         ]
 
