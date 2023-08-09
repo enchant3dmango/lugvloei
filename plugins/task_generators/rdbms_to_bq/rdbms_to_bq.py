@@ -173,7 +173,7 @@ class RDBMSToBQGenerator:
     def __generate_jdbc_credential(self, **kwargs) -> List[str]:
         credential = BaseHook.get_connection(self.source_connection)
 
-        return f'{credential.login}:{credential.password}?{credential.extra_dejson}'
+        return f'{credential.login}:{credential.password}?{credential.extra}'
 
     def generate_task(self):
         schema = self.__generate_schema()
