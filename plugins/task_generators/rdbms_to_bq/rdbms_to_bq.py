@@ -180,8 +180,8 @@ class RDBMSToBQGenerator:
     def __generate_jdbc_urlencoded_extra(self, **kwargs):
         extras = BaseHook.get_connection(self.source_connection).extra
 
-        return extras
-        # return urlencode(literal_eval(extras))
+        # return extras
+        return urlencode(literal_eval(extras))
 
     def generate_task(self):
         schema = self.__generate_schema()
