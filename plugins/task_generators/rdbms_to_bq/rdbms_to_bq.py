@@ -183,7 +183,7 @@ class RDBMSToBQGenerator:
     def __generate_jdbc_urlencoded_extra(self, **kwargs):
         extras = self.__get_conn().extra
 
-        return extras
+        return json.loads(extras)
         # return urlencode(literal_eval(extras))
 
     def generate_task(self):
