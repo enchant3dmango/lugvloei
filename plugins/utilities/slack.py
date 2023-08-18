@@ -20,15 +20,15 @@ def generate_message(context):
                 "fields": [
                     {
                         "title": "Dag ID:",
-                        "value": f"{dag_id}",
+                        "value": f"{dag_id}"
                     },
                     {
                         "title": "Task ID:",
-                        "value": "_<{}|{}>_".format(log_url, task_id),
+                        "value": "_<{}|{}>_".format(log_url, task_id)
                     },
                     {
                         "title": "Message:",
-                        "value": f"{error_message}",
+                        "value": f"{error_message}"
                     }
                 ],
                 "footer": f"Execution Date : {execution_date}"
