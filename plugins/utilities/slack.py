@@ -6,8 +6,10 @@ from plugins.constants.connections import (SLACK_WEBHOOK_CONNECTION_ID,
 
 def generate_message(context):
     dag_id         = context.get('task_instance').dag_id
+    dag_owner      = context.get('task_instance').owner
     task_id        = context.get('task_instance').task_id
     log_url        = context.get('task_instance').log_url
+    retry_count    = context.get('task_instance').try_number - 1
     execution_date = context.get('execution_date')
     error_message  = (str(context['exception'])[:140] + '...') if len(
         str(context['exception'])) > 140 else str(context['exception'])
@@ -19,18 +21,29 @@ def generate_message(context):
                 "color": "#E01E5A",
                 "fields": [
                     {
-                        "title": "Dag ID:",
+                        "title": "DAG ID:",
                         "value": f"*{dag_id}*",
                         "short": True
                     },
                     {
                         "title": "Task ID:",
-                        "value": "_<{}|{}>_".format(log_url, task_id),
+                        "value": f"_<{log_url}|{task_id}>_",
+                        "short": True
+                    },
+                    {
+                        "title": "DAG Owner:",
+                        "value": f"{dag_owner}",
+                        "short": True
+                    },
+                    {
+                        "title": "Retry Count:",
+                        "value": f"{retry_count}",
                         "short": True
                     },
                     {
                         "title": "Message:",
-                        "value": f"{error_message}"
+                        "value": f"{error_message}",
+                        "short": False
                     }
                 ],
                 "footer": f"Execution Date : {execution_date}"
