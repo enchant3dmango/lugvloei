@@ -14,7 +14,7 @@ from plugins.utilities.slack import on_failure_callback
 
 if DAG_GENERATOR_FEATURE_FLAG:
     config_files = get_dag_yaml_config_files(
-        f'{PYTHONPATH}/dags', '*.yaml')
+        f'{PYTHONPATH}/dags', 'dag.yaml')
 
     for config_file in config_files:
         with open(config_file) as file:

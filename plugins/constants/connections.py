@@ -1,5 +1,5 @@
-from airflow.models import Connection
 from airflow.hooks.base import BaseHook
 
-SLACK_WEBHOOK_CONNECTION_ID = BaseHook.get_connection('SLACK_WEBHOOK_CONNECTION_ID').host
-
+SLACK_WEBHOOK_CONNECTION_ID = 'SLACK_WEBHOOK_CONNECTION_ID'
+SLACK_WEBHOOK_TOKEN = BaseHook.get_connection(
+    'SLACK_WEBHOOK_CONNECTION_ID').password

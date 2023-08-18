@@ -6,7 +6,7 @@ dag:
     depends_on_past: True
     catch_up: False
     retry:
-      count: 4
+      count: 0
       delay_in_minute: 1
   tags:
     - mysql
