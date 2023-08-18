@@ -50,9 +50,11 @@ def on_failure_callback(context):
     SLACK_WEBHOOK_TOKEN = BaseHook.get_connection(SLACK_WEBHOOK_CONNECTION_ID).host
 
     operator = SlackWebhookOperator(
+        task_id='on_failure_callback',
         slack_webhook_conn_id=SLACK_WEBHOOK_CONNECTION_ID,
         webhook_token=SLACK_WEBHOOK_TOKEN,
         message=generate_message(context=context),
+        channel="#de-airflow-alert"
     )
 
     return operator.execute(context=context)

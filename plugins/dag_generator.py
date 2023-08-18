@@ -37,17 +37,18 @@ if DAG_GENERATOR_FEATURE_FLAG:
             minutes=dag_behavior['retry']['delay_in_minute'])
 
         default_args = {
-            'owner': dag_owner,
-            'priority_weight': dag_priority_weight,
-            'email': ['data.engineer@sirclo.com'],
-            'depend_on_past': depend_on_past,
-            'retries': retries,
-            'retry_delay': retry_delay
+            'owner'              : dag_owner,
+            'priority_weight'    : dag_priority_weight,
+            'email'              : ['data.engineer@sirclo.com'],
+            'depend_on_past'     : depend_on_past,
+            'retries'            : retries,
+            'retry_delay'        : retry_delay,
+            'on_failure_callback': on_failure_callback
         }
 
         @dag(catchup=catchup, dag_id=dag_id, default_args=default_args, schedule=schedule,
              start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), tags=dag_tags,
-             template_searchpath=PYTHONPATH, on_failure_callback=on_failure_callback)
+             template_searchpath=PYTHONPATH)
         def generate_dag():
             generate_tasks(dag_id=dag_id, config=config.get('task'))
         generate_dag()
