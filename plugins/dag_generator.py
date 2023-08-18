@@ -8,8 +8,9 @@ from airflow.decorators import dag
 
 from plugins.constants.types import PYTHONPATH
 from plugins.constants.variables import DAG_GENERATOR_FEATURE_FLAG
-from plugins.task_generator import generate_task
-from plugins.utils.miscellaneous import get_dag_yaml_config_files
+from plugins.task_generator import generate_tasks
+from plugins.utilities.miscellaneous import get_dag_yaml_config_files
+from plugins.utilities.slack import on_failure_callback
 
 if DAG_GENERATOR_FEATURE_FLAG:
     config_files = get_dag_yaml_config_files(
@@ -46,7 +47,7 @@ if DAG_GENERATOR_FEATURE_FLAG:
 
         @dag(catchup=catchup, dag_id=dag_id, default_args=default_args, schedule=schedule,
              start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), tags=dag_tags,
-             template_searchpath=PYTHONPATH)
+             template_searchpath=PYTHONPATH, on_failure_callback=on_failure_callback())
         def generate_dag():
-            generate_task(dag_id=dag_id, config=config.get('task'))
+            generate_tasks(dag_id=dag_id, config=config.get('task'))
         generate_dag()

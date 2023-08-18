@@ -24,7 +24,7 @@ from plugins.constants.variables import (RDBMS_TO_BQ_APPLICATION_FILE,
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utils.miscellaneous import get_onelined_string
+from plugins.utilities.miscellaneous import get_onelined_string
 
 
 class RDBMSToBQGenerator:
@@ -185,7 +185,7 @@ class RDBMSToBQGenerator:
 
         return urlencode(literal_eval(extras))
 
-    def generate_task(self):
+    def generate_tasks(self):
         schema = self.__generate_schema()
         schema_string = f'{json.dumps(self.__generate_schema(), separators=(",", ":"))}'
         onelined_schema_string = get_onelined_string(schema_string)
