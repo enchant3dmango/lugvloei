@@ -47,7 +47,7 @@ if DAG_GENERATOR_FEATURE_FLAG:
 
         @dag(catchup=catchup, dag_id=dag_id, default_args=default_args, schedule=schedule,
              start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), tags=dag_tags,
-             template_searchpath=PYTHONPATH, on_failure_callback=on_failure_callback())
+             template_searchpath=PYTHONPATH, on_failure_callback=on_failure_callback)
         def generate_dag():
             generate_tasks(dag_id=dag_id, config=config.get('task'))
         generate_dag()
