@@ -3,9 +3,9 @@ import os
 import re
 
 
-def get_dag_yaml_config_files(directory, suffix):
+def get_config_files(directory, suffix):
     """
-    Function to read DAG YAML config files.
+    Function to read config files based on directory and filename suffix.
     """
 
     matches = []
@@ -43,10 +43,10 @@ def get_parsed_schema_type(schema_type: str) -> str:
 
 def get_escaped_string(string: str) -> str:
     """
-    Function to escape and convert multi-lined string into one-lined string.
+    Function to escape string.
     """
 
-    return re.escape(re.sub(r'\s+', ' ', string).replace('\n', ''))
+    return re.escape(string)
 
 def get_onelined_string(string: str) -> str:
     """

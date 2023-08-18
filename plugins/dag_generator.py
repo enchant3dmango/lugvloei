@@ -9,11 +9,11 @@ from airflow.decorators import dag
 from plugins.constants.types import PYTHONPATH
 from plugins.constants.variables import DAG_GENERATOR_FEATURE_FLAG
 from plugins.task_generator import generate_tasks
-from plugins.utilities.miscellaneous import get_dag_yaml_config_files
+from plugins.utilities.miscellaneous import get_config_files
 from plugins.utilities.slack import on_failure_callback
 
 if DAG_GENERATOR_FEATURE_FLAG:
-    config_files = get_dag_yaml_config_files(
+    config_files = get_config_files(
         f'{PYTHONPATH}/dags', 'dag.yaml')
 
     for config_file in config_files:
@@ -37,12 +37,12 @@ if DAG_GENERATOR_FEATURE_FLAG:
             minutes=dag_behavior['retry']['delay_in_minute'])
 
         default_args = {
-            'owner'              : dag_owner,
-            'priority_weight'    : dag_priority_weight,
-            'email'              : ['data.engineer@sirclo.com'],
-            'depend_on_past'     : depend_on_past,
-            'retries'            : retries,
-            'retry_delay'        : retry_delay,
+            'owner': dag_owner,
+            'priority_weight': dag_priority_weight,
+            'email': ['data.engineer@sirclo.com'],
+            'depend_on_past': depend_on_past,
+            'retries': retries,
+            'retry_delay': retry_delay,
             'on_failure_callback': on_failure_callback
         }
 
