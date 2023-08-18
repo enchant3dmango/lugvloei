@@ -13,7 +13,7 @@ def generate_message(context):
         str(context['exception'])) > 140 else str(context['exception'])
 
     return {
-        "text": ":alert: [Airflow] Task Failed, kindly fix it soon!",
+        "text": ":alert: [Airflow] Task failed, kindly fix it soon!",
         "attachments": [
             {
                 "color": "#E01E5A",
@@ -43,10 +43,11 @@ def on_failure_callback(context):
     """
 
     operator = SlackWebhookOperator(
-        task_id='on_failure_callback',
-        slack_webhook_conn_id=SLACK_WEBHOOK_CONNECTION_ID,
-        webhook_token=SLACK_WEBHOOK_TOKEN,
-        message=generate_message(context=context),
+        task_id               = 'on_failure_callback',
+        slack_webhook_conn_id = SLACK_WEBHOOK_CONNECTION_ID,
+        webhook_token         = SLACK_WEBHOOK_TOKEN,
+        message               = generate_message(context=context)['text'],
+        attachments           = generate_message(context=context)['attachments']
     )
 
     return operator.execute(context=context)
