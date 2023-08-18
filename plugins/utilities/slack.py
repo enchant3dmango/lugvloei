@@ -13,18 +13,20 @@ def generate_message(context):
         str(context['exception'])) > 140 else str(context['exception'])
 
     return {
-        "text": ":alert: [Airflow] Task failed, kindly fix it soon!",
+        "text": ":alert: [Airflow] Task Failure Alert!",
         "attachments": [
             {
                 "color": "#E01E5A",
                 "fields": [
                     {
                         "title": "Dag ID:",
-                        "value": f"{dag_id}"
+                        "value": f"*{dag_id}*",
+                        "short": True
                     },
                     {
                         "title": "Task ID:",
-                        "value": "_<{}|{}>_".format(log_url, task_id)
+                        "value": "_<{}|{}>_".format(log_url, task_id),
+                        "short": True
                     },
                     {
                         "title": "Message:",
