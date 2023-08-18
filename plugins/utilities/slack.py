@@ -6,7 +6,7 @@ from plugins.constants.connections import (SLACK_WEBHOOK_CONNECTION_ID,
 
 def generate_message(context):
     dag_id         = context.get('task_instance').dag_id
-    dag_owner      = context.get('task_instance').owner
+    dag_owner      = context.get("dag_run").owner
     task_id        = context.get('task_instance').task_id
     log_url        = context.get('task_instance').log_url
     retry_count    = context.get('task_instance').try_number - 1
