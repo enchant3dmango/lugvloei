@@ -21,17 +21,14 @@ def generate_message(context):
                     {
                         "title": "Dag ID:",
                         "value": f"{dag_id}",
-                        "short": True
                     },
                     {
                         "title": "Task ID:",
                         "value": "_<{}|{}>_".format(log_url, task_id),
-                        "short": True
                     },
                     {
                         "title": "Message:",
                         "value": f"{error_message}",
-                        "short": True
                     }
                 ],
                 "footer": f"Execution Date : {execution_date}"
