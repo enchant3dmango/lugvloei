@@ -10,6 +10,7 @@ def generate_message(context):
     task_id        = context.get('task_instance').task_id
     log_url        = context.get('task_instance').log_url
     retry_count    = context.get('task_instance').try_number - 1
+    run_id         = context.get('task_instance').run_id
     execution_date = context.get('execution_date')
     error_message  = (str(context['exception'])[:140] + '...') if len(
         str(context['exception'])) > 140 else str(context['exception'])
@@ -46,7 +47,8 @@ def generate_message(context):
                         "short": False
                     }
                 ],
-                "footer": f"Execution Date : {execution_date}"
+                "footer": f"Run ID : {run_id}"
+                "footer": f"Execution Date : {execution_date}",
             }
         ]
     }
