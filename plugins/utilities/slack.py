@@ -47,7 +47,7 @@ def generate_message(context):
                         "short": False
                     }
                 ],
-                "footer": f"Run ID : {run_id}"
+                "footer": f"Run ID : {run_id}",
                 "footer": f"Execution Date : {execution_date}",
             }
         ]
