@@ -37,12 +37,12 @@ if DAG_GENERATOR_FEATURE_FLAG:
             minutes=dag_behavior['retry']['delay_in_minute'])
 
         default_args = {
-            'owner'              : dag_owner,
-            'priority_weight'    : dag_priority_weight,
-            'email'              : ['data.engineer@sirclo.com'],
-            'depend_on_past'     : depend_on_past,
-            'retries'            : retries,
-            'retry_delay'        : retry_delay,
+            'owner': dag_owner,
+            'priority_weight': dag_priority_weight,
+            'email': ['data.engineer@sirclo.com'],
+            'depend_on_past': depend_on_past,
+            'retries': retries,
+            'retry_delay': retry_delay,
             'on_failure_callback': on_failure_callback
         }
 
