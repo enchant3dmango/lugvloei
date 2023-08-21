@@ -4,7 +4,7 @@ from plugins.constants.connections import (SLACK_WEBHOOK_CONNECTION_ID,
                                            SLACK_WEBHOOK_TOKEN)
 
 
-def generate_message(context):
+def generate_failure_message(context):
     dag_id         = context.get('task_instance').dag_id
     dag_owner      = context.get("dag").owner
     task_id        = context.get('task_instance').task_id
@@ -62,8 +62,8 @@ def on_failure_callback(context):
         task_id               = 'on_failure_callback',
         slack_webhook_conn_id = SLACK_WEBHOOK_CONNECTION_ID,
         webhook_token         = SLACK_WEBHOOK_TOKEN,
-        message               = generate_message(context=context)['text'],
-        attachments           = generate_message(context=context)['attachments']
+        message               = generate_failure_message(context=context)['text'],
+        attachments           = generate_failure_message(context=context)['attachments']
     )
 
     return operator.execute(context=context)
