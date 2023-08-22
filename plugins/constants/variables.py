@@ -11,3 +11,9 @@ else:
     raise ValueError("DAG_GENERATOR_FEATURE_FLAG must be 0 or 1.")
 
 GCP_CONN_ID = Variable.get('GCP_CONN_ID', None)
+
+# Length to retain the log files if not already provided in the conf. If this
+# is set to 30, the job will remove those files that are 30 days old or older.
+DEFAULT_MAX_DB_ENTRY_AGE_IN_DAYS = int(
+    Variable.get("airflow_db_cleanup__max_db_entry_age_in_days", 30)
+)

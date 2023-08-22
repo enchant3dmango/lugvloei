@@ -32,3 +32,6 @@ EXTENDED_SCHEMA = [
 # Environment
 PYTHONPATH = os.environ["PYTHONPATH"]
 AIRFLOW_HOME = os.environ["AIRFLOW_HOME"]
+
+# Ownership
+DAG_OWNER_NAME = 'example@email.com'
