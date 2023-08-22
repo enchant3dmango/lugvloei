@@ -28,8 +28,9 @@ having too much data in your Airflow MetaStore.
 """
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 
+import airflow
 import dateutil.parser
 from airflow import settings
 from airflow.jobs.base_job import BaseJob
@@ -41,20 +42,19 @@ from sqlalchemy import and_, func
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import load_only
 
-from plugins.constants.types import DE_DAG_OWNER_NAME
+from plugins.constants.types import DAG_OWNER_NAME
 from plugins.constants.variables import DEFAULT_MAX_DB_ENTRY_AGE_IN_DAYS
-from plugins.utilities.slack import on_failure_callback
 
 now = timezone.utcnow
 
 # metadata_maintenance
 DAG_ID = os.path.basename(__file__).replace(".pyc", "").replace(".py", "")
-START_DATE = datetime(2023, 8, 1)
+START_DATE = airflow.utils.dates.days_ago(1)
 # How often to Run. @daily - Once a day at Midnight (UTC)
-SCHEDULE_INTERVAL = "@monthly"
+SCHEDULE_INTERVAL = "@daily"
 # Who is listed as the owner of this DAG in the Airflow Web Server
 # List of email address to send email alerts to if this job fails
-ALERT_EMAIL_ADDRESSES = [DE_DAG_OWNER_NAME]
+ALERT_EMAIL_ADDRESSES = ['example@email.com']
 # Airflow version used by the environment in list form, value stored in
 # airflow_version is in format e.g "2.3.4+composer"
 AIRFLOW_VERSION = airflow_version[: -len("+composer")].split(".")
@@ -140,7 +140,7 @@ except Exception as e:
     logging.error(e)
 
 default_args = {
-    "owner": DE_DAG_OWNER_NAME,
+    "owner": DAG_OWNER_NAME,
     "depends_on_past": False,
     "email": ALERT_EMAIL_ADDRESSES,
     "email_on_failure": True,
@@ -148,7 +148,6 @@ default_args = {
     "start_date": START_DATE,
     "retries": 1,
     "retry_delay": timedelta(minutes=1),
-    'on_failure_callback': on_failure_callback
 }
 
 dag = DAG(

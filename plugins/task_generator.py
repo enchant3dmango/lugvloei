@@ -4,7 +4,6 @@ from plugins.task_generators.bq_to_parquet.bq_to_parquet import \
     BQToParquetGenerator
 from plugins.task_generators.rdbms_to_bq.rdbms_to_bq import RDBMSToBQGenerator 
 
-
 def generate_tasks(dag_id, config):
 
     if config['type'] in RDBMS_TO_BQ.__members__:
