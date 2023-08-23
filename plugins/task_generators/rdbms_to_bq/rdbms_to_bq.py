@@ -6,25 +6,31 @@ from typing import List
 from urllib.parse import urlencode
 
 import yaml
-from airflow.hooks.base import BaseHook
-from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import \
-    SparkKubernetesOperator
-from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import \
-    SparkKubernetesSensor
-from airflow.providers.mysql.hooks.mysql import MySqlHook
-from airflow.providers.postgres.hooks.postgres import PostgresHook
 from google.cloud import bigquery
+from google.cloud.bigquery import (DestinationFormat, SourceFormat,
+                                   WriteDisposition)
 
-from plugins.constants.types import (DELSERT, EXTENDED_SCHEMA, MYSQL_TO_BQ,
-                                     POSTGRES_TO_BQ, PYTHONPATH,
+from airflow.hooks.base import BaseHook
+from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
+from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKubernetesSensor
+from airflow.providers.google.cloud.operators.bigquery import (
+    BigQueryDeleteTableOperator, BigQueryInsertJobOperator)
+from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
+from airflow.providers.google.cloud.transfers.mysql_to_gcs import MySQLToGCSOperator
+from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
+from plugins.constants.types import (AIRFLOW, APPEND, DELSERT, EXTENDED_SCHEMA,
+                                     MERGE, MYSQL_TO_BQ, POSTGRES_TO_BQ,
+                                     PYTHONPATH, SPARK,
                                      SPARK_KUBERNETES_OPERATOR,
                                      SPARK_KUBERNETES_SENSOR, UPSERT)
-from plugins.constants.variables import (RDBMS_TO_BQ_APPLICATION_FILE,
+from plugins.constants.variables import (DEFAULT_GCS_BUCKET, GCP_CONN_ID,
+                                         RDBMS_TO_BQ_APPLICATION_FILE,
                                          SPARK_JOB_NAMESPACE)
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utilities.miscellaneous import get_onelined_string
+from plugins.utilities.miscellaneous import (get_iso8601_date,
+                                             get_onelined_string)
 
 
 class RDBMSToBQGenerator:
@@ -40,30 +46,27 @@ class RDBMSToBQGenerator:
 
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.dag_id                    : str             = dag_id
-        self.bq_client                 : bigquery.Client = bigquery.Client()
-        self.task_type                 : str             = config['type']
-        self.source_connection         : str             = config['source']['connection']
-        self.source_schema             : str             = config['source']['schema']
-        self.source_table              : str             = config['source']['table']
-        self.source_timestamp_keys     : List[str]       = config['source']['timestamp_keys']
-        self.source_unique_keys        : List[str]       = config['source']['unique_keys']
-        self.target_bq_project         : str             = config['target']['bq']['project']
-        self.target_bq_dataset         : str             = config['target']['bq']['dataset']
-        self.target_bq_table           : str             = config['target']['bq']['table']
-        self.target_bq_table_temp      : str             = f'{self.target_bq_table}_temp'
-        self.target_bq_load_method     : str             = config['target']['bq']['load_method']
-        self.target_bq_partition_key   : str             = config['target']['bq']['partition_key']
-        self.full_target_bq_table      : str             = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
-        self.full_target_bq_table_temp : str             = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table_temp}'
-        self.target_gcs_project        : str             = config['target']['gcs']['project']
-        self.target_gcs_bucket         : str             = config['target']['gcs']['bucket']
+        self.dag_id                   : str             = dag_id
+        self.bq_client                : bigquery.Client = bigquery.Client()
+        self.task_type                : str             = config['type']
+        self.task_mode                : str             = config['mode']
+        self.source_connection        : str             = config['source']['connection']
+        self.source_schema            : str             = config['source']['schema']
+        self.source_table             : str             = config['source']['table']
+        self.source_timestamp_keys    : List[str]       = config['source']['timestamp_keys']
+        self.source_unique_keys       : List[str]       = config['source']['unique_keys']
+        self.target_bq_project        : str             = config['target']['bq']['project']
+        self.target_bq_dataset        : str             = config['target']['bq']['dataset']
+        self.target_bq_table          : str             = config['target']['bq']['table']
+        self.target_bq_table_temp     : str             = f'{self.target_bq_table}_temp'
+        self.target_bq_load_method    : str             = config['target']['bq']['load_method']
+        self.target_bq_partition_key  : str             = config['target']['bq']['partition_key']
+        self.full_target_bq_table     : str             = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
+        self.full_target_bq_table_temp: str             = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table_temp}'
 
         if self.task_type == POSTGRES_TO_BQ:
-            self.sql_hook = PostgresHook(postgres_conn_id=self.source_connection)
-            self.quoting = lambda text: f"'{text}'"
+            self.quoting = lambda text: f'"{text}"'
         elif self.task_type == MYSQL_TO_BQ:
-            self.sql_hook = MySqlHook(mysql_conn_id=self.source_connection)
             self.quoting = lambda text: f'`{text}`'
         else:
             raise Exception('Task type is not supported!')
@@ -93,20 +96,25 @@ class RDBMSToBQGenerator:
 
         return schema
 
-    def __generate_extract_query(self, schema: list, **kwargs) -> str:
-        # Get all field name and the extended field name
-        extended_fields = [schema_detail["name"]
-                           for schema_detail in EXTENDED_SCHEMA]
-        fields = [
-            schema_detail["name"]
-            for schema_detail in schema
-            if schema_detail["name"] not in extended_fields
-        ]
+    def __generate_extract_query(self, schema: list = None, **kwargs) -> str:
+        # Get all field name and exclude the extended field name to be selected
+        if schema is not None:
+            extended_fields = [schema_detail["name"]
+                               for schema_detail in EXTENDED_SCHEMA]
+            fields = [
+                schema_detail["name"]
+                for schema_detail in schema
+                if schema_detail["name"] not in extended_fields
+            ]
+
+            selected_fields = ', '.join([
+                self.quoting(field)
+                for field in fields
+            ])
 
         # Generate query
         source_extract_query = SOURCE_EXTRACT_QUERY.substitute(
-            selected_fields=', '.join([self.quoting(field)
-                                       for field in fields]),
+            selected_fields=selected_fields,
             load_timestamp='CURRENT_TIMESTAMP' if self.task_type == POSTGRES_TO_BQ else 'CURRENT_TIMESTAMP()',
             source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
         )
@@ -122,23 +130,26 @@ class RDBMSToBQGenerator:
             )
 
             # Append extract query condition
-            query = source_extract_query + f" WHERE {condition}"
+            source_extract_query = source_extract_query + f" WHERE {condition}"
 
-        logging.info(f'Extract query: {query}')
+        logging.info(f'Extract query: {source_extract_query}')
 
-        return get_onelined_string(f'({query}) AS cte')
+        if self.task_mode == SPARK:
+            source_extract_query = f'({source_extract_query}) AS cte'
+
+        return get_onelined_string(source_extract_query)
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
-        audit_condition = ''
+        partition_filter = ''
         query = None
 
-        # Query to get partition_key date list from temp table to be used as audit condition in DELSERT_QUERY
+        # Query to get partition_key date list from temp table to be used as partition filter
         if self.target_bq_partition_key is not None:
             temp_table_partition_date_query = TEMP_TABLE_PARTITION_DATE_QUERY.substitute(
                 partition_key=self.target_bq_partition_key,
                 target_bq_table_temp=self.full_target_bq_table_temp
             )
-            audit_condition = f"AND DATE(x.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
+            partition_filter = f"AND DATE(x.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
 
         # Construct delsert query
         if self.target_bq_load_method == DELSERT:
@@ -147,7 +158,7 @@ class RDBMSToBQGenerator:
                 target_bq_table_temp=self.full_target_bq_table_temp,
                 on_keys=' AND '.join(
                     [f"COALESCE(CAST(x.`{key}` as string), 'NULL') = COALESCE(CAST(y.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
-                audit_condition=audit_condition,
+                partition_filter=partition_filter,
                 insert_fields=', '.join(
                     [f"`{field['name']}`" for field in schema])
             )
@@ -157,16 +168,19 @@ class RDBMSToBQGenerator:
 
         # Construct upsert query
         elif self.target_bq_load_method == UPSERT:
-            query = UPSERT_QUERY.substitute(
+            merge_query = UPSERT_QUERY.substitute(
                 target_bq_table=self.full_target_bq_table,
                 target_bq_table_temp=self.full_target_bq_table_temp,
                 on_keys=' AND '.join(
                     [f"COALESCE(CAST(x.`{key}` as string), 'NULL') = COALESCE(CAST(y.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
+                partition_filter=partition_filter,
                 update_fields=', '.join(
                     [f"x.`{field['name']}` = y.`{field['name']}`" for field in schema]),
                 insert_fields=', '.join(
                     [f"`{field['name']}`" for field in schema])
             )
+
+            query = temp_table_partition_date_query + merge_query
             logging.info(f'Upsert query: {query}')
 
         return get_onelined_string(f'{query}')
@@ -174,14 +188,13 @@ class RDBMSToBQGenerator:
     def __get_conn(self, **kwargs) -> str:
         return BaseHook.get_connection(self.source_connection)
 
-    def __generate_jdbc_uri(self, **kwargs) -> str:
-        jdbc_uri = f'jdbc:{self.__get_conn().get_uri()}'
-
-        return (jdbc_uri.replace('postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri)
-
     def __generate_jdbc_url(self, **kwargs) -> str:
-        db_type = self.__generate_jdbc_uri().split("://")[0]
-        db_conn = self.__generate_jdbc_uri().split("@")[1].split("?")[0]
+        jdbc_uri = f'jdbc:{self.__get_conn().get_uri()}'
+        jdbc_uri.replace(
+            'postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri
+
+        db_type = jdbc_uri.split("://")[0]
+        db_conn = jdbc_uri.split("@")[1].split("?")[0]
 
         return f'{db_type}://{db_conn}?{self.__generate_jdbc_urlencoded_extra()}' if self.__get_conn().extra else f'{db_type}://{db_conn}'
 
@@ -196,45 +209,140 @@ class RDBMSToBQGenerator:
         return urlencode(literal_eval(extras))
 
     def generate_tasks(self):
-        schema = self.__generate_schema()
-        schema_string = f'{json.dumps(self.__generate_schema(), separators=(",", ":"))}'
-        onelined_schema_string = get_onelined_string(schema_string)
+        if self.task_mode == SPARK:
+            schema_string = f'{json.dumps(self.__generate_schema(), separators=(",", ":"))}'
+            onelined_schema_string = get_onelined_string(schema_string)
 
-        extract_query = self.__generate_extract_query(schema=schema)
-        merge_query = self.__generate_merge_query(schema=schema)
+            schema = self.__generate_schema()
+            extract_query = self.__generate_extract_query(schema=schema)
+            merge_query = self.__generate_merge_query(schema=schema)
 
-        with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
-            application_file = yaml.safe_load(f)
+            with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
+                application_file = yaml.safe_load(f)
 
-        application_file['spec']['arguments'] = [
-            f"--target_bq_load_method={self.target_bq_load_method}",
-            f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
-            f"--full_target_bq_table={self.full_target_bq_table}",
-            f"--target_bq_project={self.target_bq_project}",
-            f"--jdbc_credential={self.__generate_jdbc_credential()}",
-            f"--partition_key={self.target_bq_partition_key}",
-            f"--extract_query={extract_query}",
-            f"--merge_query={merge_query}",
-            f"--task_type={self.task_type}",
-            f"--jdbc_url={self.__generate_jdbc_url()}",
-            f"--schema={onelined_schema_string}",
-            # TODO: Later, send master url
-        ]
+            application_file['spec']['arguments'] = [
+                f"--target_bq_load_method={self.target_bq_load_method}",
+                f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
+                f"--full_target_bq_table={self.full_target_bq_table}",
+                f"--target_bq_project={self.target_bq_project}",
+                f"--jdbc_credential={self.__generate_jdbc_credential()}",
+                f"--partition_key={self.target_bq_partition_key}",
+                f"--extract_query={extract_query}",
+                f"--merge_query={merge_query}",
+                f"--task_type={self.task_type}",
+                f"--jdbc_url={self.__generate_jdbc_url()}",
+                f"--schema={onelined_schema_string}",
+                # TODO: Later, send master url
+            ]
 
-        spark_kubernetes_base_task_id = f'{self.target_bq_dataset}-{self.target_bq_table}'.replace('_', '-')
-        spark_kubernetes_operator_task_id = f'{spark_kubernetes_base_task_id}-{SPARK_KUBERNETES_OPERATOR}'
-        spark_kubernetes_operator_task = SparkKubernetesOperator(
-            task_id          = spark_kubernetes_operator_task_id,
-            application_file = yaml.safe_dump(application_file),
-            namespace        = SPARK_JOB_NAMESPACE,
-            do_xcom_push     = True,
-        )
+            spark_kubernetes_base_task_id = f'{self.target_bq_dataset}-{self.target_bq_table}'.replace(
+                '_', '-').replace('bronze-', '')
+            spark_kubernetes_operator_task_id = f'{spark_kubernetes_base_task_id}-{SPARK_KUBERNETES_OPERATOR}'
+            spark_kubernetes_operator_task = SparkKubernetesOperator(
+                task_id          = spark_kubernetes_operator_task_id,
+                application_file = yaml.safe_dump(application_file),
+                namespace        = SPARK_JOB_NAMESPACE,
+                do_xcom_push     = True
+            )
 
-        spark_kubernetes_sensor_task = SparkKubernetesSensor(
-            task_id          = f"{spark_kubernetes_base_task_id}-{SPARK_KUBERNETES_SENSOR}",
-            namespace        = SPARK_JOB_NAMESPACE,
-            application_name = f"{{{{ task_instance.xcom_pull(task_ids='{spark_kubernetes_operator_task_id}')['metadata']['name'] }}}}",
-            attach_log       = True
-        )
+            spark_kubernetes_sensor_task = SparkKubernetesSensor(
+                task_id          = f"{spark_kubernetes_base_task_id}-{SPARK_KUBERNETES_SENSOR}",
+                namespace        = SPARK_JOB_NAMESPACE,
+                application_name = f"{{{{ task_instance.xcom_pull(task_ids='{spark_kubernetes_operator_task_id}')['metadata']['name'] }}}}",
+                attach_log       = True
+            )
 
-        return spark_kubernetes_operator_task >> spark_kubernetes_sensor_task
+            return spark_kubernetes_operator_task >> spark_kubernetes_sensor_task
+
+        elif self.task_mode == AIRFLOW:
+            schema = self.__generate_schema()
+            extract_query = self.__generate_extract_query(schema=schema)
+            iso8601_date = get_iso8601_date()
+
+            # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
+            write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
+
+            time_partitioning = {
+                "type": "DAY",
+                "field": self.target_bq_partition_key
+            } if self.target_bq_partition_key else None
+
+            # Extract data from Postgres, then load to GCS
+            if self.task_type == POSTGRES_TO_BQ:
+                extract = PostgresToGCSOperator(
+                    task_id          = f'extract__{self.source_table}',
+                    postgres_conn_id = self.source_connection,
+                    gcp_conn_id      = GCP_CONN_ID,
+                    sql              = extract_query,
+                    bucket           = DEFAULT_GCS_BUCKET,
+                    export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                    filename         = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}.json',
+                    write_on_empty   = True,
+                    schema           = schema
+                )
+
+            # Extract data from MySQL, then load to GCS
+            elif self.task_type == MYSQL_TO_BQ:
+                extract = MySQLToGCSOperator(
+                    task_id        = f'extract__{self.source_table}',
+                    mysql_conn_id  = self.source_connection,
+                    gcp_conn_id    = GCP_CONN_ID,
+                    sql            = extract_query,
+                    bucket         = DEFAULT_GCS_BUCKET,
+                    export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                    filename       = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}.json',
+                    write_on_empty = True,
+                    schema         = schema
+                )
+
+            # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
+            destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
+                    else f'{self.full_target_bq_table_temp}'
+
+            # Load data from GCS to BigQuery
+            load = GCSToBigQueryOperator(
+                task_id                           = f'load_to_bq__{self.source_table}',
+                gcp_conn_id                       = GCP_CONN_ID,
+                bucket                            = DEFAULT_GCS_BUCKET,
+                destination_project_dataset_table = destination_project_dataset_table,
+                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/*.json'],
+                schema_fields                     = schema,
+                source_format                     = SourceFormat.NEWLINE_DELIMITED_JSON,
+                write_disposition                 = write_disposition,
+                time_partitioning                 = time_partitioning,
+                autodetect                        = False
+            )
+
+            # Add extra task to merge the data from temporary table into main table if the load method is DELSERT or UPSERT
+            if self.target_bq_load_method in MERGE.__members__:
+                merge_query = self.__generate_merge_query(schema=schema)
+
+                # JobConfiguration, https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration
+                configuration = {
+                    "query": {
+                        "query": merge_query,
+                        "useLegacySql": False
+                    }
+                }
+
+                # Merge temporary table into main table
+                merge = BigQueryInsertJobOperator(
+                    task_id       = f'merge__{self.source_table}',
+                    project_id    = self.target_bq_project,
+                    gcp_conn_id   = GCP_CONN_ID,
+                    configuration = configuration
+                )
+
+                # Delete temporary table
+                delete = BigQueryDeleteTableOperator(
+                    task_id                = f'delete__{self.target_bq_table_temp}',
+                    gcp_conn_id            = GCP_CONN_ID,
+                    deletion_dataset_table = destination_project_dataset_table,
+                    ignore_if_missing      = True
+                )
+
+                # Early return the task flow for MERGE load method
+                return extract >> load >> merge >> delete
+
+            # Task flow for TRUNCATE or APPEND method
+            return extract >> load

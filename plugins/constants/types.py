@@ -8,18 +8,29 @@ POSTGRES_TO_BQ = 'postgres_to_bq'
 RDBMS_TO_BQ = Enum('RDBMS_TO_BQ', [MYSQL_TO_BQ,
                                    POSTGRES_TO_BQ])
 
+BQ_TO_PARQUET = 'bq_to_parquet'
+
 # BigQuery
 DELSERT = 'delsert'
 UPSERT = 'upsert'
 TRUNCATE = 'truncate'
+APPEND = 'append'
+MERGE = Enum('MERGE', [DELSERT,
+                       UPSERT])
+
+AIRFLOW = 'airflow'
+SPARK = 'spark'
+
+TASK_MODE = Enum('TASK_MODE', [AIRFLOW,
+                               SPARK])
 
 BQ_LOAD_METHOD = Enum('BQ_LOAD_METHOD', [DELSERT,
                                          UPSERT,
                                          TRUNCATE])
 
 # Spark
-SPARK_KUBERNETES_OPERATOR = 'operator'
-SPARK_KUBERNETES_SENSOR = 'sensor'
+SPARK_KUBERNETES_OPERATOR = 'o'
+SPARK_KUBERNETES_SENSOR = 's'
 
 EXTENDED_SCHEMA = [
     {
@@ -34,4 +45,4 @@ PYTHONPATH = os.environ["PYTHONPATH"]
 AIRFLOW_HOME = os.environ["AIRFLOW_HOME"]
 
 # Ownership
-DAG_OWNER_NAME = 'example@email.com'
+DE_DAG_OWNER_NAME = 'example@email.com'

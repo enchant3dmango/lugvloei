@@ -9,29 +9,20 @@ dag:
       count: ~
       delay_in_minute: ~
   tags:
-    -
-    -
-    -
+    - 
   owner: ~
   priority_weight: ~
 task:
   type: ~
-  source: ~
-    connection: ~
-    schema: ~
-    table: ~
-    timestamp_keys:
-      -
-      -
-    unique_keys:
-      -
-  target:
+  source:
     bq:
       project: ~
       dataset: ~
       table: ~
-      load_method: ~
-      partition_key: ~
+      fields: ~
+      v_dataset: ~
+  target:
     gcs:
       project: ~
       bucket: ~
+      hive_partition_key: ~
