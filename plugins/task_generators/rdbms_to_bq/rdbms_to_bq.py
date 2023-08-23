@@ -28,6 +28,16 @@ from plugins.utilities.miscellaneous import get_onelined_string
 
 
 class RDBMSToBQGenerator:
+    """
+    Constructor arguments:
+        dag_id (Required[str]):
+            The ID of the Directed Acyclic Graph (DAG) to which the generated tasks belong.
+        config (Required[dict]):
+            A dictionary containing configuration parameters for the data transfer process.
+        **kwargs:
+            Additional keyword arguments.
+    """
+
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
         super().__init__(**kwargs)
         self.dag_id                    : str             = dag_id
