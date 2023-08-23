@@ -3,6 +3,8 @@ from airflow.models import Variable
 SPARK_JOB_NAMESPACE = Variable.get('SPARK_JOB_NAMESPACE', None)
 RDBMS_TO_BQ_APPLICATION_FILE = Variable.get(
     'RDBMS_TO_BQ_APPLICATION_FILE', None)
+BQ_TO_PARQUET_APPLICATION_FILE = Variable.get(
+    'BQ_TO_PARQUET_APPLICATION_FILE', None)
 
 if int(Variable.get('DAG_GENERATOR_FEATURE_FLAG')) in [0, 1]:
     DAG_GENERATOR_FEATURE_FLAG = False if int(

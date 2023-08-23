@@ -8,6 +8,8 @@ POSTGRES_TO_BQ = 'postgres_to_bq'
 RDBMS_TO_BQ = Enum('RDBMS_TO_BQ', [MYSQL_TO_BQ,
                                    POSTGRES_TO_BQ])
 
+BQ_TO_PARQUET = 'bq_to_parquet'
+
 # BigQuery
 DELSERT = 'delsert'
 UPSERT = 'upsert'
