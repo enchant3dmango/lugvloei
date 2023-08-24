@@ -3,10 +3,6 @@ A maintenance workflow that you can deploy into Airflow to periodically clean
 out the DagRun, TaskInstance, Log, XCom, Job DB and SlaMiss entries to avoid
 having too much data in your Airflow MetaStore.
 
-## Authors
-
-The DAG is a fork of [teamclairvoyant repository.](https://github.com/teamclairvoyant/airflow-maintenance-dags/tree/master/db-cleanup)
-
 ## Usage
 
 1. Update the global variables (SCHEDULE_INTERVAL, DAG_OWNER_NAME,
@@ -29,51 +25,39 @@ The DAG is a fork of [teamclairvoyant repository.](https://github.com/teamclairv
     - airflow_db_cleanup__max_db_entry_age_in_days - INTEGER - Length to retain
       the log files if not already provided in the conf. If this is set to 30,
       the job will remove those files that are 30 days old or older.
-    - METADATA_MAINTENANCE_FEATURE_FLAG - INTEGER (0/1) - 0 to disable, 1 to enable.
 """
-from datetime import timedelta
 import logging
 import os
+from datetime import timedelta
 
 import airflow
+import dateutil.parser
 from airflow import settings
 from airflow.jobs.base_job import BaseJob
-from airflow.models import (
-    DAG,
-    DagModel,
-    DagRun,
-    Log,
-    SlaMiss,
-    Variable
-)
+from airflow.models import DAG, DagModel, DagRun, Log, SlaMiss
 from airflow.operators.python import PythonOperator
 from airflow.utils import timezone
 from airflow.version import version as airflow_version
-
-import dateutil.parser
 from sqlalchemy import and_, func
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import load_only
 
-now = timezone.datetime
+from plugins.constants.types import DAG_OWNER_NAME
+from plugins.constants.variables import DEFAULT_MAX_DB_ENTRY_AGE_IN_DAYS
 
-# airflow-db-cleanup
+now = timezone.utcnow
+
+# metadata_maintenance
 DAG_ID = os.path.basename(__file__).replace(".pyc", "").replace(".py", "")
 START_DATE = airflow.utils.dates.days_ago(1)
 # How often to Run. @daily - Once a day at Midnight (UTC)
 SCHEDULE_INTERVAL = "@daily"
 # Who is listed as the owner of this DAG in the Airflow Web Server
-DAG_OWNER_NAME = "example"
 # List of email address to send email alerts to if this job fails
 ALERT_EMAIL_ADDRESSES = ['example@email.com']
 # Airflow version used by the environment in list form, value stored in
 # airflow_version is in format e.g "2.3.4+composer"
 AIRFLOW_VERSION = airflow_version[: -len("+composer")].split(".")
-# Length to retain the log files if not already provided in the conf. If this
-# is set to 30, the job will remove those files that arE 30 days old or older.
-DEFAULT_MAX_DB_ENTRY_AGE_IN_DAYS = int(
-    Variable.get("airflow_db_cleanup__max_db_entry_age_in_days", 30)
-)
 # Prints the database entries which will be getting deleted; set to False
 # to avoid printing large lists and slowdown process
 PRINT_DELETES = False
@@ -179,32 +163,32 @@ if hasattr(dag, "catchup"):
 
 
 def print_configuration_function(**context):
-    logging.info("Loading Configurations...")
+    logging.info("Loading configurations.")
     dag_run_conf = context.get("dag_run").conf
     logging.info("dag_run.conf: " + str(dag_run_conf))
     max_db_entry_age_in_days = None
     if dag_run_conf:
-        max_db_entry_age_in_days = dag_run_conf.get("maxDBEntryAgeInDays", None)
+        max_db_entry_age_in_days = dag_run_conf.get(
+            "maxDBEntryAgeInDays", None)
     logging.info("maxDBEntryAgeInDays from dag_run.conf: " + str(dag_run_conf))
     if max_db_entry_age_in_days is None or max_db_entry_age_in_days < 1:
         logging.info(
-            "maxDBEntryAgeInDays conf variable isn't included or Variable "
-            + "value is less than 1. Using Default '"
+            "maxDBEntryAgeInDays variable isn't included or variable "
+            + "value is less than 1. Using default '"
             + str(DEFAULT_MAX_DB_ENTRY_AGE_IN_DAYS)
             + "'"
         )
         max_db_entry_age_in_days = DEFAULT_MAX_DB_ENTRY_AGE_IN_DAYS
     max_date = now() + timedelta(-max_db_entry_age_in_days)
-    logging.info("Finished Loading Configurations")
-    logging.info("")
+    logging.info("Finished loading configurations.")
 
     logging.info("Configurations:")
     logging.info("max_db_entry_age_in_days: " + str(max_db_entry_age_in_days))
     logging.info("max_date:                 " + str(max_date))
     logging.info("enable_delete:            " + str(ENABLE_DELETE))
-    logging.info("")
 
-    logging.info("Setting max_execution_date to XCom for Downstream Processes")
+    logging.info(
+        "Setting max_execution_date to XCom for downstream processes.")
     context["ti"].xcom_push(key="max_date", value=max_date.isoformat())
 
 
@@ -225,9 +209,10 @@ def build_query(
     keep_last_filters=None,
     keep_last_group_by=None,
 ):
-    query = session.query(airflow_db_model).options(load_only(age_check_column))
+    query = session.query(airflow_db_model).options(
+        load_only(age_check_column))
 
-    logging.info("INITIAL QUERY : " + str(query))
+    logging.info("Initial query: " + str(query))
 
     if not keep_last:
         query = query.filter(
@@ -235,22 +220,23 @@ def build_query(
         )
     else:
         subquery = session.query(func.max(DagRun.execution_date))
-        # workaround for MySQL "table specified twice" issue
+        # Workaround for MySQL "table specified twice" issue
         # https://github.com/teamclairvoyant/airflow-maintenance-dags/issues/41
         if keep_last_filters is not None:
             for entry in keep_last_filters:
                 subquery = subquery.filter(entry)
 
-            logging.info("SUB QUERY [keep_last_filters]: " + str(subquery))
+            logging.info("Sub query [keep_last_filters]: " + str(subquery))
 
         if keep_last_group_by is not None:
             subquery = subquery.group_by(keep_last_group_by)
-            logging.info("SUB QUERY [keep_last_group_by]: " + str(subquery))
+            logging.info("Sub query [keep_last_group_by]: " + str(subquery))
 
         subquery = subquery.from_self()
 
         query = query.filter(
-            and_(age_check_column.notin_(subquery)), and_(age_check_column <= max_date)
+            and_(age_check_column.notin_(subquery)), and_(
+                age_check_column <= max_date)
         )
 
     return query
@@ -261,7 +247,7 @@ def print_query(query, airflow_db_model, age_check_column):
 
     logging.info("Query: " + str(query))
     logging.info(
-        "Process will be Deleting the following "
+        "Process will be deleting the following "
         + str(airflow_db_model.__name__)
         + "(s):"
     )
@@ -270,7 +256,7 @@ def print_query(query, airflow_db_model, age_check_column):
         logging.info("\tEntry: " + str(entry) + ", Date: " + date)
 
     logging.info(
-        "Process will be Deleting "
+        "Process will be deleting "
         + str(len(entries_to_delete))
         + " "
         + str(airflow_db_model.__name__)
@@ -285,7 +271,9 @@ def cleanup_function(**context):
     max_date = context["ti"].xcom_pull(
         task_ids=print_configuration.task_id, key="max_date"
     )
-    max_date = dateutil.parser.parse(max_date)  # stored as iso8601 str in xcom
+
+    # Stored as ISO 8601 str in XCom
+    max_date = dateutil.parser.parse(max_date)
 
     airflow_db_model = context["params"].get("airflow_db_model")
     state = context["params"].get("state")
@@ -307,7 +295,7 @@ def cleanup_function(**context):
 
     logging.info("")
 
-    logging.info("Running Cleanup Process...")
+    logging.info("Running cleanup process.")
 
     try:
         if context["params"].get("do_not_delete_by_dag_id"):
@@ -323,7 +311,7 @@ def cleanup_function(**context):
             if PRINT_DELETES:
                 print_query(query, airflow_db_model, age_check_column)
             if ENABLE_DELETE:
-                logging.info("Performing Delete...")
+                logging.info("Performing delete.")
                 query.delete(synchronize_session=False)
             session.commit()
         else:
@@ -345,22 +333,23 @@ def cleanup_function(**context):
                 if PRINT_DELETES:
                     print_query(query, airflow_db_model, age_check_column)
                 if ENABLE_DELETE:
-                    logging.info("Performing Delete...")
+                    logging.info("Performing delete.")
                     query.delete(synchronize_session=False)
                 session.commit()
 
         if not ENABLE_DELETE:
             logging.warn(
                 "You've opted to skip deleting the db entries. "
-                "Set ENABLE_DELETE to True to delete entries!!!"
+                "Set ENABLE_DELETE to True to delete entries!"
             )
 
-        logging.info("Finished Running Cleanup Process")
+        logging.info("Finished running cleanup process.")
 
     except ProgrammingError as e:
         logging.error(e)
         logging.error(
-            str(airflow_db_model) + " is not present in the metadata. " "Skipping..."
+            str(airflow_db_model) +
+            " is not present in the metadata. " "Skipping."
         )
 
     finally:
@@ -371,6 +360,7 @@ def analyze_db():
     session = settings.Session()
     session.execute("ANALYZE")
     session.commit()
+
 
 analyze_op = PythonOperator(
     task_id="analyze_query", python_callable=analyze_db, provide_context=True, dag=dag

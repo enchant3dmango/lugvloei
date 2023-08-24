@@ -1,0 +1,29 @@
+dag:
+  name: ~
+  behavior:
+    schedule: ~
+    start_date: ~
+    depends_on_past: ~
+    catch_up: ~
+    retry:
+      count: ~
+      delay_in_minute: ~
+  tags:
+    - 
+    - 
+  owner: ~
+  priority_weight: ~
+task:
+  type: ~
+  source:
+    bq:
+      project: ~
+      dataset: ~
+      table: ~
+      fields: ~
+      v_dataset: ~
+  target:
+    gcs:
+      project: ~
+      bucket: ~
+      hive_partition_key: ~
