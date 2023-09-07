@@ -271,7 +271,7 @@ class RDBMSToBQGenerator:
             } if self.target_bq_partition_key else None
 
             if type(self.source_connection) is str:
-                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}.json'
+                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}' + '__{}.json'
 
                 # Extract data from Postgres, then load to GCS
                 if self.task_type == POSTGRES_TO_BQ:
@@ -305,7 +305,7 @@ class RDBMSToBQGenerator:
                 extract = []
 
                 for index, connection in enumerate(sorted(self.source_connection)):
-                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index}_*.json'
+                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index}' + '__{}.json'
 
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
