@@ -256,26 +256,59 @@ class RDBMSToBQGenerator:
                 return spark_kubernetes_operator_task >> spark_kubernetes_sensor_task
 
         elif self.task_mode == AIRFLOW:
-                schema = self.__generate_schema()
-                extract_query = self.__generate_extract_query(schema=schema)
-                iso8601_date = get_iso8601_date()
+            schema = self.__generate_schema()
+            extract_query = self.__generate_extract_query(schema=schema)
+            iso8601_date = get_iso8601_date()
 
-                # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
-                write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
+            # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
+            write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
 
-                time_partitioning = {
-                    "type": "DAY",
-                    "field": self.target_bq_partition_key
-                } if self.target_bq_partition_key else None
+            time_partitioning = {
+                "type": "DAY",
+                "field": self.target_bq_partition_key
+            } if self.target_bq_partition_key else None
 
-                if type(self.source_connection) is str:
+            if type(self.source_connection) is str:
+                # Extract data from Postgres, then load to GCS
+                if self.task_type == POSTGRES_TO_BQ:
+                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}.json'
+
+                    extract = PostgresToGCSOperator(
+                        task_id          = f'extract__{self.source_table}',
+                        postgres_conn_id = self.source_connection,
+                        gcp_conn_id      = GCP_CONN_ID,
+                        sql              = extract_query,
+                        bucket           = DEFAULT_GCS_BUCKET,
+                        export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                        filename         = filename,
+                        write_on_empty   = True,
+                        schema           = schema
+                    )
+
+                # Extract data from MySQL, then load to GCS
+                elif self.task_type == MYSQL_TO_BQ:
+                    extract = MySQLToGCSOperator(
+                        task_id        = f'extract__{self.source_table}',
+                        mysql_conn_id  = self.source_connection,
+                        gcp_conn_id    = GCP_CONN_ID,
+                        sql            = extract_query,
+                        bucket         = DEFAULT_GCS_BUCKET,
+                        export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                        filename       = filename,
+                        write_on_empty = True,
+                        schema         = schema
+                    )
+
+            elif type(self.source_connection) is list:
+                for index, connection in enumerate(sorted(self.source_connection)):
+                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index}_*.json'
+                    extract = []
+
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
-                        filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}.json'
-
-                        extract = PostgresToGCSOperator(
+                        __extract = PostgresToGCSOperator(
                             task_id          = f'extract__{self.source_table}',
-                            postgres_conn_id = self.source_connection,
+                            postgres_conn_id = connection,
                             gcp_conn_id      = GCP_CONN_ID,
                             sql              = extract_query,
                             bucket           = DEFAULT_GCS_BUCKET,
@@ -287,9 +320,9 @@ class RDBMSToBQGenerator:
 
                     # Extract data from MySQL, then load to GCS
                     elif self.task_type == MYSQL_TO_BQ:
-                        extract = MySQLToGCSOperator(
+                        __extract = MySQLToGCSOperator(
                             task_id        = f'extract__{self.source_table}',
-                            mysql_conn_id  = self.source_connection,
+                            mysql_conn_id  = connection,
                             gcp_conn_id    = GCP_CONN_ID,
                             sql            = extract_query,
                             bucket         = DEFAULT_GCS_BUCKET,
@@ -299,89 +332,56 @@ class RDBMSToBQGenerator:
                             schema         = schema
                         )
 
-                elif type(self.source_connection) is list:
-                    for index, connection in sorted(self.source_connection):
-                        filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index}_*.json'
-                        extract = []
+                    extract.append(__extract)
 
-                        # Extract data from Postgres, then load to GCS
-                        if self.task_type == POSTGRES_TO_BQ:
-                            __extract = PostgresToGCSOperator(
-                                task_id          = f'extract__{self.source_table}',
-                                postgres_conn_id = connection,
-                                gcp_conn_id      = GCP_CONN_ID,
-                                sql              = extract_query,
-                                bucket           = DEFAULT_GCS_BUCKET,
-                                export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                                filename         = filename,
-                                write_on_empty   = True,
-                                schema           = schema
-                            )
+            # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
+            destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
+                    else f'{self.full_target_bq_table_temp}'
 
-                        # Extract data from MySQL, then load to GCS
-                        elif self.task_type == MYSQL_TO_BQ:
-                            __extract = MySQLToGCSOperator(
-                                task_id        = f'extract__{self.source_table}',
-                                mysql_conn_id  = connection,
-                                gcp_conn_id    = GCP_CONN_ID,
-                                sql            = extract_query,
-                                bucket         = DEFAULT_GCS_BUCKET,
-                                export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                                filename       = filename,
-                                write_on_empty = True,
-                                schema         = schema
-                            )
+            # Load data from GCS to BigQuery
+            load = GCSToBigQueryOperator(
+                task_id                           = f'load_to_bq__{self.source_table}',
+                gcp_conn_id                       = GCP_CONN_ID,
+                bucket                            = DEFAULT_GCS_BUCKET,
+                destination_project_dataset_table = destination_project_dataset_table,
+                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/*.json'],
+                schema_fields                     = schema,
+                source_format                     = SourceFormat.NEWLINE_DELIMITED_JSON,
+                write_disposition                 = write_disposition,
+                time_partitioning                 = time_partitioning,
+                autodetect                        = False
+            )
 
-                        extract.append(__extract)
+            # Add extra task to merge the data from temporary table into main table if the load method is DELSERT or UPSERT
+            if self.target_bq_load_method in MERGE.__members__:
+                merge_query = self.__generate_merge_query(schema=schema)
 
-                # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
-                destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
-                        else f'{self.full_target_bq_table_temp}'
+                # JobConfiguration, https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration
+                configuration = {
+                    "query": {
+                        "query": merge_query,
+                        "useLegacySql": False
+                    }
+                }
 
-                # Load data from GCS to BigQuery
-                load = GCSToBigQueryOperator(
-                    task_id                           = f'load_to_bq__{self.source_table}',
-                    gcp_conn_id                       = GCP_CONN_ID,
-                    bucket                            = DEFAULT_GCS_BUCKET,
-                    destination_project_dataset_table = destination_project_dataset_table,
-                    source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/*.json'],
-                    schema_fields                     = schema,
-                    source_format                     = SourceFormat.NEWLINE_DELIMITED_JSON,
-                    write_disposition                 = write_disposition,
-                    time_partitioning                 = time_partitioning,
-                    autodetect                        = False
+                # Merge temporary table into main table
+                merge = BigQueryInsertJobOperator(
+                    task_id       = f'merge__{self.source_table}',
+                    project_id    = self.target_bq_project,
+                    gcp_conn_id   = GCP_CONN_ID,
+                    configuration = configuration
                 )
 
-                # Add extra task to merge the data from temporary table into main table if the load method is DELSERT or UPSERT
-                if self.target_bq_load_method in MERGE.__members__:
-                    merge_query = self.__generate_merge_query(schema=schema)
+                # Delete temporary table
+                delete = BigQueryDeleteTableOperator(
+                    task_id                = f'delete__{self.target_bq_table_temp}',
+                    gcp_conn_id            = GCP_CONN_ID,
+                    deletion_dataset_table = destination_project_dataset_table,
+                    ignore_if_missing      = True
+                )
 
-                    # JobConfiguration, https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration
-                    configuration = {
-                        "query": {
-                            "query": merge_query,
-                            "useLegacySql": False
-                        }
-                    }
+                # Early return the task flow for MERGE load method
+                return extract >> load >> merge >> delete
 
-                    # Merge temporary table into main table
-                    merge = BigQueryInsertJobOperator(
-                        task_id       = f'merge__{self.source_table}',
-                        project_id    = self.target_bq_project,
-                        gcp_conn_id   = GCP_CONN_ID,
-                        configuration = configuration
-                    )
-
-                    # Delete temporary table
-                    delete = BigQueryDeleteTableOperator(
-                        task_id                = f'delete__{self.target_bq_table_temp}',
-                        gcp_conn_id            = GCP_CONN_ID,
-                        deletion_dataset_table = destination_project_dataset_table,
-                        ignore_if_missing      = True
-                    )
-
-                    # Early return the task flow for MERGE load method
-                    return extract >> load >> merge >> delete
-
-                # Task flow for TRUNCATE or APPEND method
-                return extract >> load
+            # Task flow for TRUNCATE or APPEND method
+            return extract >> load
