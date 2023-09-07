@@ -21,8 +21,8 @@ task:
     connection:
       - mysql_fizz_1
       - mysql_fizz_2
-    schema: foo
-    table: bar
+    schema: fizz
+    table: buzz
     timestamp_keys:
       - created_at
       - updated_at
