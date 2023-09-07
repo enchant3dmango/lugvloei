@@ -18,6 +18,8 @@ from airflow.providers.google.cloud.operators.bigquery import (
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from airflow.providers.google.cloud.transfers.mysql_to_gcs import MySQLToGCSOperator
 from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
+from airflow.utils.task_group import TaskGroup
+
 from plugins.constants.types import (AIRFLOW, APPEND, DELSERT, EXTENDED_SCHEMA,
                                      MERGE, MYSQL_TO_BQ, POSTGRES_TO_BQ,
                                      PYTHONPATH, SPARK,
@@ -302,7 +304,7 @@ class RDBMSToBQGenerator:
             elif type(self.source_connection) is list:
                 for index, connection in enumerate(sorted(self.source_connection)):
                     filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index}_*.json'
-                    extract = []
+                    extract = TaskGroup()
 
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
@@ -315,7 +317,8 @@ class RDBMSToBQGenerator:
                             export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename         = filename,
                             write_on_empty   = True,
-                            schema           = schema
+                            schema           = schema,
+                            task_group       = extract
                         )
 
                     # Extract data from MySQL, then load to GCS
@@ -329,10 +332,9 @@ class RDBMSToBQGenerator:
                             export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename       = filename,
                             write_on_empty = True,
-                            schema         = schema
+                            schema         = schema,
+                            task_group     = extract
                         )
-
-                    extract.append(__extract)
 
             # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
             destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
