@@ -305,12 +305,12 @@ class RDBMSToBQGenerator:
                 extract = []
 
                 for index, connection in enumerate(sorted(self.source_connection)):
-                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index}' + '__{}.json'
+                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index+1}' + '__{}.json'
 
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
                         __extract = PostgresToGCSOperator(
-                            task_id          = f'extract__{self.source_table}_{index}',
+                            task_id          = f'extract__{self.source_table}_{index+1}',
                             postgres_conn_id = connection,
                             gcp_conn_id      = GCP_CONN_ID,
                             sql              = extract_query,
@@ -324,7 +324,7 @@ class RDBMSToBQGenerator:
                     # Extract data from MySQL, then load to GCS
                     elif self.task_type == MYSQL_TO_BQ:
                         __extract = MySQLToGCSOperator(
-                            task_id        = f'extract__{self.source_table}_{index}',
+                            task_id        = f'extract__{self.source_table}_{index+1}',
                             mysql_conn_id  = connection,
                             gcp_conn_id    = GCP_CONN_ID,
                             sql            = extract_query,
