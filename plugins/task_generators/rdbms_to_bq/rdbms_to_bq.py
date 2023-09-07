@@ -256,7 +256,6 @@ class RDBMSToBQGenerator:
                 return spark_kubernetes_operator_task >> spark_kubernetes_sensor_task
 
         elif self.task_mode == AIRFLOW:
-            if type(self.source_connection) is str:
                 schema = self.__generate_schema()
                 extract_query = self.__generate_extract_query(schema=schema)
                 iso8601_date = get_iso8601_date()
@@ -269,33 +268,71 @@ class RDBMSToBQGenerator:
                     "field": self.target_bq_partition_key
                 } if self.target_bq_partition_key else None
 
-                # Extract data from Postgres, then load to GCS
-                if self.task_type == POSTGRES_TO_BQ:
-                    extract = PostgresToGCSOperator(
-                        task_id          = f'extract__{self.source_table}',
-                        postgres_conn_id = self.source_connection,
-                        gcp_conn_id      = GCP_CONN_ID,
-                        sql              = extract_query,
-                        bucket           = DEFAULT_GCS_BUCKET,
-                        export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                        filename         = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}.json',
-                        write_on_empty   = True,
-                        schema           = schema
-                    )
+                if type(self.source_connection) is str:
+                    # Extract data from Postgres, then load to GCS
+                    if self.task_type == POSTGRES_TO_BQ:
+                        filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}.json'
 
-                # Extract data from MySQL, then load to GCS
-                elif self.task_type == MYSQL_TO_BQ:
-                    extract = MySQLToGCSOperator(
-                        task_id        = f'extract__{self.source_table}',
-                        mysql_conn_id  = self.source_connection,
-                        gcp_conn_id    = GCP_CONN_ID,
-                        sql            = extract_query,
-                        bucket         = DEFAULT_GCS_BUCKET,
-                        export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                        filename       = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}.json',
-                        write_on_empty = True,
-                        schema         = schema
-                    )
+                        extract = PostgresToGCSOperator(
+                            task_id          = f'extract__{self.source_table}',
+                            postgres_conn_id = self.source_connection,
+                            gcp_conn_id      = GCP_CONN_ID,
+                            sql              = extract_query,
+                            bucket           = DEFAULT_GCS_BUCKET,
+                            export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                            filename         = filename,
+                            write_on_empty   = True,
+                            schema           = schema
+                        )
+
+                    # Extract data from MySQL, then load to GCS
+                    elif self.task_type == MYSQL_TO_BQ:
+                        extract = MySQLToGCSOperator(
+                            task_id        = f'extract__{self.source_table}',
+                            mysql_conn_id  = self.source_connection,
+                            gcp_conn_id    = GCP_CONN_ID,
+                            sql            = extract_query,
+                            bucket         = DEFAULT_GCS_BUCKET,
+                            export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                            filename       = filename,
+                            write_on_empty = True,
+                            schema         = schema
+                        )
+
+                elif type(self.source_connection) is list:
+                    for index, connection in sorted(self.source_connection):
+                        filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index}_*.json'
+                        extract = []
+
+                        # Extract data from Postgres, then load to GCS
+                        if self.task_type == POSTGRES_TO_BQ:
+                            __extract = PostgresToGCSOperator(
+                                task_id          = f'extract__{self.source_table}',
+                                postgres_conn_id = connection,
+                                gcp_conn_id      = GCP_CONN_ID,
+                                sql              = extract_query,
+                                bucket           = DEFAULT_GCS_BUCKET,
+                                export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                                filename         = filename,
+                                write_on_empty   = True,
+                                schema           = schema
+                            )
+
+                        # Extract data from MySQL, then load to GCS
+                        elif self.task_type == MYSQL_TO_BQ:
+                            __extract = MySQLToGCSOperator(
+                                task_id        = f'extract__{self.source_table}',
+                                mysql_conn_id  = connection,
+                                gcp_conn_id    = GCP_CONN_ID,
+                                sql            = extract_query,
+                                bucket         = DEFAULT_GCS_BUCKET,
+                                export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                                filename       = filename,
+                                write_on_empty = True,
+                                schema         = schema
+                            )
+
+                        extract.append(__extract)
 
                 # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
                 destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
