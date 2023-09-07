@@ -10,7 +10,6 @@ dag:
       delay_in_minute: ~
   tags:
     - 
-    - 
   owner: ~
   priority_weight: ~
 task:

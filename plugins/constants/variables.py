@@ -19,3 +19,5 @@ GCP_CONN_ID = Variable.get('GCP_CONN_ID', None)
 DEFAULT_MAX_DB_ENTRY_AGE_IN_DAYS = int(
     Variable.get("airflow_db_cleanup__max_db_entry_age_in_days", 30)
 )
+
+DEFAULT_GCS_BUCKET = Variable.get('GCS_DATA_LAKE_BUCKET', None)

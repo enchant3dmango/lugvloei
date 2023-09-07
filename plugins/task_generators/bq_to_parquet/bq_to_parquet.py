@@ -1,8 +1,6 @@
 import yaml
-from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import \
-    SparkKubernetesOperator
-from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import \
-    SparkKubernetesSensor
+from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
+from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKubernetesSensor
 from google.cloud import bigquery
 
 from plugins.constants.types import (PYTHONPATH, SPARK_KUBERNETES_OPERATOR,
@@ -12,7 +10,7 @@ from plugins.constants.variables import (BQ_TO_PARQUET_APPLICATION_FILE,
 from plugins.task_generators.bq_to_parquet.types import BQ_TABLE_EXTRACT_QUERY
 
 
-class BQToParquetGenerator():
+class BQToParquetGenerator:
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
         self.dag_id                 : str             = dag_id
         self.bq_client              : bigquery.Client = bigquery.Client()
@@ -53,7 +51,7 @@ class BQToParquetGenerator():
             task_id          = spark_kubernetes_operator_task_id,
             application_file = yaml.safe_dump(application_file),
             namespace        = SPARK_JOB_NAMESPACE,
-            do_xcom_push     = True,
+            do_xcom_push     = True
         )
 
         spark_kubernetes_sensor_task = SparkKubernetesSensor(

@@ -6,7 +6,7 @@ import pendulum
 import yaml
 from airflow.decorators import dag
 
-from plugins.constants.types import PYTHONPATH
+from plugins.constants.types import DE_DAG_OWNER_NAME, PYTHONPATH
 from plugins.constants.variables import DAG_GENERATOR_FEATURE_FLAG
 from plugins.task_generator import generate_tasks
 from plugins.utilities.miscellaneous import get_config_files
@@ -39,7 +39,7 @@ if DAG_GENERATOR_FEATURE_FLAG:
         default_args = {
             'owner': dag_owner,
             'priority_weight': dag_priority_weight,
-            'email': ['data.engineer@sirclo.com'],
+            'email': [DE_DAG_OWNER_NAME],
             'depend_on_past': depend_on_past,
             'retries': retries,
             'retry_delay': retry_delay,

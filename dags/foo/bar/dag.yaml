@@ -16,6 +16,7 @@ dag:
   priority_weight: 1
 task:
   type: mysql_to_bq
+  mode: airflow
   source:
     connection: mysql_foo
     schema: foo
@@ -32,6 +33,3 @@ task:
       table: bar
       load_method: delsert
       partition_key: created_at
-    gcs:
-      project: ~
-      bucket: ~
