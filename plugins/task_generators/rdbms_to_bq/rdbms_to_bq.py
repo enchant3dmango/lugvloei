@@ -302,9 +302,10 @@ class RDBMSToBQGenerator:
                     )
 
             elif type(self.source_connection) is list:
+                extract = []
+
                 for index, connection in enumerate(sorted(self.source_connection)):
                     filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index}_*.json'
-                    extract = TaskGroup()
 
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
@@ -317,8 +318,7 @@ class RDBMSToBQGenerator:
                             export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename         = filename,
                             write_on_empty   = True,
-                            schema           = schema,
-                            task_group       = extract
+                            schema           = schema
                         )
 
                     # Extract data from MySQL, then load to GCS
@@ -332,9 +332,10 @@ class RDBMSToBQGenerator:
                             export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename       = filename,
                             write_on_empty = True,
-                            schema         = schema,
-                            task_group     = extract
+                            schema         = schema
                         )
+
+                    extract.append(__extract)
 
             # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
             destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
