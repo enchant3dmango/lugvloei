@@ -18,7 +18,6 @@ from airflow.providers.google.cloud.operators.bigquery import (
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from airflow.providers.google.cloud.transfers.mysql_to_gcs import MySQLToGCSOperator
 from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
-from airflow.utils.task_group import TaskGroup
 
 from plugins.constants.types import (AIRFLOW, APPEND, DELSERT, EXTENDED_SCHEMA,
                                      MERGE, MYSQL_TO_BQ, POSTGRES_TO_BQ,
@@ -94,7 +93,7 @@ class RDBMSToBQGenerator:
                 ]
             )
         except:
-            raise Exception("Failed to generate schema!")
+            raise Exception('Failed to generate schema!')
 
         return schema
 
@@ -112,6 +111,7 @@ class RDBMSToBQGenerator:
             selected_fields = ', '.join([
                 self.quoting(field)
                 for field in fields
+                if field is not 'database' # Exclude database field
             ])
 
         # Generate query
@@ -120,6 +120,11 @@ class RDBMSToBQGenerator:
             load_timestamp='CURRENT_TIMESTAMP' if self.task_type == POSTGRES_TO_BQ else 'CURRENT_TIMESTAMP()',
             source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
         )
+
+        # Add custom value for database field based on connection name
+        if type(self.source_connection) is list:
+            database = kwargs['database'].replace('pg_', '').replace('mysql_', '')
+            source_extract_query.replace(" FROM", f", '{database}' AS database FROM")
 
         # Generate query filter based on target_bq_load_method
         if self.target_bq_load_method == UPSERT or self.target_bq_load_method == DELSERT:
@@ -212,6 +217,7 @@ class RDBMSToBQGenerator:
 
     def generate_tasks(self):
         if self.task_mode == SPARK:
+            # Task generator for single connection dag
             if type(self.source_connection) is str:
                 schema_string = f'{json.dumps(self.__generate_schema(), separators=(",", ":"))}'
                 onelined_schema_string = get_onelined_string(schema_string)
@@ -259,7 +265,6 @@ class RDBMSToBQGenerator:
 
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
-            extract_query = self.__generate_extract_query(schema=schema)
             iso8601_date = get_iso8601_date()
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
@@ -270,7 +275,9 @@ class RDBMSToBQGenerator:
                 "field": self.target_bq_partition_key
             } if self.target_bq_partition_key else None
 
+            # Task generator for single connection dag
             if type(self.source_connection) is str:
+                extract_query = self.__generate_extract_query(schema=schema)
                 filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}' + '__{}.json'
 
                 # Extract data from Postgres, then load to GCS
@@ -301,10 +308,12 @@ class RDBMSToBQGenerator:
                         schema         = schema
                     )
 
+            # Task generator for multiple connection dag
             elif type(self.source_connection) is list:
                 extract = []
 
                 for index, connection in enumerate(sorted(self.source_connection)):
+                    extract_query = self.__generate_extract_query(schema=schema, database=connection)
                     filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index+1}' + '__{}.json'
 
                     # Extract data from Postgres, then load to GCS
