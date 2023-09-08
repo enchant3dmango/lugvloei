@@ -127,7 +127,7 @@ class RDBMSToBQGenerator:
             database = str(kwargs[DATABASE]).replace('pg_', '').replace('mysql_', '')
             source_extract_query = source_extract_query.replace(
                 " FROM",
-                f", '{database}' AS database FROM"
+                f", '{database}' AS {self.quoting('database')} FROM"
             )
 
         # Generate query filter based on target_bq_load_method
