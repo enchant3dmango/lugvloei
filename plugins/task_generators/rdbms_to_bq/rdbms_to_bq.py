@@ -126,7 +126,7 @@ class RDBMSToBQGenerator:
         # This is intended for multiple connection dag
         if kwargs.get(DATABASE) is not None:
             database = str(kwargs[DATABASE]).replace('pg_', '').replace('mysql_', '')
-            source_extract_query.replace(
+            source_extract_query = source_extract_query.replace(
                 " FROM",
                 f", '{database}' AS database FROM"
             )
