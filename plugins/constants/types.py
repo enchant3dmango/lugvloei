@@ -28,6 +28,8 @@ BQ_LOAD_METHOD = Enum('BQ_LOAD_METHOD', [DELSERT,
                                          UPSERT,
                                          TRUNCATE])
 
+DATABASE = 'database'
+
 # Spark
 SPARK_KUBERNETES_OPERATOR = 'o'
 SPARK_KUBERNETES_SENSOR = 's'

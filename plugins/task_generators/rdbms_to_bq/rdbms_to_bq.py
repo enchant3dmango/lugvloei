@@ -19,17 +19,17 @@ from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQue
 from airflow.providers.google.cloud.transfers.mysql_to_gcs import MySQLToGCSOperator
 from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
 
-from plugins.constants.types import (AIRFLOW, APPEND, DELSERT, EXTENDED_SCHEMA,
-                                     MERGE, MYSQL_TO_BQ, POSTGRES_TO_BQ,
-                                     PYTHONPATH, SPARK,
+from plugins.constants.types import (AIRFLOW, APPEND, DATABASE, DELSERT,
+                                     EXTENDED_SCHEMA, MERGE, MYSQL_TO_BQ,
+                                     POSTGRES_TO_BQ, PYTHONPATH, SPARK,
                                      SPARK_KUBERNETES_OPERATOR,
                                      SPARK_KUBERNETES_SENSOR, UPSERT)
 from plugins.constants.variables import (DEFAULT_GCS_BUCKET, GCP_CONN_ID,
                                          RDBMS_TO_BQ_APPLICATION_FILE,
                                          SPARK_JOB_NAMESPACE)
 from plugins.task_generators.rdbms_to_bq.types import (
-    DELSERT_QUERY, SOURCE_EXTRACT_QUERY,
-    TEMP_TABLE_PARTITION_DATE_QUERY, UPSERT_QUERY)
+    DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
+    UPSERT_QUERY)
 from plugins.utilities.miscellaneous import (get_iso8601_date,
                                              get_onelined_string)
 
@@ -111,7 +111,7 @@ class RDBMSToBQGenerator:
             selected_fields = ', '.join([
                 self.quoting(field)
                 for field in fields
-                if field is not 'database' # Exclude database field
+                if field != DATABASE # Exclude database field
             ])
 
         # Generate query
@@ -122,7 +122,8 @@ class RDBMSToBQGenerator:
         )
 
         # Add custom value for database field based on connection name
-        if type(self.source_connection) is list:
+        # This is intended for multiple connection dag
+        if DATABASE in kwargs:
             database = kwargs['database'].replace('pg_', '').replace('mysql_', '')
             source_extract_query.replace(" FROM", f", '{database}' AS database FROM")
 
