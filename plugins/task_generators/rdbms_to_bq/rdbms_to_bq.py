@@ -121,7 +121,6 @@ class RDBMSToBQGenerator:
             source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
         )
 
-        logging.info(f'This is the kwargs: {kwargs}')
         # Add custom value for database field based on connection name
         # This is intended for multiple connection dag
         if kwargs.get(DATABASE) is not None:
