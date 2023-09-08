@@ -121,11 +121,15 @@ class RDBMSToBQGenerator:
             source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
         )
 
+        logging.info(f'This is the kwargs: {kwargs}')
         # Add custom value for database field based on connection name
         # This is intended for multiple connection dag
         if DATABASE in kwargs:
-            database = kwargs['database'].replace('pg_', '').replace('mysql_', '')
-            source_extract_query.replace(" FROM", f", '{database}' AS database FROM")
+            database = str(kwargs['database'])
+            source_extract_query.replace(
+                " FROM",
+                f",'{database.replace('pg_', '').replace('mysql_', '')}' AS database FROM"
+            )
 
         # Generate query filter based on target_bq_load_method
         if self.target_bq_load_method == UPSERT or self.target_bq_load_method == DELSERT:
