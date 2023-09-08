@@ -124,11 +124,11 @@ class RDBMSToBQGenerator:
         logging.info(f'This is the kwargs: {kwargs}')
         # Add custom value for database field based on connection name
         # This is intended for multiple connection dag
-        if DATABASE in kwargs:
-            database = str(kwargs['database'])
+        if kwargs.get(DATABASE) is not None:
+            database = str(kwargs[DATABASE]).replace('pg_', '').replace('mysql_', '')
             source_extract_query.replace(
                 " FROM",
-                f",'{database.replace('pg_', '').replace('mysql_', '')}' AS database FROM"
+                f", '{database}' AS database FROM"
             )
 
         # Generate query filter based on target_bq_load_method
