@@ -18,7 +18,6 @@ from airflow.providers.google.cloud.operators.bigquery import (
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from airflow.providers.google.cloud.transfers.mysql_to_gcs import MySQLToGCSOperator
 from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
-
 from plugins.constants.types import (AIRFLOW, APPEND, DATABASE, DELSERT,
                                      EXTENDED_SCHEMA, MERGE, MYSQL_TO_BQ,
                                      POSTGRES_TO_BQ, PYTHONPATH, SPARK,
@@ -30,8 +29,7 @@ from plugins.constants.variables import (DEFAULT_GCS_BUCKET, GCP_CONN_ID,
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utilities.miscellaneous import (get_iso8601_date,
-                                             get_onelined_string)
+from plugins.utilities.generic import get_iso8601_date, get_onelined_string
 
 
 class RDBMSToBQGenerator:
