@@ -9,7 +9,7 @@ from airflow.decorators import dag
 from plugins.constants.types import DE_DAG_OWNER_NAME, PYTHONPATH
 from plugins.constants.variables import DAG_GENERATOR_FEATURE_FLAG
 from plugins.task_generator import generate_tasks
-from plugins.utilities.miscellaneous import get_config_files
+from plugins.utilities.generic import get_config_files
 from plugins.utilities.slack import on_failure_callback
 
 if DAG_GENERATOR_FEATURE_FLAG:
