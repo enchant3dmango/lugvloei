@@ -66,4 +66,4 @@ def test_get_iso8601_date(mocker):
     assert result == expected_result
 
 # pytest==7.4.2, pytest-mock==3.11.1
-# pytest tests/plugins/utilities/miscellaneous_test.py --verbose
+# pytest tests/plugins/utilities/generic_test.py --verbose
