@@ -70,9 +70,10 @@ class RDBMSToBQGenerator:
         else:
             raise Exception('Task type is not supported!')
 
+        self.dag_base_path = f'{os.environ["PYTHONPATH"]}/dags/{self.target_bq_dataset}/{self.target_bq_table}'
+
     def __generate_schema(self, **kwargs) -> list:
-        schema_path = f'{os.environ["PYTHONPATH"]}/dags/{self.target_bq_dataset}/{self.target_bq_table}'
-        schema_file = os.path.join(schema_path, "assets/schema.json")
+        schema_file = os.path.join(self.dag_base_path, "assets/schema.json")
 
         try:
             logging.info(f'Getting table schema from {schema_file}')
@@ -160,11 +161,24 @@ class RDBMSToBQGenerator:
             )
             partition_filter = f"AND DATE(x.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
 
+        # Use cte to get the latest source table data for the merge statement
+        # Only applied to dag that has cte_merge.sql in its assets folder
+        # Will use the temporary table as merge source if no cte_merge.sql is provided 
+        merge_cte = os.path.join(self.dag_base_path, "assets/cte_merge.sql")
+        if os.path.exists(merge_cte):
+            with open(merge_cte, "r") as file:
+                merge_source = file.read()
+                merge_source = merge_source.format(
+                    full_target_bq_table_temp=self.full_target_bq_table_temp
+                )
+        else:
+            merge_source = f"`{self.full_target_bq_table_temp}`"
+
         # Construct delsert query
         if self.target_bq_load_method == DELSERT:
             merge_query = DELSERT_QUERY.substitute(
-                target_bq_table=self.full_target_bq_table,
-                target_bq_table_temp=self.full_target_bq_table_temp,
+                merge_target=self.full_target_bq_table,
+                merge_source=merge_source,
                 on_keys=' AND '.join(
                     [f"COALESCE(CAST(x.`{key}` as string), 'NULL') = COALESCE(CAST(y.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
                 partition_filter=partition_filter,
@@ -178,8 +192,8 @@ class RDBMSToBQGenerator:
         # Construct upsert query
         elif self.target_bq_load_method == UPSERT:
             merge_query = UPSERT_QUERY.substitute(
-                target_bq_table=self.full_target_bq_table,
-                target_bq_table_temp=self.full_target_bq_table_temp,
+                merge_target=self.full_target_bq_table,
+                merge_source=merge_source,
                 on_keys=' AND '.join(
                     [f"COALESCE(CAST(x.`{key}` as string), 'NULL') = COALESCE(CAST(y.`{key}` as string), 'NULL')" for key in self.source_unique_keys]),
                 partition_filter=partition_filter,

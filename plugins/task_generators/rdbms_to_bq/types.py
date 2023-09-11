@@ -11,8 +11,8 @@ SOURCE_EXTRACT_QUERY = Template(
     """SELECT $selected_fields, $load_timestamp AS load_timestamp FROM $source_table_name""")
 
 UPSERT_QUERY = Template("""MERGE
-  `$target_bq_table` AS x
-USING `$target_bq_table_temp` AS y
+  `$merge_target` AS x
+USING $merge_source AS y
   ON $on_keys
   $partition_filter
 WHEN MATCHED THEN
@@ -22,8 +22,8 @@ WHEN NOT MATCHED THEN
 """)
 
 DELSERT_QUERY = Template("""MERGE
-  `$target_bq_table` AS x
-USING `$target_bq_table_temp` AS y
+  `$merge_target` AS x
+USING $merge_source AS y
   ON $on_keys
   $partition_filter
 WHEN MATCHED THEN
