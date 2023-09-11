@@ -161,8 +161,9 @@ class RDBMSToBQGenerator:
             )
             partition_filter = f"AND DATE(x.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
 
-        # Use cte to rank data in temporary table for merge statement
-        # Only applied to dag with cte_merge.sql in its assets folder
+        # Use cte to get the latest source table data for the merge statement
+        # Only applied to dag that has cte_merge.sql in its assets folder
+        # Will use the temporary table as merge source if no cte_merge.sql is provided 
         merge_cte = os.path.join(self.dag_base_path, "assets/cte_merge.sql")
         if os.path.exists(merge_cte):
             with open(merge_cte, "r") as file:
@@ -171,7 +172,7 @@ class RDBMSToBQGenerator:
                     full_target_bq_table_temp=self.full_target_bq_table_temp
                 )
         else:
-            merge_source = self.full_target_bq_table_temp
+            merge_source = f"`{self.full_target_bq_table_temp}`"
 
         # Construct delsert query
         if self.target_bq_load_method == DELSERT:

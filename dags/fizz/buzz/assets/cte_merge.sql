@@ -20,7 +20,7 @@ SELECT
 FROM (
 SELECT
     DISTINCT *,
-    ROW_NUMBER() OVER (PARTITION BY id ORDER BY created_at DESC ) AS rownum
+    ROW_NUMBER() OVER (PARTITION BY id ORDER BY created_at, updated_at DESC ) AS rownum
 FROM
     latest )
 WHERE

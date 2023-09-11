@@ -12,7 +12,7 @@ SOURCE_EXTRACT_QUERY = Template(
 
 UPSERT_QUERY = Template("""MERGE
   `$merge_target` AS x
-USING `$merge_source` AS y
+USING $merge_source AS y
   ON $on_keys
   $partition_filter
 WHEN MATCHED THEN
@@ -23,7 +23,7 @@ WHEN NOT MATCHED THEN
 
 DELSERT_QUERY = Template("""MERGE
   `$merge_target` AS x
-USING `$merge_source` AS y
+USING $merge_source AS y
   ON $on_keys
   $partition_filter
 WHEN MATCHED THEN
