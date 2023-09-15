@@ -102,17 +102,17 @@ class RDBMSToBQGenerator:
             extended_fields = [schema_detail["name"]
                                for schema_detail in EXTENDED_SCHEMA]
             fields = [
-                f"{schema_detail['name']}::text" \
-                    if schema_detail["type"] == 'STRING' \
-                        else schema_detail['name'] 
+                # Cast all column with string type into text
+                f"{self.quoting(schema_detail['name'])}::text"
+                if schema_detail["type"] == 'STRING'
+                else self.quoting(schema_detail['name'])
                 for schema_detail in schema
                 if schema_detail["name"] not in extended_fields
             ]
 
             selected_fields = ', '.join([
-                self.quoting(field)
-                for field in fields
-                if field != DATABASE # Exclude database field
+                field for field in fields
+                if field != DATABASE  # Exclude database field
             ])
 
         # Generate query
@@ -125,7 +125,8 @@ class RDBMSToBQGenerator:
         # Add custom value for database field based on connection name
         # This is intended for multiple connection dag
         if kwargs.get(DATABASE) is not None:
-            database = str(kwargs[DATABASE]).replace('pg_', '').replace('mysql_', '')
+            database = str(kwargs[DATABASE]).replace(
+                'pg_', '').replace('mysql_', '')
             source_extract_query = source_extract_query.replace(
                 " FROM",
                 f", '{database}' AS {self.quoting('database')} FROM"
@@ -165,7 +166,7 @@ class RDBMSToBQGenerator:
 
         # Use cte to get the latest source table data for the merge statement
         # Only applied to dag that has cte_merge.sql in its assets folder
-        # Will use the temporary table as merge source if no cte_merge.sql is provided 
+        # Will use the temporary table as merge source if no cte_merge.sql is provided
         merge_cte = os.path.join(self.dag_base_path, "assets/cte_merge.sql")
         if os.path.exists(merge_cte):
             with open(merge_cte, "r") as file:
@@ -370,7 +371,7 @@ class RDBMSToBQGenerator:
 
             # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
             destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
-                    else f'{self.full_target_bq_table_temp}'
+                else f'{self.full_target_bq_table_temp}'
 
             # Load data from GCS to BigQuery
             load = GCSToBigQueryOperator(
