@@ -102,7 +102,9 @@ class RDBMSToBQGenerator:
             extended_fields = [schema_detail["name"]
                                for schema_detail in EXTENDED_SCHEMA]
             fields = [
-                schema_detail["name"]
+                f"{schema_detail['name']}::text" \
+                    if schema_detail["type"] == 'STRING' \
+                        else schema_detail['name'] 
                 for schema_detail in schema
                 if schema_detail["name"] not in extended_fields
             ]
@@ -130,7 +132,7 @@ class RDBMSToBQGenerator:
             )
 
         # Generate query filter based on target_bq_load_method
-        if self.target_bq_load_method == UPSERT or self.target_bq_load_method == DELSERT:
+        if self.target_bq_load_method in MERGE.__members__ or self.target_bq_load_method == APPEND:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
@@ -307,7 +309,8 @@ class RDBMSToBQGenerator:
                         export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
                         filename         = filename,
                         write_on_empty   = True,
-                        schema           = schema
+                        schema           = schema,
+                        stringify_dict   = True
                     )
 
                 # Extract data from MySQL, then load to GCS
@@ -321,7 +324,8 @@ class RDBMSToBQGenerator:
                         export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
                         filename       = filename,
                         write_on_empty = True,
-                        schema         = schema
+                        schema         = schema,
+                        stringify_dict   = True
                     )
 
             # Task generator for multiple connection dag
@@ -343,7 +347,8 @@ class RDBMSToBQGenerator:
                             export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename         = filename,
                             write_on_empty   = True,
-                            schema           = schema
+                            schema           = schema,
+                            stringify_dict   = True
                         )
 
                     # Extract data from MySQL, then load to GCS
@@ -357,7 +362,8 @@ class RDBMSToBQGenerator:
                             export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename       = filename,
                             write_on_empty = True,
-                            schema         = schema
+                            schema         = schema,
+                            stringify_dict = True
                         )
 
                     extract.append(__extract)
