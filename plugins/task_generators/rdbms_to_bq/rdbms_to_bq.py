@@ -65,8 +65,10 @@ class RDBMSToBQGenerator:
 
         if self.task_type == POSTGRES_TO_BQ:
             self.quoting = lambda text: f'"{text}"'
+            self.string_type = 'TEXT'
         elif self.task_type == MYSQL_TO_BQ:
             self.quoting = lambda text: f'`{text}`'
+            self.string_type = 'CHAR'
         else:
             raise Exception('Task type is not supported!')
 
@@ -101,9 +103,10 @@ class RDBMSToBQGenerator:
         if schema is not None:
             extended_fields = [schema_detail["name"]
                                for schema_detail in EXTENDED_SCHEMA]
+
             fields = [
-                # Cast all column with string type into text
-                f"{self.quoting(schema_detail['name'])}::text"
+                # Cast all column with string type as TEXT or CHAR
+                f"CAST({self.quoting(schema_detail['name'])} AS {self.string_type})"
                 if schema_detail["type"] == 'STRING'
                 else self.quoting(schema_detail['name'])
                 for schema_detail in schema
