@@ -29,7 +29,7 @@ from plugins.constants.variables import (DEFAULT_GCS_BUCKET, GCP_CONN_ID,
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utilities.generic import get_iso8601_date, get_onelined_string
+from plugins.utilities.generic import get_onelined_string
 
 
 class RDBMSToBQGenerator:
@@ -108,7 +108,7 @@ class RDBMSToBQGenerator:
 
             selected_fields = [
                 # Cast all column with string type as TEXT or CHAR, except for database field
-                f"CAST({self.quoting(schema_detail['name'])} AS {self.string_type})"
+                f"CAST({self.quoting(schema_detail['name'])} AS {self.string_type}) AS {self.quoting(schema_detail['name'])}"
                 if schema_detail["type"] == 'STRING'
                 else self.quoting(schema_detail['name'])
                 for schema_detail in schema
@@ -284,7 +284,7 @@ class RDBMSToBQGenerator:
 
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
-            iso8601_date = get_iso8601_date()
+            iso8601_date = '{{ ds }}'
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
             write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
