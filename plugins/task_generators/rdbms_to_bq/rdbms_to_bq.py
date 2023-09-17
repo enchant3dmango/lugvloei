@@ -115,6 +115,7 @@ class RDBMSToBQGenerator:
 
             selected_fields = ', '.join([
                 field for field in fields
+                if field != DATABASE  # Exclude database field
             ])
 
         # Generate query
