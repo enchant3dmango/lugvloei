@@ -103,24 +103,21 @@ class RDBMSToBQGenerator:
         if schema is not None:
             extended_fields = [schema_detail["name"]
                                for schema_detail in EXTENDED_SCHEMA]
+            # Wrap extended_fields and DATABASE field into excluded_fields
+            excluded_fields = extended_fields; extended_fields.append(DATABASE) 
 
-            fields = [
+            selected_fields = [
                 # Cast all column with string type as TEXT or CHAR, except for database field
                 f"CAST({self.quoting(schema_detail['name'])} AS {self.string_type})"
-                if schema_detail["type"] == 'STRING' and schema_detail["name"] != DATABASE
+                if schema_detail["type"] == 'STRING'
                 else self.quoting(schema_detail['name'])
                 for schema_detail in schema
-                if schema_detail["name"] not in extended_fields
+                if schema_detail["name"] not in excluded_fields
             ]
-
-            selected_fields = ', '.join([
-                field for field in fields
-                if field != DATABASE  # Exclude database field
-            ])
 
         # Generate query
         source_extract_query = SOURCE_EXTRACT_QUERY.substitute(
-            selected_fields=selected_fields,
+            selected_fields=', '.join([field for field in selected_fields]),
             load_timestamp='CURRENT_TIMESTAMP' if self.task_type == POSTGRES_TO_BQ else 'CURRENT_TIMESTAMP()',
             source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
         )
