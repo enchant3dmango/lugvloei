@@ -15,7 +15,7 @@ def generate_failure_message(context):
         str(context['exception'])) > 140 else str(context['exception'])
 
     return {
-        "text": ":alert: [Airflow] Task Failure Alert!",
+        "text": ":alert: *Task Failure Alert!*",
         "attachments": [
             {
                 "color": "#E01E5A",
