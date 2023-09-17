@@ -105,13 +105,12 @@ class RDBMSToBQGenerator:
                                for schema_detail in EXTENDED_SCHEMA]
 
             fields = [
-                # Cast all column with string type as TEXT or CHAR
+                # Cast all column with string type as TEXT or CHAR, except for database field
                 f"CAST({self.quoting(schema_detail['name'])} AS {self.string_type})"
-                if schema_detail["type"] == 'STRING'
+                if schema_detail["type"] == 'STRING' and schema_detail["name"] != DATABASE
                 else self.quoting(schema_detail['name'])
                 for schema_detail in schema
                 if schema_detail["name"] not in extended_fields
-                or schema_detail["name"] != DATABASE
             ]
 
             selected_fields = ', '.join([
