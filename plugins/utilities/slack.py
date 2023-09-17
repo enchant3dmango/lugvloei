@@ -17,7 +17,7 @@ def generate_failure_message(context):
         "text": ":alert: *Task Failure Alert!*",
         "attachments": [
             {
-                "color": "#E01E5A",
+                "color": "firebrick",
                 "fields": [
                     {
                         "title": "DAG ID:",
