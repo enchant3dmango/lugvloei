@@ -64,7 +64,7 @@ images:
     tag: ~
     # Specifying digest takes precedence over tag.
     digest: ~
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   # To avoid images with user code, you can turn this to 'true' and
   # all the 'run-airflow-migrations' and 'wait-for-airflow-migrations' containers/jobs
   # will use the images from 'defaultAirflowRepository:defaultAirflowTag' values
@@ -1996,7 +1996,7 @@ dags:
     # git repo clone url
     # ssh example: git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
-    repo: https://github.com/enchant3dmango/spairkflow-on-k8s.git
+    repo: https://github.com/enchant3dmango/aircube.git
     branch: staging
     rev: HEAD
     depth: 1

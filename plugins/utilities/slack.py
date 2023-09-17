@@ -1,7 +1,6 @@
 from airflow.providers.slack.operators.slack_webhook import SlackWebhookOperator
 
-from plugins.constants.connections import (SLACK_WEBHOOK_CONNECTION_ID,
-                                           SLACK_WEBHOOK_TOKEN)
+from plugins.constants.connections import SLACK_WEBHOOK_CONNECTION_ID
 
 
 def generate_failure_message(context):
@@ -11,19 +10,18 @@ def generate_failure_message(context):
     log_url        = context.get('task_instance').log_url
     retry_count    = context.get('task_instance').try_number - 1
     run_id         = context.get('task_instance').run_id
-    execution_date = context.get('execution_date')
     error_message  = (str(context['exception'])[:140] + '...') if len(
         str(context['exception'])) > 140 else str(context['exception'])
 
     return {
-        "text": ":alert: [Airflow] Task Failure Alert!",
+        "text": ":alert: *Task Failure Alert!*",
         "attachments": [
             {
-                "color": "#E01E5A",
+                "color": "#B22222",
                 "fields": [
                     {
                         "title": "DAG ID:",
-                        "value": f"*{dag_id}*",
+                        "value": f"{dag_id}",
                         "short": True
                     },
                     {
@@ -47,7 +45,7 @@ def generate_failure_message(context):
                         "short": False
                     }
                 ],
-                "footer": f"Run ID : {run_id}\nExecution Date : {execution_date}",
+                "footer": f"Run ID : {run_id}",
             }
         ]
     }
@@ -61,7 +59,6 @@ def on_failure_callback(context):
     operator = SlackWebhookOperator(
         task_id               = 'on_failure_callback',
         slack_webhook_conn_id = SLACK_WEBHOOK_CONNECTION_ID,
-        webhook_token         = SLACK_WEBHOOK_TOKEN,
         message               = generate_failure_message(context=context)['text'],
         attachments           = generate_failure_message(context=context)['attachments']
     )

@@ -23,13 +23,13 @@ from plugins.constants.types import (AIRFLOW, APPEND, DATABASE, DELSERT,
                                      POSTGRES_TO_BQ, PYTHONPATH, SPARK,
                                      SPARK_KUBERNETES_OPERATOR,
                                      SPARK_KUBERNETES_SENSOR, UPSERT)
-from plugins.constants.variables import (DEFAULT_GCS_BUCKET, GCP_CONN_ID,
+from plugins.constants.variables import (GCP_CONN_ID, GCS_DATA_LAKE_BUCKET,
                                          RDBMS_TO_BQ_APPLICATION_FILE,
                                          SPARK_JOB_NAMESPACE)
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utilities.generic import get_iso8601_date, get_onelined_string
+from plugins.utilities.generic import get_onelined_string
 
 
 class RDBMSToBQGenerator:
@@ -65,8 +65,10 @@ class RDBMSToBQGenerator:
 
         if self.task_type == POSTGRES_TO_BQ:
             self.quoting = lambda text: f'"{text}"'
+            self.string_type = 'TEXT'
         elif self.task_type == MYSQL_TO_BQ:
             self.quoting = lambda text: f'`{text}`'
+            self.string_type = 'CHAR'
         else:
             raise Exception('Task type is not supported!')
 
@@ -97,25 +99,25 @@ class RDBMSToBQGenerator:
         return schema
 
     def __generate_extract_query(self, schema: list = None, **kwargs) -> str:
-        # Get all field name and exclude the extended field name to be selected
+        # Get all field name and exclude the extended field and database field to be selected
         if schema is not None:
             extended_fields = [schema_detail["name"]
                                for schema_detail in EXTENDED_SCHEMA]
-            fields = [
-                schema_detail["name"]
-                for schema_detail in schema
-                if schema_detail["name"] not in extended_fields
-            ]
+            # Wrap extended_fields and DATABASE field into excluded_fields
+            excluded_fields = extended_fields; extended_fields.append(DATABASE) 
 
-            selected_fields = ', '.join([
-                self.quoting(field)
-                for field in fields
-                if field != DATABASE # Exclude database field
-            ])
+            selected_fields = [
+                # Cast all column with string type as TEXT or CHAR, except for database field
+                f"CAST({self.quoting(schema_detail['name'])} AS {self.string_type}) AS {self.quoting(schema_detail['name'])}"
+                if schema_detail["type"] == 'STRING'
+                else self.quoting(schema_detail['name'])
+                for schema_detail in schema
+                if schema_detail["name"] not in excluded_fields
+            ]
 
         # Generate query
         source_extract_query = SOURCE_EXTRACT_QUERY.substitute(
-            selected_fields=selected_fields,
+            selected_fields=', '.join([field for field in selected_fields]),
             load_timestamp='CURRENT_TIMESTAMP' if self.task_type == POSTGRES_TO_BQ else 'CURRENT_TIMESTAMP()',
             source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
         )
@@ -123,14 +125,15 @@ class RDBMSToBQGenerator:
         # Add custom value for database field based on connection name
         # This is intended for multiple connection dag
         if kwargs.get(DATABASE) is not None:
-            database = str(kwargs[DATABASE]).replace('pg_', '').replace('mysql_', '')
+            database = str(kwargs[DATABASE]).replace(
+                'pg_', '').replace('mysql_', '')
             source_extract_query = source_extract_query.replace(
                 " FROM",
                 f", '{database}' AS {self.quoting('database')} FROM"
             )
 
         # Generate query filter based on target_bq_load_method
-        if self.target_bq_load_method == UPSERT or self.target_bq_load_method == DELSERT:
+        if self.target_bq_load_method in MERGE.__members__ or self.target_bq_load_method == APPEND:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
@@ -163,7 +166,7 @@ class RDBMSToBQGenerator:
 
         # Use cte to get the latest source table data for the merge statement
         # Only applied to dag that has cte_merge.sql in its assets folder
-        # Will use the temporary table as merge source if no cte_merge.sql is provided 
+        # Will use the temporary table as merge source if no cte_merge.sql is provided
         merge_cte = os.path.join(self.dag_base_path, "assets/cte_merge.sql")
         if os.path.exists(merge_cte):
             with open(merge_cte, "r") as file:
@@ -281,7 +284,7 @@ class RDBMSToBQGenerator:
 
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
-            iso8601_date = get_iso8601_date()
+            iso8601_date = '{{ ds }}'
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
             write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
@@ -303,11 +306,12 @@ class RDBMSToBQGenerator:
                         postgres_conn_id = self.source_connection,
                         gcp_conn_id      = GCP_CONN_ID,
                         sql              = extract_query,
-                        bucket           = DEFAULT_GCS_BUCKET,
+                        bucket           = GCS_DATA_LAKE_BUCKET,
                         export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
                         filename         = filename,
                         write_on_empty   = True,
-                        schema           = schema
+                        schema           = schema,
+                        stringify_dict   = True
                     )
 
                 # Extract data from MySQL, then load to GCS
@@ -317,11 +321,12 @@ class RDBMSToBQGenerator:
                         mysql_conn_id  = self.source_connection,
                         gcp_conn_id    = GCP_CONN_ID,
                         sql            = extract_query,
-                        bucket         = DEFAULT_GCS_BUCKET,
+                        bucket         = GCS_DATA_LAKE_BUCKET,
                         export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
                         filename       = filename,
                         write_on_empty = True,
-                        schema         = schema
+                        schema         = schema,
+                        stringify_dict   = True
                     )
 
             # Task generator for multiple connection dag
@@ -339,11 +344,12 @@ class RDBMSToBQGenerator:
                             postgres_conn_id = connection,
                             gcp_conn_id      = GCP_CONN_ID,
                             sql              = extract_query,
-                            bucket           = DEFAULT_GCS_BUCKET,
+                            bucket           = GCS_DATA_LAKE_BUCKET,
                             export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename         = filename,
                             write_on_empty   = True,
-                            schema           = schema
+                            schema           = schema,
+                            stringify_dict   = True
                         )
 
                     # Extract data from MySQL, then load to GCS
@@ -353,24 +359,25 @@ class RDBMSToBQGenerator:
                             mysql_conn_id  = connection,
                             gcp_conn_id    = GCP_CONN_ID,
                             sql            = extract_query,
-                            bucket         = DEFAULT_GCS_BUCKET,
+                            bucket         = GCS_DATA_LAKE_BUCKET,
                             export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename       = filename,
                             write_on_empty = True,
-                            schema         = schema
+                            schema         = schema,
+                            stringify_dict = True
                         )
 
                     extract.append(__extract)
 
             # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
             destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
-                    else f'{self.full_target_bq_table_temp}'
+                else f'{self.full_target_bq_table_temp}'
 
             # Load data from GCS to BigQuery
             load = GCSToBigQueryOperator(
                 task_id                           = f'load_to_bq__{self.source_table}',
                 gcp_conn_id                       = GCP_CONN_ID,
-                bucket                            = DEFAULT_GCS_BUCKET,
+                bucket                            = GCS_DATA_LAKE_BUCKET,
                 destination_project_dataset_table = destination_project_dataset_table,
                 source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/*.json'],
                 schema_fields                     = schema,
