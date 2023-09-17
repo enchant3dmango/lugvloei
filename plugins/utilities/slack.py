@@ -21,7 +21,7 @@ def generate_failure_message(context):
                 "fields": [
                     {
                         "title": "DAG ID:",
-                        "value": f"*{dag_id}*",
+                        "value": f"{dag_id}",
                         "short": True
                     },
                     {
