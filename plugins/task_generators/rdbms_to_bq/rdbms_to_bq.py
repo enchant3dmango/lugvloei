@@ -99,7 +99,7 @@ class RDBMSToBQGenerator:
         return schema
 
     def __generate_extract_query(self, schema: list = None, **kwargs) -> str:
-        # Get all field name and exclude the extended field name to be selected
+        # Get all field name and exclude the extended field and database field to be selected
         if schema is not None:
             extended_fields = [schema_detail["name"]
                                for schema_detail in EXTENDED_SCHEMA]
@@ -111,11 +111,11 @@ class RDBMSToBQGenerator:
                 else self.quoting(schema_detail['name'])
                 for schema_detail in schema
                 if schema_detail["name"] not in extended_fields
+                or schema_detail["name"] != DATABASE
             ]
 
             selected_fields = ', '.join([
                 field for field in fields
-                if field != DATABASE  # Exclude database field
             ])
 
         # Generate query
