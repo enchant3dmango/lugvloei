@@ -17,7 +17,7 @@ def generate_failure_message(context):
         "text": ":alert: *Task Failure Alert!*",
         "attachments": [
             {
-                "color": "#FF0000",
+                "color": "#B22222",
                 "fields": [
                     {
                         "title": "DAG ID:",
@@ -45,7 +45,7 @@ def generate_failure_message(context):
                         "short": False
                     }
                 ],
-                "footer": f"Run ID : {run_id}",
+                "footer": f"Run ID: {run_id}",
             }
         ]
     }

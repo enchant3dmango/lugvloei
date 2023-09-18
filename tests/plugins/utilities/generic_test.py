@@ -5,10 +5,8 @@ import sys
 import pendulum
 
 sys.path.append(os.getcwd())
-from plugins.utilities.generic import (get_config_files,
-                                             get_escaped_string,
-                                             get_iso8601_date,
-                                             get_onelined_string)
+from plugins.utilities.generic import (get_config_files, get_escaped_string,
+                                       get_iso8601_date, get_onelined_string)
 
 
 def test_get_config_files(mocker):
@@ -33,7 +31,6 @@ def test_get_config_files(mocker):
         os.path.normpath(f'{directory}/file-2.txt')
     ]
 
-    # Assert the result
     assert result == expected_result
 
 
@@ -62,7 +59,6 @@ def test_get_iso8601_date(mocker):
     result = get_iso8601_date()
     expected_result = '2023-09-10'
 
-    # Assert the result
     assert result == expected_result
 
 # pytest==7.4.2, pytest-mock==3.11.1
