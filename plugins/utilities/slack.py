@@ -45,7 +45,7 @@ def generate_failure_message(context):
                         "short": False
                     }
                 ],
-                "footer": f"Run ID : {run_id}",
+                "footer": f"Run ID: {run_id}",
             }
         ]
     }
