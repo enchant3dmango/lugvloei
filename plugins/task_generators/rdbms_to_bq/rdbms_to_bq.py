@@ -60,7 +60,7 @@ class RDBMSToBQGenerator:
         self.target_bq_table_temp      : str                   = f'{self.target_bq_table}_temp'
         self.target_bq_load_method     : str                   = config['target']['bq']['load_method']
         self.target_bq_partition_field : str                   = config['target']['bq']['partition_field']
-        self.target_bq_cluster_field   : List[str]             = config['target']['bq']['cluster_field']
+        self.target_bq_cluster_fields  : List[str]             = config['target']['bq']['cluster_fields']
         self.full_target_bq_table      : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
         self.full_target_bq_table_temp : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table_temp}'
 
@@ -298,7 +298,7 @@ class RDBMSToBQGenerator:
             } if self.target_bq_partition_field else None
 
             # Clustering, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Clustering
-            cluster_fields = self.target_bq_cluster_field if self.target_bq_cluster_field else None
+            cluster_fields = self.target_bq_cluster_fields if self.target_bq_cluster_fields else None
 
             # Task generator for single connection dag
             if type(self.source_connection) is str:
