@@ -35,4 +35,4 @@ task:
       table: buzz
       load_method: upsert
       partition_field: created_at
-      cluster_field: ~
+      cluster_fields: ~
