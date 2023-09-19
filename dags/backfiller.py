@@ -29,11 +29,15 @@ default_args = {
 
 def configuration_reader(**kwargs):
     logging.info('Parsing configuration.')
+
+    dag_run = kwargs.get('dag_run')
+    logging.info(dag_run)
+
     try:
         logging.info(f"""Backfill configuration:
-        dag_id={kwargs['dag_run'].conf['dag_id']}
-        start_date={kwargs['dag_run'].conf['start_date']}
-        end_date={kwargs['dag_run'].conf['end_date']}
+        dag_id={dag_run.conf['dag_id']}
+        start_date={dag_run.conf['start_date']}
+        end_date={dag_run.conf['end_date']}
         """)
     except:
         raise Exception(
