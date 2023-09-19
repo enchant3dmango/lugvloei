@@ -286,7 +286,7 @@ class RDBMSToBQGenerator:
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
             iso8601_date = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y-%m-%d') }}"
-            iso8601_time = "{{ data_interval_start.astimezone(dag.timezone).strftime('%H-%M-%S') }}" # For non-daily dag
+            iso8601_time = "{{ data_interval_start.astimezone(dag.timezone).strftime('%H:%M:%S') }}" # For non-daily dag
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
             write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
