@@ -290,11 +290,13 @@ class RDBMSToBQGenerator:
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
             write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
 
+            # TimePartitioning, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TimePartitioning
             time_partitioning = {
                 "type": "DAY",
                 "field": self.target_bq_partition_field
             } if self.target_bq_partition_field else None
 
+            # Clustering, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Clustering
             cluster_fields = {
                 "fields": self.target_bq_cluster_field
             } if self.target_bq_cluster_field else None
