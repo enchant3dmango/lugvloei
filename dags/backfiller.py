@@ -27,8 +27,6 @@ default_args = {
 }
 
 
-@dag(catchup=False, dag_id='backfiller', default_args=default_args,
-     start_date=start_date, tags=tags)
 def configuration_reader(**kwargs):
     logging.info('Parsing configuration.')
     try:
@@ -42,19 +40,25 @@ def configuration_reader(**kwargs):
             'Wrong backfill configuration, the configuration should contain dag_id, start_date, and end_date. Kindly check the trigger configuration!')
 
 
-configuration_reader_task = PythonOperator(
-    task_id='configuration_reader',
-    provide_context=True,
-    python_callable=configuration_reader
-)
-
-backfill_task = BashOperator(
-    task_id='backfill',
-    bash_command='airflow dags backfill --disable-retry -s {start_date} -e {end_date} --verbose {dag_id}'.format(
-        start_date="{{ dag_run.conf['start_date'] }}",
-        end_date="{{ dag_run.conf['end_date'] }}",
-        dag_id="{{ dag_run.conf['dag_id'] }}"
+@dag(catchup=False, dag_id='backfiller', default_args=default_args,
+     start_date=start_date, tags=tags)
+def generate_dag():
+    configuration_reader_task = PythonOperator(
+        task_id='configuration_reader',
+        provide_context=True,
+        python_callable=configuration_reader
     )
-)
 
-configuration_reader_task >> backfill_task
+    backfill_task = BashOperator(
+        task_id='backfill',
+        bash_command='airflow dags backfill --disable-retry -s {start_date} -e {end_date} --verbose {dag_id}'.format(
+            start_date="{{ dag_run.conf['start_date'] }}",
+            end_date="{{ dag_run.conf['end_date'] }}",
+            dag_id="{{ dag_run.conf['dag_id'] }}"
+        )
+    )
+
+    configuration_reader_task.set_downstream(backfill_task)
+
+
+generate_dag()
