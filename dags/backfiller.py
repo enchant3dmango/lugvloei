@@ -11,7 +11,7 @@ from airflow.operators.bash import BashOperator
 from plugins.constants.types import DE_DAG_OWNER_NAME, PYTHONPATH
 from plugins.utilities.slack import on_failure_callback
 
-start_date = '2023, 9, 1'
+start_date = pendulum.datetime(2023, 9, 1, tz='Asia/Jakarta')
 tags = [
     'backfill'
 ]
@@ -28,8 +28,7 @@ default_args = {
 
 
 @dag(catchup=False, dag_id='backfiller', default_args=default_args,
-     start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), tags=tags,
-     template_searchpath=PYTHONPATH)
+     start_date=start_date, tags=tags)
 def configuration_reader(**kwargs):
     logging.info('Parsing configuration.')
     try:
