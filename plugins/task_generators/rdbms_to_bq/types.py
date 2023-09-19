@@ -42,7 +42,7 @@ EXECUTE IMMEDIATE
           CONCAT("DATE '", FORMAT_DATE('%Y-%m-%d', flattened_dates_array), "'")
         FROM (
           SELECT
-            DISTINCT DATE($partition_key) AS flattened_dates_array
+            DISTINCT DATE($partition_field) AS flattened_dates_array
           FROM
             `$target_bq_table_temp` ) AS t
         ORDER BY
