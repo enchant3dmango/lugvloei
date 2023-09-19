@@ -59,7 +59,8 @@ class RDBMSToBQGenerator:
         self.target_bq_table           : str                   = config['target']['bq']['table']
         self.target_bq_table_temp      : str                   = f'{self.target_bq_table}_temp'
         self.target_bq_load_method     : str                   = config['target']['bq']['load_method']
-        self.target_bq_partition_key   : str                   = config['target']['bq']['partition_key']
+        self.target_bq_partition_field : str                   = config['target']['bq']['partition_field']
+        self.target_bq_cluster_field   : List[str]             = config['target']['bq']['cluster_field']
         self.full_target_bq_table      : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
         self.full_target_bq_table_temp : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table_temp}'
 
@@ -156,13 +157,13 @@ class RDBMSToBQGenerator:
         partition_filter = ''
         query = None
 
-        # Query to get partition_key date list from temp table to be used as partition filter
-        if self.target_bq_partition_key is not None:
+        # Query to get partition_field date list from temp table to be used as partition filter
+        if self.target_bq_partition_field is not None:
             temp_table_partition_date_query = TEMP_TABLE_PARTITION_DATE_QUERY.substitute(
-                partition_key=self.target_bq_partition_key,
+                partition_field=self.target_bq_partition_field,
                 target_bq_table_temp=self.full_target_bq_table_temp
             )
-            partition_filter = f"AND DATE(x.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
+            partition_filter = f"AND DATE(x.{self.target_bq_partition_field}) IN UNNEST(formatted_dates)"
 
         # Use cte to get the latest source table data for the merge statement
         # Only applied to dag that has cte_merge.sql in its assets folder
@@ -254,7 +255,7 @@ class RDBMSToBQGenerator:
                     f"--full_target_bq_table={self.full_target_bq_table}",
                     f"--target_bq_project={self.target_bq_project}",
                     f"--jdbc_credential={self.__generate_jdbc_credential()}",
-                    f"--partition_key={self.target_bq_partition_key}",
+                    f"--partition_field={self.target_bq_partition_field}",
                     f"--extract_query={extract_query}",
                     f"--merge_query={merge_query}",
                     f"--task_type={self.task_type}",
@@ -284,15 +285,19 @@ class RDBMSToBQGenerator:
 
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
-            iso8601_date = '{{ ds }}'
+            iso8601_date = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y-%m-%d') }}"
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
             write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
 
             time_partitioning = {
                 "type": "DAY",
-                "field": self.target_bq_partition_key
-            } if self.target_bq_partition_key else None
+                "field": self.target_bq_partition_field
+            } if self.target_bq_partition_field else None
+
+            cluster_fields = {
+                "fields": self.target_bq_cluster_field
+            } if self.target_bq_cluster_field else None
 
             # Task generator for single connection dag
             if type(self.source_connection) is str:
@@ -384,6 +389,7 @@ class RDBMSToBQGenerator:
                 source_format                     = SourceFormat.NEWLINE_DELIMITED_JSON,
                 write_disposition                 = write_disposition,
                 time_partitioning                 = time_partitioning,
+                cluster_fields                    = cluster_fields,
                 autodetect                        = False
             )
 
