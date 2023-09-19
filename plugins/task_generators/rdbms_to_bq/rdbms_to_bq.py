@@ -286,6 +286,7 @@ class RDBMSToBQGenerator:
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
             iso8601_date = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y-%m-%d') }}"
+            iso8601_time = "{{ data_interval_start.astimezone(dag.timezone).strftime('%H-%M-%S') }}" # For non-daily dag
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
             write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
@@ -302,7 +303,7 @@ class RDBMSToBQGenerator:
             # Task generator for single connection dag
             if type(self.source_connection) is str:
                 extract_query = self.__generate_extract_query(schema=schema)
-                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}' + '__{}.json'
+                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}' + '__{}.json'
 
                 # Extract data from Postgres, then load to GCS
                 if self.task_type == POSTGRES_TO_BQ:
@@ -340,7 +341,7 @@ class RDBMSToBQGenerator:
 
                 for index, connection in enumerate(sorted(self.source_connection)):
                     extract_query = self.__generate_extract_query(schema=schema, database=connection)
-                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index+1}' + '__{}.json'
+                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}_{index+1}' + '__{}.json'
 
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
@@ -384,7 +385,7 @@ class RDBMSToBQGenerator:
                 gcp_conn_id                       = GCP_CONN_ID,
                 bucket                            = GCS_DATA_LAKE_BUCKET,
                 destination_project_dataset_table = destination_project_dataset_table,
-                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/*.json'],
+                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/*.json'],
                 schema_fields                     = schema,
                 source_format                     = SourceFormat.NEWLINE_DELIMITED_JSON,
                 write_disposition                 = write_disposition,
