@@ -33,4 +33,5 @@ task:
       table: bar
       load_method: truncate
       partition_field: created_at
-      cluster_field: name
+      cluster_fields:
+        - name
