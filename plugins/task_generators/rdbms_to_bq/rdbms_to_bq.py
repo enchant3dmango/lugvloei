@@ -297,9 +297,7 @@ class RDBMSToBQGenerator:
             } if self.target_bq_partition_field else None
 
             # Clustering, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Clustering
-            cluster_fields = {
-                "fields": self.target_bq_cluster_field
-            } if self.target_bq_cluster_field else None
+            cluster_fields = self.target_bq_cluster_field if self.target_bq_cluster_field else None
 
             # Task generator for single connection dag
             if type(self.source_connection) is str:
