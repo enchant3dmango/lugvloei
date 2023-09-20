@@ -44,7 +44,6 @@ class RDBMSToBQGenerator:
     """
 
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
-        super().__init__(**kwargs)
         self.dag_id                    : str                   = dag_id
         self.bq_client                 : bigquery.Client       = bigquery.Client()
         self.task_type                 : str                   = config['type']
@@ -57,12 +56,11 @@ class RDBMSToBQGenerator:
         self.target_bq_project         : str                   = config['target']['bq']['project']
         self.target_bq_dataset         : str                   = config['target']['bq']['dataset']
         self.target_bq_table           : str                   = config['target']['bq']['table']
-        self.target_bq_table_temp      : str                   = f'{self.target_bq_table}_temp'
         self.target_bq_load_method     : str                   = config['target']['bq']['load_method']
         self.target_bq_partition_field : str                   = config['target']['bq']['partition_field']
         self.target_bq_cluster_fields  : List[str]             = config['target']['bq']['cluster_fields']
         self.full_target_bq_table      : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
-        self.full_target_bq_table_temp : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table_temp}'
+        self.full_target_bq_table_temp : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
 
         if self.task_type == POSTGRES_TO_BQ:
             self.quoting = lambda text: f'"{text}"'
