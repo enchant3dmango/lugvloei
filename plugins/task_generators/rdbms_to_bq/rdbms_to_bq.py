@@ -57,7 +57,7 @@ class RDBMSToBQGenerator:
         self.target_bq_project         : str                   = config['target']['bq']['project']
         self.target_bq_dataset         : str                   = config['target']['bq']['dataset']
         self.target_bq_table           : str                   = config['target']['bq']['table']
-        self.target_bq_table_temp      : str                   = f'{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
+        self.target_bq_table_temp      : str                   = f'{self.target_bq_table}_temp'
         self.target_bq_load_method     : str                   = config['target']['bq']['load_method']
         self.target_bq_partition_field : str                   = config['target']['bq']['partition_field']
         self.target_bq_cluster_fields  : List[str]             = config['target']['bq']['cluster_fields']
