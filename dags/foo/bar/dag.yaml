@@ -11,7 +11,7 @@ dag:
   tags:
     - mysql
     - bigquery
-    - truncate
+    - upsert
   owner: example@email.com
   priority_weight: 1
 task:
@@ -31,7 +31,7 @@ task:
       project: pocz-389704
       dataset: foo
       table: bar
-      load_method: truncate
+      load_method: upsert
       partition_field: created_at
       cluster_fields:
         - name
