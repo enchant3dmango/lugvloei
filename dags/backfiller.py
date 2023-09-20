@@ -9,7 +9,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
 from plugins.constants.types import DE_DAG_OWNER_NAME
-from plugins.utilities.slack import on_failure_callback
+from plugins.utilities.slack import on_failure_callback, on_success_callback
 
 start_date = pendulum.datetime(2023, 9, 1, tz='Asia/Jakarta')
 tags = [
@@ -23,7 +23,8 @@ default_args = {
     'depend_on_past': False,
     'retries': 0,
     'retry_delay': timedelta(minutes=5),
-    'on_failure_callback': on_failure_callback
+    'on_failure_callback': on_failure_callback,
+    'on_success_callback': on_success_callback
 }
 
 # TODO: Add configuration validator function
