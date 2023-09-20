@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from datetime import timedelta
 import logging
+from datetime import timedelta
 
 import pendulum
 from airflow.decorators import dag
-from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 
-from plugins.constants.types import DE_DAG_OWNER_NAME, PYTHONPATH
+from plugins.constants.types import DE_DAG_OWNER_NAME
 from plugins.utilities.slack import on_failure_callback
 
 start_date = pendulum.datetime(2023, 9, 1, tz='Asia/Jakarta')
 tags = [
-    'backfill'
+    'utility'
 ]
 
 default_args = {
@@ -24,6 +24,14 @@ default_args = {
     'retries': 0,
     'retry_delay': timedelta(minutes=5),
     'on_failure_callback': on_failure_callback
+}
+
+# TODO: Add configuration validator function
+
+configuration_template = {
+    "dag_id": "foo.bar",
+    "start_date": "2023-09-01",
+    "end_date": "2023-09-07"
 }
 
 
@@ -41,11 +49,13 @@ def configuration_reader(**kwargs):
         """)
     except:
         raise Exception(
-            'Wrong backfill configuration, the configuration should contain dag_id, start_date, and end_date. Kindly check the trigger configuration!')
+            'Wrong backfill configuration, the configuration should contain dag_id, start_date, and end_date. Kindly check the trigger configuration!\n' +
+            f'Here is an example configuration: {configuration_template}'
+        )
 
 
 @dag(catchup=False, dag_id='backfiller', default_args=default_args,
-     start_date=start_date, tags=tags)
+     start_date=start_date, tags=tags, schedule=None)
 def generate_dag():
     configuration_reader_task = PythonOperator(
         task_id='configuration_reader',
@@ -53,8 +63,8 @@ def generate_dag():
         python_callable=configuration_reader
     )
 
-    backfill_task = BashOperator(
-        task_id='backfill',
+    executor_task = BashOperator(
+        task_id='executor',
         bash_command='airflow dags backfill --disable-retry -s {start_date} -e {end_date} --verbose {dag_id}'.format(
             start_date="{{ dag_run.conf['start_date'] }}",
             end_date="{{ dag_run.conf['end_date'] }}",
@@ -62,7 +72,7 @@ def generate_dag():
         )
     )
 
-    configuration_reader_task.set_downstream(backfill_task)
+    configuration_reader_task.set_downstream(executor_task)
 
 
 generate_dag()
