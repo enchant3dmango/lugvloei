@@ -37,8 +37,7 @@ def generate_dag():
         task_id='executor',
         bash_command='airflow db clean --clean-before-timestamp {clean_before_timestamp} --skip-archive --verbose -t {tables}'.format(
             clean_before_timestamp=three_months_ago,
-            tables=['callback_request', 'celery_taskmeta', 'celery_tasksetmeta', 'dag', 'dag_run', 'dataset_event',
-                    'import_error', 'job', 'log', 'session', 'sla_miss', 'task_fail', 'task_instance', 'task_reschedule', 'xcom']
+            tables='callback_request, celery_taskmeta, celery_tasksetmeta, dag, dag_run, dataset_event, import_error, job, log, session, sla_miss, task_fail, task_instance, task_reschedule, xcom'
         )
     )
 
