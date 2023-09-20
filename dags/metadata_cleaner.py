@@ -7,7 +7,7 @@ from airflow.decorators import dag
 from airflow.operators.bash import BashOperator
 
 from plugins.constants.types import DE_DAG_OWNER_NAME
-from plugins.utilities.slack import on_failure_callback
+from plugins.utilities.slack import on_failure_callback, on_success_callback
 
 start_date = pendulum.datetime(2023, 8, 1, tz='Asia/Jakarta')
 tags = [
@@ -25,7 +25,8 @@ default_args = {
     'depend_on_past': False,
     'retries': 0,
     'retry_delay': timedelta(minutes=5),
-    'on_failure_callback': on_failure_callback
+    'on_failure_callback': on_failure_callback,
+    'on_success_callback': on_success_callback
 }
 
 
