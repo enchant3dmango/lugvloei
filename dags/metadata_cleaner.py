@@ -30,7 +30,7 @@ default_args = {
 }
 
 
-@dag(catchup=False, dag_id='medatada_cleaner', default_args=default_args,
+@dag(catchup=False, dag_id='metadata_cleaner', default_args=default_args,
      start_date=start_date, tags=tags, schedule='@monthly')
 def generate_dag():
 
