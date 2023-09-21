@@ -13,4 +13,3 @@ def generate_tasks(dag_id, config):
         bq_to_parquet = BQToParquetGenerator(dag_id=dag_id, config=config)
         bq_to_parquet.generate_tasks()
     # TODO: Add conditional statement for other task type here
-
