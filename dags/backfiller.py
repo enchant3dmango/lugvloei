@@ -23,8 +23,7 @@ default_args = {
     'depend_on_past': False,
     'retries': 0,
     'retry_delay': timedelta(minutes=5),
-    'on_failure_callback': on_failure_callback,
-    'on_success_callback': on_success_callback
+    'on_failure_callback': on_failure_callback
 }
 
 # TODO: Add configuration validator function
@@ -70,7 +69,8 @@ def generate_dag():
             start_date="{{ dag_run.conf['start_date'] }}",
             end_date="{{ dag_run.conf['end_date'] }}",
             dag_id="{{ dag_run.conf['dag_id'] }}"
-        )
+        ),
+        on_success_callback=on_success_callback
     )
 
     configuration_reader_task.set_downstream(executor_task)
