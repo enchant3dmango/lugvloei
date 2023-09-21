@@ -26,3 +26,4 @@ task:
       project: ~
       bucket: ~
       hive_partition_key: ~
+
