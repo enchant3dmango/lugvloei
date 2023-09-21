@@ -34,4 +34,5 @@ task:
       dataset: fizz
       table: buzz
       load_method: upsert
-      partition_key: created_at
+      partition_field: created_at
+      cluster_fields: ~

@@ -44,7 +44,6 @@ class RDBMSToBQGenerator:
     """
 
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
-        super().__init__(**kwargs)
         self.dag_id                    : str                   = dag_id
         self.bq_client                 : bigquery.Client       = bigquery.Client()
         self.task_type                 : str                   = config['type']
@@ -57,11 +56,11 @@ class RDBMSToBQGenerator:
         self.target_bq_project         : str                   = config['target']['bq']['project']
         self.target_bq_dataset         : str                   = config['target']['bq']['dataset']
         self.target_bq_table           : str                   = config['target']['bq']['table']
-        self.target_bq_table_temp      : str                   = f'{self.target_bq_table}_temp'
         self.target_bq_load_method     : str                   = config['target']['bq']['load_method']
-        self.target_bq_partition_key   : str                   = config['target']['bq']['partition_key']
+        self.target_bq_partition_field : str                   = config['target']['bq']['partition_field']
+        self.target_bq_cluster_fields  : List[str]             = config['target']['bq']['cluster_fields']
         self.full_target_bq_table      : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
-        self.full_target_bq_table_temp : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table_temp}'
+        self.full_target_bq_table_temp : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
 
         if self.task_type == POSTGRES_TO_BQ:
             self.quoting = lambda text: f'"{text}"'
@@ -156,13 +155,13 @@ class RDBMSToBQGenerator:
         partition_filter = ''
         query = None
 
-        # Query to get partition_key date list from temp table to be used as partition filter
-        if self.target_bq_partition_key is not None:
+        # Query to get partition_field date list from temp table to be used as partition filter
+        if self.target_bq_partition_field is not None:
             temp_table_partition_date_query = TEMP_TABLE_PARTITION_DATE_QUERY.substitute(
-                partition_key=self.target_bq_partition_key,
+                partition_field=self.target_bq_partition_field,
                 target_bq_table_temp=self.full_target_bq_table_temp
             )
-            partition_filter = f"AND DATE(x.{self.target_bq_partition_key}) IN UNNEST(formatted_dates)"
+            partition_filter = f"AND DATE(x.{self.target_bq_partition_field}) IN UNNEST(formatted_dates)"
 
         # Use cte to get the latest source table data for the merge statement
         # Only applied to dag that has cte_merge.sql in its assets folder
@@ -254,7 +253,7 @@ class RDBMSToBQGenerator:
                     f"--full_target_bq_table={self.full_target_bq_table}",
                     f"--target_bq_project={self.target_bq_project}",
                     f"--jdbc_credential={self.__generate_jdbc_credential()}",
-                    f"--partition_key={self.target_bq_partition_key}",
+                    f"--partition_field={self.target_bq_partition_field}",
                     f"--extract_query={extract_query}",
                     f"--merge_query={merge_query}",
                     f"--task_type={self.task_type}",
@@ -284,25 +283,30 @@ class RDBMSToBQGenerator:
 
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
-            iso8601_date = '{{ ds }}'
+            iso8601_date = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y-%m-%d') }}"
+            iso8601_time = "{{ data_interval_start.astimezone(dag.timezone).strftime('%H:%M:%S') }}" # For non-daily dag
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
             write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
 
+            # TimePartitioning, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TimePartitioning
             time_partitioning = {
                 "type": "DAY",
-                "field": self.target_bq_partition_key
-            } if self.target_bq_partition_key else None
+                "field": self.target_bq_partition_field
+            } if self.target_bq_partition_field else None
+
+            # Clustering, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Clustering
+            cluster_fields = self.target_bq_cluster_fields if self.target_bq_cluster_fields else None
 
             # Task generator for single connection dag
             if type(self.source_connection) is str:
                 extract_query = self.__generate_extract_query(schema=schema)
-                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}' + '__{}.json'
+                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}' + '__{}.json'
 
                 # Extract data from Postgres, then load to GCS
                 if self.task_type == POSTGRES_TO_BQ:
                     extract = PostgresToGCSOperator(
-                        task_id          = f'extract__{self.source_table}',
+                        task_id          = f'extract_and_load_to_gcs',
                         postgres_conn_id = self.source_connection,
                         gcp_conn_id      = GCP_CONN_ID,
                         sql              = extract_query,
@@ -317,7 +321,7 @@ class RDBMSToBQGenerator:
                 # Extract data from MySQL, then load to GCS
                 elif self.task_type == MYSQL_TO_BQ:
                     extract = MySQLToGCSOperator(
-                        task_id        = f'extract__{self.source_table}',
+                        task_id        = f'extract_and_load_to_gcs',
                         mysql_conn_id  = self.source_connection,
                         gcp_conn_id    = GCP_CONN_ID,
                         sql            = extract_query,
@@ -335,12 +339,12 @@ class RDBMSToBQGenerator:
 
                 for index, connection in enumerate(sorted(self.source_connection)):
                     extract_query = self.__generate_extract_query(schema=schema, database=connection)
-                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{self.source_table}_{index+1}' + '__{}.json'
+                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}_{index+1}' + '__{}.json'
 
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
                         __extract = PostgresToGCSOperator(
-                            task_id          = f'extract__{self.source_table}_{index+1}',
+                            task_id          = f'extract_and_load_to_gcs__{index+1}',
                             postgres_conn_id = connection,
                             gcp_conn_id      = GCP_CONN_ID,
                             sql              = extract_query,
@@ -355,7 +359,7 @@ class RDBMSToBQGenerator:
                     # Extract data from MySQL, then load to GCS
                     elif self.task_type == MYSQL_TO_BQ:
                         __extract = MySQLToGCSOperator(
-                            task_id        = f'extract__{self.source_table}_{index+1}',
+                            task_id        = f'extract_and_load_to_gcs__{index+1}',
                             mysql_conn_id  = connection,
                             gcp_conn_id    = GCP_CONN_ID,
                             sql            = extract_query,
@@ -375,15 +379,16 @@ class RDBMSToBQGenerator:
 
             # Load data from GCS to BigQuery
             load = GCSToBigQueryOperator(
-                task_id                           = f'load_to_bq__{self.source_table}',
+                task_id                           = f'load_to_bq',
                 gcp_conn_id                       = GCP_CONN_ID,
                 bucket                            = GCS_DATA_LAKE_BUCKET,
                 destination_project_dataset_table = destination_project_dataset_table,
-                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/*.json'],
+                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/*.json'],
                 schema_fields                     = schema,
                 source_format                     = SourceFormat.NEWLINE_DELIMITED_JSON,
                 write_disposition                 = write_disposition,
                 time_partitioning                 = time_partitioning,
+                cluster_fields                    = cluster_fields,
                 autodetect                        = False
             )
 
@@ -401,7 +406,7 @@ class RDBMSToBQGenerator:
 
                 # Merge temporary table into main table
                 merge = BigQueryInsertJobOperator(
-                    task_id       = f'merge__{self.source_table}',
+                    task_id       = f'merge_to_main_table',
                     project_id    = self.target_bq_project,
                     gcp_conn_id   = GCP_CONN_ID,
                     configuration = configuration
@@ -409,7 +414,7 @@ class RDBMSToBQGenerator:
 
                 # Delete temporary table
                 delete = BigQueryDeleteTableOperator(
-                    task_id                = f'delete__{self.target_bq_table_temp}',
+                    task_id                = f'delete_temp_table',
                     gcp_conn_id            = GCP_CONN_ID,
                     deletion_dataset_table = destination_project_dataset_table,
                     ignore_if_missing      = True

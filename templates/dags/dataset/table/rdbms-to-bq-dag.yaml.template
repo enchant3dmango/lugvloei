@@ -29,4 +29,6 @@ task:
       dataset: ~
       table: ~
       load_method: ~
-      partition_key: ~
+      partition_field: ~
+      cluster_field:
+        -

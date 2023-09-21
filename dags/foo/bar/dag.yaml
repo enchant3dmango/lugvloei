@@ -1,7 +1,7 @@
 dag:
   name: foo.bar
   behavior:
-    schedule: 0 0 * * *
+    schedule: 0 2 * * *
     start_date: 2023, 6, 14
     depends_on_past: True
     catch_up: False
@@ -11,7 +11,7 @@ dag:
   tags:
     - mysql
     - bigquery
-    - delsert
+    - upsert
   owner: example@email.com
   priority_weight: 1
 task:
@@ -31,5 +31,7 @@ task:
       project: pocz-389704
       dataset: foo
       table: bar
-      load_method: delsert
-      partition_key: created_at
+      load_method: upsert
+      partition_field: created_at
+      cluster_fields:
+        - name
