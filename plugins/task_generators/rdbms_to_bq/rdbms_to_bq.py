@@ -106,10 +106,19 @@ class RDBMSToBQGenerator:
             excluded_fields = extended_fields; extended_fields.append(DATABASE) 
 
             selected_fields = [
-                # Cast all column with string type as TEXT or CHAR, except for database field
+                # Cast all columns with string type as TEXT or CHAR, except for database field
                 f"CAST({self.quoting(schema_detail['name'])} AS {self.string_type}) AS {self.quoting(schema_detail['name'])}"
                 if schema_detail["type"] == 'STRING'
-                else self.quoting(schema_detail['name'])
+                else (
+                    # Replace TIMESTAMP value less than or equal to '1900-01-01 00:00:00' with '1900-01-01 00:00:00'
+                    f"""CASE
+                        WHEN {self.quoting(schema_detail['name'])} <= '1900-01-01 00:00:00'
+                        THEN '1900-01-01 00:00:00'
+                        ELSE {self.quoting(schema_detail['name'])}
+                    END AS {self.quoting(schema_detail['name'])}"""
+                    if schema_detail["type"] == 'TIMESTAMP'
+                    else self.quoting(schema_detail['name'])
+                )
                 for schema_detail in schema
                 if schema_detail["name"] not in excluded_fields
             ]
@@ -253,7 +262,7 @@ class RDBMSToBQGenerator:
                     f"--full_target_bq_table={self.full_target_bq_table}",
                     f"--target_bq_project={self.target_bq_project}",
                     f"--jdbc_credential={self.__generate_jdbc_credential()}",
-                    f"--partition_field={self.target_bq_partition_field}",
+                    f"--partition_key={self.target_bq_partition_field}", # TODO: Rename into partition_field later
                     f"--extract_query={extract_query}",
                     f"--merge_query={merge_query}",
                     f"--task_type={self.task_type}",

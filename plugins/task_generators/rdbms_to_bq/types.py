@@ -10,7 +10,9 @@ FROM information_schema.columns
 SOURCE_EXTRACT_QUERY = Template(
     """SELECT $selected_fields, $load_timestamp AS load_timestamp FROM $source_table_name""")
 
-UPSERT_QUERY = Template("""MERGE
+UPSERT_QUERY = Template("""CREATE TABLE IF NOT EXISTS
+  `$merge_target` COPY $merge_source
+MERGE
   `$merge_target` AS x
 USING $merge_source AS y
   ON $on_keys
@@ -21,7 +23,9 @@ WHEN NOT MATCHED THEN
   INSERT ($insert_fields) VALUES ($insert_fields);
 """)
 
-DELSERT_QUERY = Template("""MERGE
+DELSERT_QUERY = Template("""CREATE TABLE IF NOT EXISTS
+  `$merge_target` COPY $merge_source
+MERGE
   `$merge_target` AS x
 USING $merge_source AS y
   ON $on_keys
