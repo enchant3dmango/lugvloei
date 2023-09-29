@@ -253,22 +253,26 @@ class RDBMSToBQGenerator:
                 extract_query = self.__generate_extract_query(schema=schema)
                 merge_query = self.__generate_merge_query(schema=schema)
 
+                job_config = {
+                    "target_bq_load_method": {self.target_bq_load_method},
+                    "source_timestamp_keys": {','.join(self.source_timestamp_keys)},
+                    "full_target_bq_table": {self.full_target_bq_table},
+                    "target_bq_project": {self.target_bq_project},
+                    "jdbc_credential": {self.__generate_jdbc_credential()},
+                    "partition_field": {self.target_bq_partition_field},
+                    "extract_query": {extract_query},
+                    "merge_query": {merge_query},
+                    "task_type": {self.task_type},
+                    "jdbc_url": {self.__generate_jdbc_url()},
+                    "schema": {onelined_schema_string}
+                }
+
                 with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
                     application_file = yaml.safe_load(f)
 
                 application_file['spec']['arguments'] = [
-                    f"--target_bq_load_method={self.target_bq_load_method}",
-                    f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
-                    f"--full_target_bq_table={self.full_target_bq_table}",
-                    f"--target_bq_project={self.target_bq_project}",
-                    f"--jdbc_credential={self.__generate_jdbc_credential()}",
-                    f"--partition_key={self.target_bq_partition_field}", # TODO: Rename into partition_field later
-                    f"--extract_query={extract_query}",
-                    f"--merge_query={merge_query}",
-                    f"--task_type={self.task_type}",
-                    f"--jdbc_url={self.__generate_jdbc_url()}",
-                    f"--schema={onelined_schema_string}",
-                    # TODO: Later, send master url
+                    f"--job_type=jdbc-to-bigquery",
+                    f"--job_config={job_config}"
                 ]
 
                 spark_kubernetes_base_task_id = f'{self.target_bq_dataset}-{self.target_bq_table}'.replace(
