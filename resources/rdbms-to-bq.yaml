@@ -1,7 +1,7 @@
 apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
-  name: "{{ ti.task_id }}-{{ ds_nodash }}-{{ ti.try_number }}"
+  name: "{{ ti.task_id }}-{{ data_interval_start.astimezone(dag.timezone).strftime('%Y%m%d') }}-{{ ti.try_number }}"
   namespace: spark
 spec:
   type: Scala
