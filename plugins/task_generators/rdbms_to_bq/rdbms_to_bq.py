@@ -272,7 +272,7 @@ class RDBMSToBQGenerator:
 
                 application_file['spec']['arguments'] = [
                     f"--job_type=jdbc-to-bigquery",
-                    f"--job_config={job_config!r}"
+                    f"--job_config={job_config}"
                 ]
 
                 spark_kubernetes_base_task_id = f'{self.target_bq_dataset}-{self.target_bq_table}'.replace(
