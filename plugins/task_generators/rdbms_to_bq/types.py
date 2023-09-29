@@ -11,7 +11,7 @@ SOURCE_EXTRACT_QUERY = Template(
     """SELECT $selected_fields, $load_timestamp AS load_timestamp FROM $source_table_name""")
 
 UPSERT_QUERY = Template("""CREATE TABLE IF NOT EXISTS
-  `$merge_target` COPY $merge_source
+  `$merge_target` COPY $merge_source;
 MERGE
   `$merge_target` AS x
 USING $merge_source AS y
@@ -24,7 +24,7 @@ WHEN NOT MATCHED THEN
 """)
 
 DELSERT_QUERY = Template("""CREATE TABLE IF NOT EXISTS
-  `$merge_target` COPY $merge_source
+  `$merge_target` COPY $merge_source;
 MERGE
   `$merge_target` AS x
 USING $merge_source AS y
