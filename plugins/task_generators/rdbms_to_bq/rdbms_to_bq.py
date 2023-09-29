@@ -254,17 +254,17 @@ class RDBMSToBQGenerator:
                 merge_query = self.__generate_merge_query(schema=schema)
 
                 job_config = {
-                    "target_bq_load_method": {self.target_bq_load_method},
-                    "source_timestamp_keys": {','.join(self.source_timestamp_keys)},
-                    "full_target_bq_table": {self.full_target_bq_table},
-                    "target_bq_project": {self.target_bq_project},
-                    "jdbc_credential": {self.__generate_jdbc_credential()},
-                    "partition_field": {self.target_bq_partition_field},
-                    "extract_query": {extract_query},
-                    "merge_query": {merge_query},
-                    "task_type": {self.task_type},
-                    "jdbc_url": {self.__generate_jdbc_url()},
-                    "schema": {onelined_schema_string}
+                    "target_bq_load_method": self.target_bq_load_method,
+                    "source_timestamp_keys": ','.join(self.source_timestamp_keys),
+                    "full_target_bq_table": self.full_target_bq_table,
+                    "target_bq_project": self.target_bq_project,
+                    "jdbc_credential": self.__generate_jdbc_credential(),
+                    "partition_field": self.target_bq_partition_field,
+                    "extract_query": extract_query,
+                    "merge_query": merge_query,
+                    "task_type": self.task_type,
+                    "jdbc_url": self.__generate_jdbc_url(),
+                    "schema": onelined_schema_string
                 }
 
                 with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
