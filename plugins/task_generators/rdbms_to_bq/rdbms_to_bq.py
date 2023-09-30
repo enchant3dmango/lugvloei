@@ -127,7 +127,7 @@ class RDBMSToBQGenerator:
         source_extract_query = SOURCE_EXTRACT_QUERY.substitute(
             selected_fields=', '.join([field for field in selected_fields]),
             load_timestamp='CURRENT_TIMESTAMP' if self.task_type == POSTGRES_TO_BQ else 'CURRENT_TIMESTAMP()',
-            source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
+            source_table_name=self.quoting(self.source_table) if self.source_schema is None else f'{self.quoting(self.source_schema)}.{self.quoting(self.source_table)}'
         )
 
         # Add custom value for database field based on connection name
@@ -343,7 +343,7 @@ class RDBMSToBQGenerator:
                         filename       = filename,
                         write_on_empty = True,
                         schema         = schema,
-                        stringify_dict   = True
+                        stringify_dict = True
                     )
 
             # Task generator for multiple connection dag
