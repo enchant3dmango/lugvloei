@@ -187,7 +187,7 @@ class RDBMSToBQGenerator:
 
         # Used for table creation if not exists
         # Can't use COPY directly if the merge source is a CTE from the source table
-        table_creation_query_type = f'TIMESTAMP_TRUNC({self.source_timestamp_keys}, DAY) AS' if DATABASE in schema else 'COPY'
+        table_creation_query_type = f'TIMESTAMP_TRUNC({self.source_timestamp_keys}, DAY) AS' if type(self.source_connection) is list else 'COPY'
 
         # Construct delsert query
         if self.target_bq_load_method == DELSERT:
