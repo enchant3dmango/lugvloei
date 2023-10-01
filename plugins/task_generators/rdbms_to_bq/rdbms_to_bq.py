@@ -185,9 +185,14 @@ class RDBMSToBQGenerator:
         else:
             merge_source = f"`{self.full_target_bq_table_temp}`"
 
+        # Used for table creation if not exists
+        # Can't use COPY directly if the merge source is a CTE from the source table
+        table_creation_query_type = f'TIMESTAMP_TRUNC({self.source_timestamp_keys}, DAY) AS' if DATABASE in schema else 'COPY'
+
         # Construct delsert query
         if self.target_bq_load_method == DELSERT:
             merge_query = DELSERT_QUERY.substitute(
+                table_creation_query_type=table_creation_query_type,
                 merge_target=self.full_target_bq_table,
                 merge_source=merge_source,
                 on_keys=' AND '.join(
@@ -203,6 +208,7 @@ class RDBMSToBQGenerator:
         # Construct upsert query
         elif self.target_bq_load_method == UPSERT:
             merge_query = UPSERT_QUERY.substitute(
+                table_creation_query_type=table_creation_query_type,
                 merge_target=self.full_target_bq_table,
                 merge_source=merge_source,
                 on_keys=' AND '.join(
