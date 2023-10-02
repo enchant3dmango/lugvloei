@@ -161,6 +161,7 @@ class RDBMSToBQGenerator:
         return get_onelined_string(source_extract_query)
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
+        table_creation_query_type = 'COPY'
         partition_filter = ''
         query = None
 
@@ -182,12 +183,12 @@ class RDBMSToBQGenerator:
                 merge_source = merge_source.format(
                     full_target_bq_table_temp=self.full_target_bq_table_temp
                 )
+
+            # Used for table creation if not exists
+            # Can't use COPY directly if the merge source is a CTE from the source table
+            table_creation_query_type = f'PARTITION BY TIMESTAMP_TRUNC({self.target_bq_partition_field}, DAY) AS'
         else:
             merge_source = f"`{self.full_target_bq_table_temp}`"
-
-        # Used for table creation if not exists
-        # Can't use COPY directly if the merge source is a CTE from the source table
-        table_creation_query_type = f'PARTITION BY TIMESTAMP_TRUNC({self.target_bq_partition_field}, DAY) AS' if type(self.source_connection) is list else 'COPY'
 
         # Construct delsert query
         if self.target_bq_load_method == DELSERT:
