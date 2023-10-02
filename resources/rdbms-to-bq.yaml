@@ -6,7 +6,7 @@ metadata:
 spec:
   type: Scala
   mode: cluster
-  image: "asia-docker.pkg.dev/pocz-389704/docker/spark:1.1.3"
+  image: andresitorusz/spark:1.1.3
   imagePullPolicy: IfNotPresent
   mainClass: com.sirclo.spark.Main
   mainApplicationFile: local:///opt/app/spark/target/scala-2.12/Spark_2.12_3.3.2_1.0.0-RELEASE.jar
