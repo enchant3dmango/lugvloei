@@ -17,14 +17,14 @@ spec:
   driver:
     cores: 1
     coreLimit: "1200m"
-    memory: "256m"
+    memory: 1g
     labels:
       version: 3.3.2
     serviceAccount: spark-spark
   executor:
     cores: 1
     instances: 1
-    memory: "256m"
+    memory: 1g
     labels:
       version: 3.3.2
   dynamicAllocation:
