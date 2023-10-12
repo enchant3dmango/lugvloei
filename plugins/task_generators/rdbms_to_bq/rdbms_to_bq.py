@@ -151,7 +151,7 @@ class RDBMSToBQGenerator:
             condition = ' OR '.join(
                 [
                     f"""{self.quoting(timestamp_key)} >=  '{{{{ data_interval_start.astimezone(dag.timezone).subtract(minutes={self.source_dis_subtraction_in_minute}) }}}}'
-                    AND {self.quoting(timestamp_key)} < '{{{{ data_interval_end.astimezone(dag.timezone).subtract(minutes={self.source_dis_subtraction_in_minute}) }}}}'"""
+                    AND {self.quoting(timestamp_key)} < '{{{{ data_interval_end.astimezone(dag.timezone) }}}}'"""
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
