@@ -19,6 +19,7 @@ task:
     connection: ~
     schema: ~
     table: ~
+    dis_subtraction_in_minute: ~
     timestamp_keys:
       -
     unique_keys:

@@ -1,7 +1,7 @@
 dag:
-  name: fizz.buzz
+  name: foo.baz
   behavior:
-    schedule: 0 0 * * *
+    schedule: 0 2 * * *
     start_date: 2023, 6, 14
     depends_on_past: True
     catch_up: False
@@ -16,14 +16,12 @@ dag:
   priority_weight: 1
 task:
   type: mysql_to_bq
-  mode: airflow
+  mode: spark
   source:
-    connection:
-      - mysql_fizz_1
-      - mysql_fizz_2
-    schema: ~
-    table: buzz
-    dis_subtraction_in_minute: ~
+    connection: mysql_foo
+    schema: foo
+    table: baz
+    dis_subtraction_in_minute: 60
     timestamp_keys:
       - created_at
       - updated_at
@@ -32,8 +30,8 @@ task:
   target:
     bq:
       project: pocz-389704
-      dataset: fizz
-      table: buzz
+      dataset: foo
+      table: baz
       load_method: upsert
       partition_field: created_at
       cluster_fields: ~

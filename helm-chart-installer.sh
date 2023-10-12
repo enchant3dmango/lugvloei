@@ -11,6 +11,9 @@ helm install airflow -f values-airflow.yaml apache-airflow/airflow --namespace a
 # Install MySQL
 helm install mysql-db -f values-mysql.yaml bitnami/mysql --namespace mysql --create-namespace
 
+# Install PostgreSQL
+helm install postgresql-db -f values-postgresql.yaml bitnami/postgresql --namespace postgresql --create-namespace
+
 # Install Spark-Operator and its prerequisites
 helm install spark -f values-spark-on-k8s-operator.yaml spark-operator/spark-operator --namespace spark --create-namespace --set sparkJobNamespace=spark --set webhook.enable=true
 

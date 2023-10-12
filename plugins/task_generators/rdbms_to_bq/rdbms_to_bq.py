@@ -29,7 +29,7 @@ from plugins.constants.variables import (GCP_CONN_ID, GCS_DATA_LAKE_BUCKET,
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utilities.generic import get_onelined_string
+from plugins.utilities.general import get_onelined_string
 
 
 class RDBMSToBQGenerator:
@@ -44,23 +44,23 @@ class RDBMSToBQGenerator:
     """
 
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
-        self.dag_id                    : str                   = dag_id
-        self.bq_client                 : bigquery.Client       = bigquery.Client()
-        self.task_type                 : str                   = config['type']
-        self.task_mode                 : str                   = config['mode']
-        self.source_connection         : Union[str, List[str]] = config['source']['connection']
-        self.source_schema             : str                   = config['source']['schema']
-        self.source_table              : str                   = config['source']['table']
-        self.source_timestamp_keys     : List[str]             = config['source']['timestamp_keys']
-        self.source_unique_keys        : List[str]             = config['source']['unique_keys']
-        self.target_bq_project         : str                   = config['target']['bq']['project']
-        self.target_bq_dataset         : str                   = config['target']['bq']['dataset']
-        self.target_bq_table           : str                   = config['target']['bq']['table']
-        self.target_bq_load_method     : str                   = config['target']['bq']['load_method']
-        self.target_bq_partition_field : str                   = config['target']['bq']['partition_field']
-        self.target_bq_cluster_fields  : List[str]             = config['target']['bq']['cluster_fields']
-        self.full_target_bq_table      : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
-        self.full_target_bq_table_temp : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
+        self.dag_id                           : str                   = dag_id
+        self.task_type                        : str                   = config['type']
+        self.task_mode                        : str                   = config['mode']
+        self.source_connection                : Union[str, List[str]] = config['source']['connection']
+        self.source_schema                    : str                   = config['source']['schema']
+        self.source_table                     : str                   = config['source']['table']
+        self.source_dis_subtraction_in_minute : str                   = config['source']['dis_subtraction_in_minute']
+        self.source_timestamp_keys            : List[str]             = config['source']['timestamp_keys']
+        self.source_unique_keys               : List[str]             = config['source']['unique_keys']
+        self.target_bq_project                : str                   = config['target']['bq']['project']
+        self.target_bq_dataset                : str                   = config['target']['bq']['dataset']
+        self.target_bq_table                  : str                   = config['target']['bq']['table']
+        self.target_bq_load_method            : str                   = config['target']['bq']['load_method']
+        self.target_bq_partition_field        : str                   = config['target']['bq']['partition_field']
+        self.target_bq_cluster_fields         : List[str]             = config['target']['bq']['cluster_fields']
+        self.full_target_bq_table             : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
+        self.full_target_bq_table_temp        : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
 
         if self.task_type == POSTGRES_TO_BQ:
             self.quoting = lambda text: f'"{text}"'
@@ -70,6 +70,11 @@ class RDBMSToBQGenerator:
             self.string_type = 'CHAR'
         else:
             raise Exception('Task type is not supported!')
+
+        # Set source_dis_subtraction_in_minute default value
+        # dis stands for data_interval_start
+        if self.source_dis_subtraction_in_minute is None:
+            self.source_dis_subtraction_in_minute = 0
 
         self.dag_base_path = f'{os.environ["PYTHONPATH"]}/dags/{self.target_bq_dataset}/{self.target_bq_table}'
 
@@ -127,7 +132,7 @@ class RDBMSToBQGenerator:
         source_extract_query = SOURCE_EXTRACT_QUERY.substitute(
             selected_fields=', '.join([field for field in selected_fields]),
             load_timestamp='CURRENT_TIMESTAMP' if self.task_type == POSTGRES_TO_BQ else 'CURRENT_TIMESTAMP()',
-            source_table_name=self.source_table if self.source_schema is None else f'{self.source_schema}.{self.source_table}',
+            source_table_name=self.quoting(self.source_table) if self.source_schema is None else f'{self.quoting(self.source_schema)}.{self.quoting(self.source_table)}'
         )
 
         # Add custom value for database field based on connection name
@@ -145,7 +150,8 @@ class RDBMSToBQGenerator:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f"{self.quoting(timestamp_key)} >=  '{{{{ data_interval_start.astimezone(dag.timezone) }}}}' AND {self.quoting(timestamp_key)} < '{{{{ data_interval_end.astimezone(dag.timezone) }}}}'"
+                    f"""{self.quoting(timestamp_key)} >=  '{{{{ data_interval_start.astimezone(dag.timezone).subtract(minutes={self.source_dis_subtraction_in_minute}) }}}}'
+                    AND {self.quoting(timestamp_key)} < '{{{{ data_interval_end.astimezone(dag.timezone) }}}}'"""
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
@@ -161,6 +167,7 @@ class RDBMSToBQGenerator:
         return get_onelined_string(source_extract_query)
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
+        table_creation_query_type = 'COPY'
         partition_filter = ''
         query = None
 
@@ -182,12 +189,17 @@ class RDBMSToBQGenerator:
                 merge_source = merge_source.format(
                     full_target_bq_table_temp=self.full_target_bq_table_temp
                 )
+
+            # Used for table creation if not exists
+            # Can't use COPY directly if the merge source is a CTE from the source table
+            table_creation_query_type = f'PARTITION BY TIMESTAMP_TRUNC({self.target_bq_partition_field}, DAY) AS'
         else:
             merge_source = f"`{self.full_target_bq_table_temp}`"
 
         # Construct delsert query
         if self.target_bq_load_method == DELSERT:
             merge_query = DELSERT_QUERY.substitute(
+                table_creation_query_type=table_creation_query_type,
                 merge_target=self.full_target_bq_table,
                 merge_source=merge_source,
                 on_keys=' AND '.join(
@@ -203,6 +215,7 @@ class RDBMSToBQGenerator:
         # Construct upsert query
         elif self.target_bq_load_method == UPSERT:
             merge_query = UPSERT_QUERY.substitute(
+                table_creation_query_type=table_creation_query_type,
                 merge_target=self.full_target_bq_table,
                 merge_source=merge_source,
                 on_keys=' AND '.join(
@@ -253,22 +266,26 @@ class RDBMSToBQGenerator:
                 extract_query = self.__generate_extract_query(schema=schema)
                 merge_query = self.__generate_merge_query(schema=schema)
 
+                job_config = {
+                    "target_bq_load_method": self.target_bq_load_method,
+                    "source_timestamp_keys": ','.join(self.source_timestamp_keys),
+                    "full_target_bq_table": self.full_target_bq_table,
+                    "target_bq_project": self.target_bq_project,
+                    "jdbc_credential": self.__generate_jdbc_credential(),
+                    "partition_field": self.target_bq_partition_field,
+                    "extract_query": extract_query,
+                    "merge_query": merge_query,
+                    "task_type": self.task_type,
+                    "jdbc_url": self.__generate_jdbc_url(),
+                    "schema": onelined_schema_string
+                }
+
                 with open(f'{PYTHONPATH}/{RDBMS_TO_BQ_APPLICATION_FILE}') as f:
                     application_file = yaml.safe_load(f)
 
                 application_file['spec']['arguments'] = [
-                    f"--target_bq_load_method={self.target_bq_load_method}",
-                    f"--source_timestamp_keys={','.join(self.source_timestamp_keys)}",
-                    f"--full_target_bq_table={self.full_target_bq_table}",
-                    f"--target_bq_project={self.target_bq_project}",
-                    f"--jdbc_credential={self.__generate_jdbc_credential()}",
-                    f"--partition_key={self.target_bq_partition_field}", # TODO: Rename into partition_field later
-                    f"--extract_query={extract_query}",
-                    f"--merge_query={merge_query}",
-                    f"--task_type={self.task_type}",
-                    f"--jdbc_url={self.__generate_jdbc_url()}",
-                    f"--schema={onelined_schema_string}",
-                    # TODO: Later, send master url
+                    f"--job_type=jdbc-to-bigquery",
+                    f"--job_config={job_config}"
                 ]
 
                 spark_kubernetes_base_task_id = f'{self.target_bq_dataset}-{self.target_bq_table}'.replace(
@@ -339,7 +356,7 @@ class RDBMSToBQGenerator:
                         filename       = filename,
                         write_on_empty = True,
                         schema         = schema,
-                        stringify_dict   = True
+                        stringify_dict = True
                     )
 
             # Task generator for multiple connection dag

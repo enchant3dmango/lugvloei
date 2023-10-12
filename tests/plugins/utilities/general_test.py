@@ -5,7 +5,7 @@ import sys
 import pendulum
 
 sys.path.append(os.getcwd())
-from plugins.utilities.generic import (get_config_files, get_escaped_string,
+from plugins.utilities.general import (get_config_files, get_escaped_string,
                                        get_iso8601_date, get_onelined_string)
 
 
@@ -62,4 +62,4 @@ def test_get_iso8601_date(mocker):
     assert result == expected_result
 
 # pytest==7.4.2, pytest-mock==3.11.1
-# pytest tests/plugins/utilities/generic_test.py --verbose
+# pytest tests/plugins/utilities/general_test.py --verbose
