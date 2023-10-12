@@ -5,7 +5,7 @@ import sys
 import pendulum
 
 sys.path.append(os.getcwd())
-from plugins.utilities.generic import (get_config_files, get_escaped_string,
+from plugins.utilities.general import (get_config_files, get_escaped_string,
                                        get_iso8601_date, get_onelined_string)
 
 
