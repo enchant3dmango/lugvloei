@@ -29,7 +29,7 @@ from plugins.constants.variables import (GCP_CONN_ID, GCS_DATA_LAKE_BUCKET,
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utilities.generic import get_onelined_string
+from plugins.utilities.general import get_onelined_string
 
 
 class RDBMSToBQGenerator:
@@ -44,22 +44,23 @@ class RDBMSToBQGenerator:
     """
 
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
-        self.dag_id                    : str                   = dag_id
-        self.task_type                 : str                   = config['type']
-        self.task_mode                 : str                   = config['mode']
-        self.source_connection         : Union[str, List[str]] = config['source']['connection']
-        self.source_schema             : str                   = config['source']['schema']
-        self.source_table              : str                   = config['source']['table']
-        self.source_timestamp_keys     : List[str]             = config['source']['timestamp_keys']
-        self.source_unique_keys        : List[str]             = config['source']['unique_keys']
-        self.target_bq_project         : str                   = config['target']['bq']['project']
-        self.target_bq_dataset         : str                   = config['target']['bq']['dataset']
-        self.target_bq_table           : str                   = config['target']['bq']['table']
-        self.target_bq_load_method     : str                   = config['target']['bq']['load_method']
-        self.target_bq_partition_field : str                   = config['target']['bq']['partition_field']
-        self.target_bq_cluster_fields  : List[str]             = config['target']['bq']['cluster_fields']
-        self.full_target_bq_table      : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
-        self.full_target_bq_table_temp : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
+        self.dag_id                           : str                   = dag_id
+        self.task_type                        : str                   = config['type']
+        self.task_mode                        : str                   = config['mode']
+        self.source_connection                : Union[str, List[str]] = config['source']['connection']
+        self.source_schema                    : str                   = config['source']['schema']
+        self.source_table                     : str                   = config['source']['table']
+        self.source_dis_subtraction_in_minute : str                   = config['source']['dis_subtraction_in_minute']
+        self.source_timestamp_keys            : List[str]             = config['source']['timestamp_keys']
+        self.source_unique_keys               : List[str]             = config['source']['unique_keys']
+        self.target_bq_project                : str                   = config['target']['bq']['project']
+        self.target_bq_dataset                : str                   = config['target']['bq']['dataset']
+        self.target_bq_table                  : str                   = config['target']['bq']['table']
+        self.target_bq_load_method            : str                   = config['target']['bq']['load_method']
+        self.target_bq_partition_field        : str                   = config['target']['bq']['partition_field']
+        self.target_bq_cluster_fields         : List[str]             = config['target']['bq']['cluster_fields']
+        self.full_target_bq_table             : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
+        self.full_target_bq_table_temp        : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
 
         if self.task_type == POSTGRES_TO_BQ:
             self.quoting = lambda text: f'"{text}"'
@@ -69,6 +70,11 @@ class RDBMSToBQGenerator:
             self.string_type = 'CHAR'
         else:
             raise Exception('Task type is not supported!')
+
+        # Set source_dis_subtraction_in_minute default value
+        # dis stands for data_interval_start
+        if self.source_dis_subtraction_in_minute is None:
+            self.source_dis_subtraction_in_minute = 0
 
         self.dag_base_path = f'{os.environ["PYTHONPATH"]}/dags/{self.target_bq_dataset}/{self.target_bq_table}'
 
@@ -144,7 +150,8 @@ class RDBMSToBQGenerator:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f"{self.quoting(timestamp_key)} >=  '{{{{ data_interval_start.astimezone(dag.timezone) }}}}' AND {self.quoting(timestamp_key)} < '{{{{ data_interval_end.astimezone(dag.timezone) }}}}'"
+                    f"""{self.quoting(timestamp_key)} >=  '{{{{ data_interval_start.astimezone(dag.timezone).subtract(minutes={self.source_dis_subtraction_in_minute}) }}}}'
+                    AND {self.quoting(timestamp_key)} < '{{{{ data_interval_end.astimezone(dag.timezone).subtract(minutes={self.source_dis_subtraction_in_minute}) }}}}'"""
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
