@@ -4,8 +4,8 @@ from datetime import timedelta
 
 import pendulum
 import yaml
-from airflow.decorators import dag
 
+from airflow.decorators import dag
 from plugins.constants.types import DE_DAG_OWNER_NAME, PYTHONPATH
 from plugins.constants.variables import DAG_GENERATOR_FEATURE_FLAG
 from plugins.task_generator import generate_tasks
