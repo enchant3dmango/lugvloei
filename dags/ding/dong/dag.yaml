@@ -16,11 +16,12 @@ dag:
   priority_weight: 1
 task:
   type: postgres_to_bq
-  mode: spark
+  mode: airflow
   source:
     connection: pg_ding
     schema: public
     table: dong
+    dis_subtraction_in_minute: 120
     timestamp_keys:
       - created_at
       - updated_at

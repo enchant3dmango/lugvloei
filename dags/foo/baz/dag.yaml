@@ -21,6 +21,7 @@ task:
     connection: mysql_foo
     schema: foo
     table: baz
+    dis_subtraction_in_minute: 60
     timestamp_keys:
       - created_at
       - updated_at
