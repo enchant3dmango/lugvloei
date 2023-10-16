@@ -22,8 +22,8 @@ task:
     schema: foo
     table: bar
     start_window_expansion:
-      value: 60
-      unit: minutes
+      value: 1
+      unit: days
     timestamp_keys:
       - created_at
       - updated_at
