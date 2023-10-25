@@ -327,7 +327,7 @@ class RDBMSToBQGenerator:
             # Task generator for single connection dag
             if type(self.source_connection) is str:
                 extract_query = self.__generate_extract_query(schema=schema)
-                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}' + '__{}.json'
+                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}' + '__{}.parquet'
 
                 # Extract data from Postgres, then load to GCS
                 if self.task_type == POSTGRES_TO_BQ:
@@ -365,7 +365,7 @@ class RDBMSToBQGenerator:
 
                 for index, connection in enumerate(sorted(self.source_connection)):
                     extract_query = self.__generate_extract_query(schema=schema, database=connection)
-                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}_{index+1}' + '__{}.json'
+                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}_{index+1}' + '__{}.parquet'
 
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
@@ -409,13 +409,14 @@ class RDBMSToBQGenerator:
                 gcp_conn_id                       = GCP_CONN_ID,
                 bucket                            = GCS_DATA_LAKE_BUCKET,
                 destination_project_dataset_table = destination_project_dataset_table,
-                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/*.json'],
+                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/*.parquet'],
                 schema_fields                     = schema,
                 source_format                     = SourceFormat.PARQUET,
                 write_disposition                 = write_disposition,
                 time_partitioning                 = time_partitioning,
                 cluster_fields                    = cluster_fields,
-                autodetect                        = False
+                autodetect                        = False,
+                ignore_unknown_values             = True
             )
 
             # Add extra task to merge the data from temporary table into main table if the load method is DELSERT or UPSERT
