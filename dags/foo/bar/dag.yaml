@@ -11,7 +11,7 @@ dag:
   tags:
     - mysql
     - bigquery
-    - upsert
+    - truncate
   owner: example@email.com
   priority_weight: 1
 task:
@@ -22,19 +22,16 @@ task:
     schema: foo
     table: bar
     start_window_expansion:
-      value: 1
-      unit: days
-    timestamp_keys:
-      - created_at
-      - updated_at
-    unique_keys:
-      - id
+      value: ~
+      unit: ~
+    timestamp_keys: ~
+    unique_keys: ~
   target:
     bq:
       project: pocz-389704
       dataset: foo
       table: bar
-      load_method: upsert
+      load_method: truncate
       partition_field: created_at
       cluster_fields:
         - name
