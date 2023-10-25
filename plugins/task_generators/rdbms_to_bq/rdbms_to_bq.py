@@ -84,7 +84,6 @@ class RDBMSToBQGenerator:
             logging.info(f'Getting table schema from {schema_file}')
             with open(schema_file, "r") as file:
                 schema = json.load(file)
-                file.close()
 
             fields = [schema_detail["name"] for schema_detail in schema]
 
