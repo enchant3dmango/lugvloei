@@ -6,7 +6,6 @@ from typing import List, Union
 from urllib.parse import urlencode
 
 import yaml
-from google.cloud import bigquery
 from google.cloud.bigquery import (DestinationFormat, SourceFormat,
                                    WriteDisposition)
 
@@ -334,31 +333,33 @@ class RDBMSToBQGenerator:
                 # Extract data from Postgres, then load to GCS
                 if self.task_type == POSTGRES_TO_BQ:
                     extract = PostgresToGCSOperator(
-                        task_id          = f'extract_and_load_to_gcs',
-                        postgres_conn_id = self.source_connection,
-                        gcp_conn_id      = GCP_CONN_ID,
-                        sql              = extract_query,
-                        bucket           = GCS_DATA_LAKE_BUCKET,
-                        export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                        filename         = filename,
-                        write_on_empty   = True,
-                        schema           = schema,
-                        stringify_dict   = True
+                        task_id                    = f'extract_and_load_to_gcs',
+                        postgres_conn_id           = self.source_connection,
+                        gcp_conn_id                = GCP_CONN_ID,
+                        sql                        = extract_query,
+                        bucket                     = GCS_DATA_LAKE_BUCKET,
+                        export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                        filename                   = filename,
+                        approx_max_file_size_bytes = 200000000,
+                        write_on_empty             = True,
+                        schema                     = schema,
+                        stringify_dict             = True
                     )
 
                 # Extract data from MySQL, then load to GCS
                 elif self.task_type == MYSQL_TO_BQ:
                     extract = MySQLToGCSOperator(
-                        task_id        = f'extract_and_load_to_gcs',
-                        mysql_conn_id  = self.source_connection,
-                        gcp_conn_id    = GCP_CONN_ID,
-                        sql            = extract_query,
-                        bucket         = GCS_DATA_LAKE_BUCKET,
-                        export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                        filename       = filename,
-                        write_on_empty = True,
-                        schema         = schema,
-                        stringify_dict = True
+                        task_id                    = f'extract_and_load_to_gcs',
+                        mysql_conn_id              = self.source_connection,
+                        gcp_conn_id                = GCP_CONN_ID,
+                        sql                        = extract_query,
+                        bucket                     = GCS_DATA_LAKE_BUCKET,
+                        export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                        filename                   = filename,
+                        approx_max_file_size_bytes = 200000000,
+                        write_on_empty             = True,
+                        schema                     = schema,
+                        stringify_dict             = True
                     )
 
             # Task generator for multiple connection dag
@@ -372,31 +373,33 @@ class RDBMSToBQGenerator:
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
                         __extract = PostgresToGCSOperator(
-                            task_id          = f'extract_and_load_to_gcs__{index+1}',
-                            postgres_conn_id = connection,
-                            gcp_conn_id      = GCP_CONN_ID,
-                            sql              = extract_query,
-                            bucket           = GCS_DATA_LAKE_BUCKET,
-                            export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                            filename         = filename,
-                            write_on_empty   = True,
-                            schema           = schema,
-                            stringify_dict   = True
+                            task_id                    = f'extract_and_load_to_gcs__{index+1}',
+                            postgres_conn_id           = connection,
+                            gcp_conn_id                = GCP_CONN_ID,
+                            sql                        = extract_query,
+                            bucket                     = GCS_DATA_LAKE_BUCKET,
+                            export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                            filename                   = filename,
+                            approx_max_file_size_bytes = 200000000,
+                            write_on_empty             = True,
+                            schema                     = schema,
+                            stringify_dict             = True
                         )
 
                     # Extract data from MySQL, then load to GCS
                     elif self.task_type == MYSQL_TO_BQ:
                         __extract = MySQLToGCSOperator(
-                            task_id        = f'extract_and_load_to_gcs__{index+1}',
-                            mysql_conn_id  = connection,
-                            gcp_conn_id    = GCP_CONN_ID,
-                            sql            = extract_query,
-                            bucket         = GCS_DATA_LAKE_BUCKET,
-                            export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                            filename       = filename,
-                            write_on_empty = True,
-                            schema         = schema,
-                            stringify_dict = True
+                            task_id                    = f'extract_and_load_to_gcs__{index+1}',
+                            mysql_conn_id              = connection,
+                            gcp_conn_id                = GCP_CONN_ID,
+                            sql                        = extract_query,
+                            bucket                     = GCS_DATA_LAKE_BUCKET,
+                            export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                            filename                   = filename,
+                            approx_max_file_size_bytes = 200000000,
+                            write_on_empty             = True,
+                            schema                     = schema,
+                            stringify_dict             = True
                         )
 
                     extract.append(__extract)
