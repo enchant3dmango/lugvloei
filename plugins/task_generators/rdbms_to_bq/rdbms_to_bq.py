@@ -327,7 +327,7 @@ class RDBMSToBQGenerator:
             # Task generator for single connection dag
             if type(self.source_connection) is str:
                 extract_query = self.__generate_extract_query(schema=schema)
-                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}' + '__{}.parquet'
+                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}' + '__{}.json'
 
                 # Extract data from Postgres, then load to GCS
                 if self.task_type == POSTGRES_TO_BQ:
@@ -337,9 +337,8 @@ class RDBMSToBQGenerator:
                         gcp_conn_id                = GCP_CONN_ID,
                         sql                        = extract_query,
                         bucket                     = GCS_DATA_LAKE_BUCKET,
-                        export_format              = DestinationFormat.PARQUET,
+                        export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
                         filename                   = filename,
-                        approx_max_file_size_bytes = 100000000,
                         write_on_empty             = True,
                         schema                     = schema
                     )
@@ -352,9 +351,8 @@ class RDBMSToBQGenerator:
                         gcp_conn_id                = GCP_CONN_ID,
                         sql                        = extract_query,
                         bucket                     = GCS_DATA_LAKE_BUCKET,
-                        export_format              = DestinationFormat.PARQUET,
+                        export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
                         filename                   = filename,
-                        approx_max_file_size_bytes = 100000000,
                         write_on_empty             = True,
                         schema                     = schema
                     )
@@ -365,7 +363,7 @@ class RDBMSToBQGenerator:
 
                 for index, connection in enumerate(sorted(self.source_connection)):
                     extract_query = self.__generate_extract_query(schema=schema, database=connection)
-                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}_{index+1}' + '__{}.parquet'
+                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}_{index+1}' + '__{}.json'
 
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
@@ -375,9 +373,8 @@ class RDBMSToBQGenerator:
                             gcp_conn_id                = GCP_CONN_ID,
                             sql                        = extract_query,
                             bucket                     = GCS_DATA_LAKE_BUCKET,
-                            export_format              = DestinationFormat.PARQUET,
+                            export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename                   = filename,
-                            approx_max_file_size_bytes = 100000000,
                             write_on_empty             = True,
                             schema                     = schema
                         )
@@ -390,9 +387,8 @@ class RDBMSToBQGenerator:
                             gcp_conn_id                = GCP_CONN_ID,
                             sql                        = extract_query,
                             bucket                     = GCS_DATA_LAKE_BUCKET,
-                            export_format              = DestinationFormat.PARQUET,
+                            export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename                   = filename,
-                            approx_max_file_size_bytes = 100000000,
                             write_on_empty             = True,
                             schema                     = schema
                         )
@@ -409,14 +405,13 @@ class RDBMSToBQGenerator:
                 gcp_conn_id                       = GCP_CONN_ID,
                 bucket                            = GCS_DATA_LAKE_BUCKET,
                 destination_project_dataset_table = destination_project_dataset_table,
-                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/*.parquet'],
+                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/*.json'],
                 schema_fields                     = schema,
-                source_format                     = SourceFormat.PARQUET,
+                source_format                     = SourceFormat.NEWLINE_DELIMITED_JSON,
                 write_disposition                 = write_disposition,
                 time_partitioning                 = time_partitioning,
                 cluster_fields                    = cluster_fields,
-                autodetect                        = False,
-                ignore_unknown_values             = True
+                autodetect                        = False
             )
 
             # Add extra task to merge the data from temporary table into main table if the load method is DELSERT or UPSERT
