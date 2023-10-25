@@ -340,10 +340,9 @@ class RDBMSToBQGenerator:
                         bucket                     = GCS_DATA_LAKE_BUCKET,
                         export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
                         filename                   = filename,
-                        approx_max_file_size_bytes = 200000000,
+                        approx_max_file_size_bytes = 100000000,
                         write_on_empty             = True,
-                        schema                     = schema,
-                        stringify_dict             = True
+                        schema                     = schema
                     )
 
                 # Extract data from MySQL, then load to GCS
@@ -356,10 +355,9 @@ class RDBMSToBQGenerator:
                         bucket                     = GCS_DATA_LAKE_BUCKET,
                         export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
                         filename                   = filename,
-                        approx_max_file_size_bytes = 200000000,
+                        approx_max_file_size_bytes = 100000000,
                         write_on_empty             = True,
-                        schema                     = schema,
-                        stringify_dict             = True
+                        schema                     = schema
                     )
 
             # Task generator for multiple connection dag
@@ -380,10 +378,9 @@ class RDBMSToBQGenerator:
                             bucket                     = GCS_DATA_LAKE_BUCKET,
                             export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename                   = filename,
-                            approx_max_file_size_bytes = 200000000,
+                            approx_max_file_size_bytes = 100000000,
                             write_on_empty             = True,
-                            schema                     = schema,
-                            stringify_dict             = True
+                            schema                     = schema
                         )
 
                     # Extract data from MySQL, then load to GCS
@@ -396,10 +393,9 @@ class RDBMSToBQGenerator:
                             bucket                     = GCS_DATA_LAKE_BUCKET,
                             export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
                             filename                   = filename,
-                            approx_max_file_size_bytes = 200000000,
+                            approx_max_file_size_bytes = 100000000,
                             write_on_empty             = True,
-                            schema                     = schema,
-                            stringify_dict             = True
+                            schema                     = schema
                         )
 
                     extract.append(__extract)
