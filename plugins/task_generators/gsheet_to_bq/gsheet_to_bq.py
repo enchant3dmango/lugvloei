@@ -18,7 +18,7 @@ from plugins.constants.types import AIRFLOW, APPEND, EXTENDED_SCHEMA, MERGE
 from plugins.constants.variables import GCP_CONN_ID, GCS_DATA_LAKE_BUCKET
 from plugins.utilities.gcs import upload_multiple_files_from_local
 from plugins.utilities.general import (dataframe_dtypes_casting,
-                                       dataframe_to_file, delete_directory)
+                                       dataframe_to_file, delete_file)
 
 
 class GSheetToBQGenerator:
@@ -158,8 +158,8 @@ class GSheetToBQGenerator:
                 dirname=dirname,
             )
 
-            delete_directory(
-                dirname=dirname
+            delete_file(
+                name=f'{dirname}/{filename}'
             )
 
     def __check_if_file_exists_in_gcs(self, **kwargs):

@@ -121,8 +121,8 @@ def dataframe_to_file(dataframe: pd.DataFrame, dirname: str, filename: str, exte
         raise Exception('Extension is not supported!')
 
 
-def delete_directory(dirname: str) -> None:
-    os.removedirs(os.path.join('/tmp/', dirname))
+def delete_file(name: str) -> None:
+    os.remove(os.path.join('/tmp/', name))
 
 
 # def polars_dataframe_type_mapping(dataframe: pl.DataFrame, schema: list, **kwargs) -> pl.DataFrame:
