@@ -98,12 +98,13 @@ def dataframe_dtypes_casting(dataframe: pd.DataFrame, schema: list, **kwargs) ->
     return dataframe
 
 
-def dataframe_to_file(dataframe: pd.DataFrame, filename: str, extension: str, **kwargs) -> None:
-    # Create local /tmp/ dir if not exists
-    if not os.path.exists('/tmp/'):
-        os.makedirs('/tmp/')
+def dataframe_to_file(dataframe: pd.DataFrame, dirname: str, filename: str, extension: str, **kwargs) -> None:
+    # Create local dir if not exists
+    dirname = os.path.join('/tmp/', dirname)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
-    filename = os.path.join('/tmp/', filename)
+    filename = os.path.join(dirname, filename)
 
     if extension == '.gz':
         dataframe.to_json(path_or_buf=filename, orient='records', lines=kwargs.get(
