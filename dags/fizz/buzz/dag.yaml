@@ -23,7 +23,9 @@ task:
       - mysql_fizz_2
     schema: ~
     table: buzz
-    dis_subtraction_in_minute: ~
+    start_window_expansion:
+      value: ~
+      unit: ~
     timestamp_keys:
       - created_at
       - updated_at

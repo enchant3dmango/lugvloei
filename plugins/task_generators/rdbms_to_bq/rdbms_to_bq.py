@@ -6,7 +6,6 @@ from typing import List, Union
 from urllib.parse import urlencode
 
 import yaml
-from google.cloud import bigquery
 from google.cloud.bigquery import (DestinationFormat, SourceFormat,
                                    WriteDisposition)
 
@@ -44,23 +43,24 @@ class RDBMSToBQGenerator:
     """
 
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
-        self.dag_id                           : str                   = dag_id
-        self.task_type                        : str                   = config['type']
-        self.task_mode                        : str                   = config['mode']
-        self.source_connection                : Union[str, List[str]] = config['source']['connection']
-        self.source_schema                    : str                   = config['source']['schema']
-        self.source_table                     : str                   = config['source']['table']
-        self.source_dis_subtraction_in_minute : str                   = config['source']['dis_subtraction_in_minute']
-        self.source_timestamp_keys            : List[str]             = config['source']['timestamp_keys']
-        self.source_unique_keys               : List[str]             = config['source']['unique_keys']
-        self.target_bq_project                : str                   = config['target']['bq']['project']
-        self.target_bq_dataset                : str                   = config['target']['bq']['dataset']
-        self.target_bq_table                  : str                   = config['target']['bq']['table']
-        self.target_bq_load_method            : str                   = config['target']['bq']['load_method']
-        self.target_bq_partition_field        : str                   = config['target']['bq']['partition_field']
-        self.target_bq_cluster_fields         : List[str]             = config['target']['bq']['cluster_fields']
-        self.full_target_bq_table             : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
-        self.full_target_bq_table_temp        : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
+        self.dag_id                              : str                   = dag_id
+        self.task_type                           : str                   = config['type']
+        self.task_mode                           : str                   = config['mode']
+        self.source_connection                   : Union[str, List[str]] = config['source']['connection']
+        self.source_schema                       : str                   = config['source']['schema']
+        self.source_table                        : str                   = config['source']['table']
+        self.source_start_window_expansion_value : int                   = config['source']['start_window_expansion']['value']
+        self.source_start_window_expansion_unit  : str                   = config['source']['start_window_expansion']['unit']
+        self.source_timestamp_keys               : List[str]             = config['source']['timestamp_keys']
+        self.source_unique_keys                  : List[str]             = config['source']['unique_keys']
+        self.target_bq_project                   : str                   = config['target']['bq']['project']
+        self.target_bq_dataset                   : str                   = config['target']['bq']['dataset']
+        self.target_bq_table                     : str                   = config['target']['bq']['table']
+        self.target_bq_load_method               : str                   = config['target']['bq']['load_method']
+        self.target_bq_partition_field           : str                   = config['target']['bq']['partition_field']
+        self.target_bq_cluster_fields            : List[str]             = config['target']['bq']['cluster_fields']
+        self.full_target_bq_table                : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
+        self.full_target_bq_table_temp           : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
 
         if self.task_type == POSTGRES_TO_BQ:
             self.quoting = lambda text: f'"{text}"'
@@ -71,10 +71,9 @@ class RDBMSToBQGenerator:
         else:
             raise Exception('Task type is not supported!')
 
-        # Set source_dis_subtraction_in_minute default value
-        # dis stands for data_interval_start
-        if self.source_dis_subtraction_in_minute is None:
-            self.source_dis_subtraction_in_minute = 0
+        # Set source_start_window_expansion default value, set both value and unit to 0 and minutes if one of them is not provided
+        if self.source_start_window_expansion_value is None or self.source_start_window_expansion_unit is None:
+            self.source_start_window_expansion_value = 0; self.source_start_window_expansion_unit = 'minutes'
 
         self.dag_base_path = f'{os.environ["PYTHONPATH"]}/dags/{self.target_bq_dataset}/{self.target_bq_table}'
 
@@ -85,7 +84,6 @@ class RDBMSToBQGenerator:
             logging.info(f'Getting table schema from {schema_file}')
             with open(schema_file, "r") as file:
                 schema = json.load(file)
-                file.close()
 
             fields = [schema_detail["name"] for schema_detail in schema]
 
@@ -150,8 +148,10 @@ class RDBMSToBQGenerator:
             # Create the condition for filtering based on timestamp_keys
             condition = ' OR '.join(
                 [
-                    f"""{self.quoting(timestamp_key)} >=  '{{{{ data_interval_start.astimezone(dag.timezone).subtract(minutes={self.source_dis_subtraction_in_minute}) }}}}'
-                    AND {self.quoting(timestamp_key)} < '{{{{ data_interval_end.astimezone(dag.timezone) }}}}'"""
+                    f"""{self.quoting(timestamp_key)} >=
+                    '{{{{ data_interval_start.astimezone(dag.timezone).subtract({self.source_start_window_expansion_unit}={self.source_start_window_expansion_value}) }}}}'
+                    AND {self.quoting(timestamp_key)} <
+                    '{{{{ data_interval_end.astimezone(dag.timezone) }}}}'"""
                     for timestamp_key in self.source_timestamp_keys
                 ]
             )
@@ -309,8 +309,7 @@ class RDBMSToBQGenerator:
 
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
-            iso8601_date = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y-%m-%d') }}"
-            iso8601_time = "{{ data_interval_start.astimezone(dag.timezone).strftime('%H:%M:%S') }}" # For non-daily dag
+            ts_nodash = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y%m%dT%H%M%S') }}"
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
             write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
@@ -327,36 +326,36 @@ class RDBMSToBQGenerator:
             # Task generator for single connection dag
             if type(self.source_connection) is str:
                 extract_query = self.__generate_extract_query(schema=schema)
-                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}' + '__{}.json'
+                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/{self.source_table}' + '__{}.json'
 
                 # Extract data from Postgres, then load to GCS
                 if self.task_type == POSTGRES_TO_BQ:
                     extract = PostgresToGCSOperator(
-                        task_id          = f'extract_and_load_to_gcs',
-                        postgres_conn_id = self.source_connection,
-                        gcp_conn_id      = GCP_CONN_ID,
-                        sql              = extract_query,
-                        bucket           = GCS_DATA_LAKE_BUCKET,
-                        export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                        filename         = filename,
-                        write_on_empty   = True,
-                        schema           = schema,
-                        stringify_dict   = True
+                        task_id                    = f'extract_and_load_to_gcs',
+                        postgres_conn_id           = self.source_connection,
+                        gcp_conn_id                = GCP_CONN_ID,
+                        sql                        = extract_query,
+                        bucket                     = GCS_DATA_LAKE_BUCKET,
+                        export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                        filename                   = filename,
+                        approx_max_file_size_bytes = 200000000,
+                        write_on_empty             = True,
+                        schema                     = schema
                     )
 
                 # Extract data from MySQL, then load to GCS
                 elif self.task_type == MYSQL_TO_BQ:
                     extract = MySQLToGCSOperator(
-                        task_id        = f'extract_and_load_to_gcs',
-                        mysql_conn_id  = self.source_connection,
-                        gcp_conn_id    = GCP_CONN_ID,
-                        sql            = extract_query,
-                        bucket         = GCS_DATA_LAKE_BUCKET,
-                        export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                        filename       = filename,
-                        write_on_empty = True,
-                        schema         = schema,
-                        stringify_dict = True
+                        task_id                    = f'extract_and_load_to_gcs',
+                        mysql_conn_id              = self.source_connection,
+                        gcp_conn_id                = GCP_CONN_ID,
+                        sql                        = extract_query,
+                        bucket                     = GCS_DATA_LAKE_BUCKET,
+                        export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                        filename                   = filename,
+                        approx_max_file_size_bytes = 200000000,
+                        write_on_empty             = True,
+                        schema                     = schema
                     )
 
             # Task generator for multiple connection dag
@@ -365,36 +364,35 @@ class RDBMSToBQGenerator:
 
                 for index, connection in enumerate(sorted(self.source_connection)):
                     extract_query = self.__generate_extract_query(schema=schema, database=connection)
-                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/{self.source_table}_{index+1}' + '__{}.json'
+                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/{self.source_table}_{index+1}' + '__{}.json'
 
                     # Extract data from Postgres, then load to GCS
                     if self.task_type == POSTGRES_TO_BQ:
                         __extract = PostgresToGCSOperator(
-                            task_id          = f'extract_and_load_to_gcs__{index+1}',
-                            postgres_conn_id = connection,
-                            gcp_conn_id      = GCP_CONN_ID,
-                            sql              = extract_query,
-                            bucket           = GCS_DATA_LAKE_BUCKET,
-                            export_format    = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                            filename         = filename,
-                            write_on_empty   = True,
-                            schema           = schema,
-                            stringify_dict   = True
+                            task_id                    = f'extract_and_load_to_gcs__{index+1}',
+                            postgres_conn_id           = connection,
+                            gcp_conn_id                = GCP_CONN_ID,
+                            sql                        = extract_query,
+                            bucket                     = GCS_DATA_LAKE_BUCKET,
+                            export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                            filename                   = filename,
+                            approx_max_file_size_bytes = 200000000,
+                            write_on_empty             = True,
+                            schema                     = schema
                         )
 
                     # Extract data from MySQL, then load to GCS
                     elif self.task_type == MYSQL_TO_BQ:
                         __extract = MySQLToGCSOperator(
-                            task_id        = f'extract_and_load_to_gcs__{index+1}',
-                            mysql_conn_id  = connection,
-                            gcp_conn_id    = GCP_CONN_ID,
-                            sql            = extract_query,
-                            bucket         = GCS_DATA_LAKE_BUCKET,
-                            export_format  = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                            filename       = filename,
-                            write_on_empty = True,
-                            schema         = schema,
-                            stringify_dict = True
+                            task_id                    = f'extract_and_load_to_gcs__{index+1}',
+                            mysql_conn_id              = connection,
+                            gcp_conn_id                = GCP_CONN_ID,
+                            sql                        = extract_query,
+                            bucket                     = GCS_DATA_LAKE_BUCKET,
+                            export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                            filename                   = filename,
+                            write_on_empty             = True,
+                            schema                     = schema
                         )
 
                     extract.append(__extract)
@@ -409,7 +407,7 @@ class RDBMSToBQGenerator:
                 gcp_conn_id                       = GCP_CONN_ID,
                 bucket                            = GCS_DATA_LAKE_BUCKET,
                 destination_project_dataset_table = destination_project_dataset_table,
-                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{iso8601_date}/{iso8601_time}/*.json'],
+                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/*.json'],
                 schema_fields                     = schema,
                 source_format                     = SourceFormat.NEWLINE_DELIMITED_JSON,
                 write_disposition                 = write_disposition,

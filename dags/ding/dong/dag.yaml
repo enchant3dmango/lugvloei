@@ -21,7 +21,9 @@ task:
     connection: pg_ding
     schema: public
     table: dong
-    dis_subtraction_in_minute: 120
+    start_window_expansion:
+      value: 120
+      unit: minutes
     timestamp_keys:
       - created_at
       - updated_at

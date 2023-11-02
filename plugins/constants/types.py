@@ -10,6 +10,8 @@ RDBMS_TO_BQ = Enum('RDBMS_TO_BQ', [MYSQL_TO_BQ,
 
 BQ_TO_PARQUET = 'bq_to_parquet'
 
+GSHEET_TO_BQ = 'gsheet_to_bq'
+
 # BigQuery
 DELSERT = 'delsert'
 UPSERT = 'upsert'
