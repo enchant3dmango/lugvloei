@@ -6,7 +6,7 @@ import re
 import numpy as np
 import pandas as pd
 import pendulum
-import polars as pl
+# import polars as pl
 
 
 def get_config_files(directory, suffix):
@@ -124,27 +124,27 @@ def delete_directory(dirname: str) -> None:
     os.removedirs(dirname)
 
 
-def polars_dataframe_type_mapping(dataframe: pl.DataFrame, schema: list, **kwargs) -> pl.DataFrame:
-    # Define a mapping of BigQuery data types to Polars data types
-    type_mapping = {
-        "STRING": pl.Utf8,
-        "BOOLEAN": pl.Boolean,
-        "INTEGER": pl.Int64,
-        "FLOAT": pl.Float64,
-        "DATE": pl.Date,
-        "TIME": pl.Time,
-        "TIMESTAMP": pl.Datetime,
-    }
+# def polars_dataframe_type_mapping(dataframe: pl.DataFrame, schema: list, **kwargs) -> pl.DataFrame:
+#     # Define a mapping of BigQuery data types to Polars data types
+#     type_mapping = {
+#         "STRING": pl.Utf8,
+#         "BOOLEAN": pl.Boolean,
+#         "INTEGER": pl.Int64,
+#         "FLOAT": pl.Float64,
+#         "DATE": pl.Date,
+#         "TIME": pl.Time,
+#         "TIMESTAMP": pl.Datetime,
+#     }
 
-    # Cast the Polars DataFrame schema based on the schema provided
-    dataframe = dataframe.select(
-        [pl.col(field["name"]).cast(type_mapping[field["type"]])
-         for field in schema]
-    )
+#     # Cast the Polars DataFrame schema based on the schema provided
+#     dataframe = dataframe.select(
+#         [pl.col(field["name"]).cast(type_mapping[field["type"]])
+#          for field in schema]
+#     )
 
-    return dataframe
+#     return dataframe
 
 
-# TODO: Complete this function
-def polars_dataframe_format(dataframe: pl.DataFrame, **kwargs) -> None:
-    dataframe.write_parquet(kwargs.get('filepath_temp', '/tmp/'))
+# # TODO: Complete this function
+# def polars_dataframe_format(dataframe: pl.DataFrame, **kwargs) -> None:
+#     dataframe.write_parquet(kwargs.get('filepath_temp', '/tmp/'))
