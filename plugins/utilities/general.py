@@ -122,7 +122,7 @@ def dataframe_to_file(dataframe: pd.DataFrame, dirname: str, filename: str, exte
 
 
 def delete_directory(dirname: str) -> None:
-    os.removedirs(dirname)
+    os.removedirs(os.path.join('/tmp/', dirname))
 
 
 # def polars_dataframe_type_mapping(dataframe: pl.DataFrame, schema: list, **kwargs) -> pl.DataFrame:
