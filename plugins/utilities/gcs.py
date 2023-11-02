@@ -15,6 +15,7 @@ def upload_multiple_files_from_local(bucket: str, dirname: str = None, privacy: 
     # Set local and GCS file path
     local_path = os.path.join('/tmp/', dirname)
 
+    logging.info(f'Reading files from {local_path}.')
     # Upload files to GCS
     for file in os.listdir(local_path):
         # The name of file on GCS once uploaded
