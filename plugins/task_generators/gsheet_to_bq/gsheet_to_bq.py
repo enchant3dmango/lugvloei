@@ -18,7 +18,7 @@ from plugins.constants.types import AIRFLOW, APPEND, EXTENDED_SCHEMA, MERGE
 from plugins.constants.variables import GCP_CONN_ID, GCS_DATA_LAKE_BUCKET
 from plugins.utilities.gcs import upload_multiple_files_from_local
 from plugins.utilities.general import (dataframe_dtypes_casting,
-                                       dataframe_to_file, delete_file)
+                                       dataframe_to_file, remove_file)
 
 
 class GSheetToBQGenerator:
@@ -158,7 +158,7 @@ class GSheetToBQGenerator:
                 dirname=dirname,
             )
 
-            delete_file(
+            remove_file(
                 name=f'{dirname}/{filename}'
             )
 

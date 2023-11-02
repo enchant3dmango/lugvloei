@@ -24,7 +24,7 @@ def upload_multiple_files_from_local(bucket: str, dirname: str = None, privacy: 
         # Path of the local file to upload
         blob.upload_from_filename(f'{local_path}/{file}')
 
-    logging.info(f"Successfully uploaded all files in {os.path.dirname(local_path)} uploaded to GCS.")
+    logging.info(f"Successfully uploaded all files in {local_path} to GCS.")
 
     if (privacy != "private"):
         blob.make_public()

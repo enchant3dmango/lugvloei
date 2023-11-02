@@ -105,6 +105,7 @@ def dataframe_to_file(dataframe: pd.DataFrame, dirname: str, filename: str, exte
         os.makedirs(dirname)
 
     filename = os.path.join(dirname, filename)
+    logging.info(f'Writing dataframe into {extension} file to {filename}.')
 
     if extension == '.gz':
         dataframe.to_json(path_or_buf=filename, orient='records', lines=kwargs.get(
@@ -121,7 +122,8 @@ def dataframe_to_file(dataframe: pd.DataFrame, dirname: str, filename: str, exte
         raise Exception('Extension is not supported!')
 
 
-def delete_file(name: str) -> None:
+def remove_file(name: str) -> None:
+    logging.info(f"Removing {os.path.join('/tmp/', name)}")
     os.remove(os.path.join('/tmp/', name))
 
 
