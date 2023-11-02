@@ -19,6 +19,7 @@ def upload_multiple_files_from_local(bucket: str, dirname: str = None, privacy: 
     for file in os.listdir(local_path):
         # The name of file on GCS once uploaded
         blob = gcs_bucket.blob(file)
+        logging.info(f'Uploading {file} to {blob}.')
         # Path of the local file to upload
         blob.upload_from_filename(file)
 
