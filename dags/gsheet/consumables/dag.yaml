@@ -25,7 +25,7 @@ task:
     format_timestamp: ~
   target:
     bq:
-      project: sirclo-prod
+      project: pocz-389704
       dataset: gsheet
       table: consumables
       load_method: truncate
