@@ -1,0 +1,33 @@
+dag:
+  name: gsheet.consumables
+  behavior:
+    schedule: 00 05 10 * *
+    start_date: 2023, 10, 26
+    depends_on_past: True
+    catch_up: False
+    retry:
+      count: 2
+      delay_in_minute: 1
+  tags:
+    - gsheet
+    - bigquery
+    - truncate
+  owner: example@email.com
+  priority_weight: 2
+task:
+  type: gsheet_to_bq
+  mode: airflow
+  source:
+    spreadsheet_id: 1anI5ystpVZt5dGq-YWH9nvH5L_kfA_DiCRzNwGPOl8c
+    sheet_name: Raw Data
+    sheet_columns: A:M
+    format_date: ~
+    format_timestamp: ~
+  target:
+    bq:
+      project: sirclo-prod
+      dataset: gsheet
+      table: consumables
+      load_method: truncate
+      partition_field: load_timestamp
+      cluster_fields: ~
