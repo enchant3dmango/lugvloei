@@ -54,7 +54,7 @@ class GSheetToBQGenerator:
 
         # Define dag base path and default file extension for each dag
         self.dag_base_path = f'{os.environ["PYTHONPATH"]}/dags/{self.target_bq_dataset}/{self.target_bq_table}'
-        self.extension = '.parquet'
+        self.extension = 'parquet'
 
     def __generate_schema(self) -> list:
         schema_file = os.path.join(self.dag_base_path, "assets/schema.json")
@@ -150,7 +150,7 @@ class GSheetToBQGenerator:
                 dataframe=dataframe,
                 dirname=dirname,
                 filename=filename,
-                extension=self.extension
+                extension=f'.{self.extension}'
             )
 
             upload_multiple_files_from_local(
