@@ -1,19 +1,19 @@
 import json
 import logging
 import os
+from datetime import datetime
 from typing import List
 
 import pandas as pd
-import pendulum
+from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import BranchPythonOperator, PythonOperator
+from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from google.cloud import storage
 from google.cloud.bigquery import (CreateDisposition, SourceFormat,
                                    WriteDisposition)
 from google.oauth2 import service_account
 from googleapiclient import discovery
 
-from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import BranchPythonOperator, PythonOperator
-from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from plugins.constants.types import AIRFLOW, APPEND, EXTENDED_SCHEMA, MERGE
 from plugins.constants.variables import GCP_CONN_ID, GCS_DATA_LAKE_BUCKET
 from plugins.utilities.gcs import upload_multiple_files_from_local
@@ -133,7 +133,7 @@ class GSheetToBQGenerator:
         dataframe = pd.concat(list_of_dataframe, axis=1)
         dataframe.columns = column_name[:-1]
         dataframe = dataframe.drop(0)  # Remove old column name
-        dataframe['load_timestamp'] = pendulum.now('Asia/Jakarta')
+        dataframe['load_timestamp'] = datetime.now()
 
         # Transform data type based on schema
         dataframe = dataframe_dtypes_casting(
