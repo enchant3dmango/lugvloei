@@ -73,15 +73,17 @@ def dataframe_dtypes_casting(dataframe: pd.DataFrame, schema: list, **kwargs) ->
             dataframe[field_name] = pd.to_datetime(
                 dataframe[field_name], errors="coerce", utc=True, format=format_date).dt.date
         elif field_type == "TIMESTAMP" and (format_timestamp is None or isinstance(format_timestamp, str)):
-            format = format_timestamp if format_timestamp else None
+            format = None; utc = False
+            if format_timestamp:
+                format = format_timestamp; utc = True
             dataframe[field_name] = pd.to_datetime(
-                dataframe[field_name], errors="coerce", utc=True, format=format)
+                dataframe[field_name], errors="coerce", utc=utc, format=format)
         elif field_type == "FLOAT":
             dataframe[field_name] = pd.to_numeric(dataframe[field_name].astype(
                 str).replace(["", " ", "#REF!", "-", "None"], np.NaN)).astype(float)
         elif field_type == "INTEGER":
             dataframe[field_name] = pd.to_numeric(dataframe[field_name].replace(
-                ["", " ", "#REF!", "-", "None"], np.NaN)).fillna(0).astype('Int64')
+                ["", " ", "#REF!", "-", "None"], np.NaN)).astype('Int64')
         elif field_type == "BOOLEAN":
             dataframe[field_name] = dataframe[field_name].astype(bool)
         elif field_type == "STRING":
