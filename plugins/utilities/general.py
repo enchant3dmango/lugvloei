@@ -6,7 +6,6 @@ import re
 import numpy as np
 import pandas as pd
 import pendulum
-# import polars as pl
 
 
 def get_config_files(directory, suffix):
@@ -81,17 +80,17 @@ def dataframe_dtypes_casting(dataframe: pd.DataFrame, schema: list, **kwargs) ->
                 dataframe[field_name] = pd.to_datetime(
                     dataframe[field_name], errors="coerce", utc=True, format=format_timestamp)
         elif field_type == "FLOAT":
-            dataframe[field_name] = dataframe[field_name].astype(str).replace(
-                ["", " ", "#REF!", "-", "None"], np.NaN).astype(float)
+            dataframe[field_name] = dataframe[field_name].astype(pd.StringDtype).replace(
+                ["", " ", "#REF!", "-", "None"], np.NaN).astype(pd.Float64Dtype)
             dataframe[field_name] = pd.to_numeric(dataframe[field_name])
         elif field_type == "INTEGER":
             dataframe[field_name] = dataframe[field_name].replace(
                 ["", " ", "#REF!", "-", "None"], np.NaN)
-            dataframe[field_name] = dataframe[field_name].astype('int64')
+            dataframe[field_name] = dataframe[field_name].astype(pd.Int64Dtype)
         elif field_type == "BOOLEAN":
-            dataframe[field_name] = dataframe[field_name].astype(bool)
+            dataframe[field_name] = dataframe[field_name].astype(pd.BooleanDtype)
         elif field_type == "STRING":
-            dataframe[field_name] = dataframe[field_name].astype(str)
+            dataframe[field_name] = dataframe[field_name].astype(pd.StringDtype)
 
     logging.info(f'Dataframe dtypes after casted:\n{dataframe.dtypes}')
 
@@ -125,29 +124,3 @@ def dataframe_to_file(dataframe: pd.DataFrame, dirname: str, filename: str, exte
 def remove_file(name: str) -> None:
     logging.info(f"Removing {os.path.join('/tmp/', name)}")
     os.remove(os.path.join('/tmp/', name))
-
-
-# def polars_dataframe_type_mapping(dataframe: pl.DataFrame, schema: list, **kwargs) -> pl.DataFrame:
-#     # Define a mapping of BigQuery data types to Polars data types
-#     type_mapping = {
-#         "STRING": pl.Utf8,
-#         "BOOLEAN": pl.Boolean,
-#         "INTEGER": pl.Int64,
-#         "FLOAT": pl.Float64,
-#         "DATE": pl.Date,
-#         "TIME": pl.Time,
-#         "TIMESTAMP": pl.Datetime,
-#     }
-
-#     # Cast the Polars DataFrame schema based on the schema provided
-#     dataframe = dataframe.select(
-#         [pl.col(field["name"]).cast(type_mapping[field["type"]])
-#          for field in schema]
-#     )
-
-#     return dataframe
-
-
-# # TODO: Complete this function
-# def polars_dataframe_format(dataframe: pl.DataFrame, **kwargs) -> None:
-#     dataframe.write_parquet(kwargs.get('filepath_temp', '/tmp/'))
