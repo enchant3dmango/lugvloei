@@ -72,25 +72,20 @@ def dataframe_dtypes_casting(dataframe: pd.DataFrame, schema: list, **kwargs) ->
         if field_type == "DATE" and isinstance(format_date, str):
             dataframe[field_name] = pd.to_datetime(
                 dataframe[field_name], errors="coerce", utc=True, format=format_date).dt.date
-        elif field_type == "TIMESTAMP" and (format_timestamp == None or isinstance(format_timestamp, str)):
-            if format_timestamp == None:
-                dataframe[field_name] = pd.to_datetime(
-                    dataframe[field_name], errors="coerce")
-            else:
-                dataframe[field_name] = pd.to_datetime(
-                    dataframe[field_name], errors="coerce", utc=True, format=format_timestamp)
+        elif field_type == "TIMESTAMP" and (format_timestamp is None or isinstance(format_timestamp, str)):
+            format = format_timestamp if format_timestamp else None
+            dataframe[field_name] = pd.to_datetime(
+                dataframe[field_name], errors="coerce", utc=True, format=format)
         elif field_type == "FLOAT":
-            dataframe[field_name] = dataframe[field_name].astype(pd.StringDtype).replace(
-                ["", " ", "#REF!", "-", "None"], np.NaN).astype(pd.Float64Dtype)
-            dataframe[field_name] = pd.to_numeric(dataframe[field_name])
+            dataframe[field_name] = pd.to_numeric(dataframe[field_name].astype(
+                str).replace(["", " ", "#REF!", "-", "None"], np.NaN)).astype(float)
         elif field_type == "INTEGER":
-            dataframe[field_name] = dataframe[field_name].replace(
-                ["", " ", "#REF!", "-", "None"], np.NaN)
-            dataframe[field_name] = dataframe[field_name].astype(pd.Int64Dtype)
+            dataframe[field_name] = pd.to_numeric(dataframe[field_name].replace(
+                ["", " ", "#REF!", "-", "None"], np.NaN)).fillna(0).astype('Int64')
         elif field_type == "BOOLEAN":
-            dataframe[field_name] = dataframe[field_name].astype(pd.BooleanDtype)
+            dataframe[field_name] = dataframe[field_name].astype(bool)
         elif field_type == "STRING":
-            dataframe[field_name] = dataframe[field_name].astype(pd.StringDtype)
+            dataframe[field_name] = dataframe[field_name].astype(str)
 
     logging.info(f'Dataframe dtypes after casted:\n{dataframe.dtypes}')
 
