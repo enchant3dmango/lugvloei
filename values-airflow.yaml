@@ -271,16 +271,11 @@ volumes:
   - name: gcp-sa
     secret:
       secretName: gcp-sa
-  - name: git-ssh-key
-    secret:
-      secretName: git-ssh-key
 
 # VolumeMounts for all airflow containers
 volumeMounts:
   - name: gcp-sa
     mountPath: "/var/secrets/gcp-sa/"
-  - name: git-ssh-key
-    mountPath: "var/secrets/git-ssh-key"
 
 # Secrets for all airflow containers
 secret: []
@@ -472,7 +467,7 @@ kerberos:
 # Airflow Worker Config
 workers:
   # Number of airflow celery workers in StatefulSet
-  replicas: 2
+  replicas: 1
   # Max number of old replicasets to retain
   revisionHistoryLimit: ~
 
@@ -2028,15 +2023,15 @@ dags:
     # If you are using an ssh clone url, you can load
     # the ssh private key to a k8s secret like the one below
     #   ---
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: git-ssh-key
-    data:
-      # key needs to be gitSshKey
-      gitSshKey: LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0NCmIzQmxibk56YUMxclpYa3RkakVBQUFBQUJHNXZibVVBQUFBRWJtOXVaUUFBQUFBQUFBQUJBQUFCbHdBQUFBZHpjMmd0Y24NCk5oQUFBQUF3RUFBUUFBQVlFQXpSRzdsZ3ZFOWNpdGtya0ZZNVBtbmJjM253TjQwRkdibnVIM29zdDRabWxGRFV2YUk3bE8NCmg5NUkrRDY0TWxLeUxGRzA1NjlZaldCZ2lHZDlJcXcrVHNVTEZES0puYWt2QW5xUkJ1LzNiM0ZXR3F3M1k2R1paN3FzK2UNCndxZmxZQUNyVGNGa1NVelhseVFHNExYZWlOeXI1OGkyMTBaWm8yUUwwc1BmbGlYVktFdFBOQlFQQ3JydTNFNXFiSHFnNC8NCmE1enVRZUdteUI1bFMxT29mTWFkK0lETlRJclNuOThQWVFOdlRaREgwOTRHV09jYU8zblNFWkZlY0dSQkN5UEYrRnFrME0NCk50eGNTZUVQWG1tOTJwTjMxNHJCaDJxd0hCdFdSaXk2V1VNUENXTnc4d2tsT2pmTVR4VnBFdmY1U0RURDZZZncrNmNVaUcNCmJ6SzY1SE1BaW5vSHY1ZlZqM29ERVIydFAwd1N3UXkrOUZ4bGhVVW5XdlZUMzQ2Y1NuVjQ1cGJucEFHYkROdVBUVmxTQXINCmNuUmVWOHk4SlY2MGZ6cHBzT1RLRUZGRHp5K2cyWDZ3bTdGcVZ4aFloVWhIUUthVXpjRUREZkFjdUVoOFJQTkx4QWVWT2sNCkJtL2xpWC9kN1Q0ejBPQndnTG1hUlg0UVlialJQZXU5OWNZWEd6VjNBQUFGa0JYc1Jnb1Y3RVlLQUFBQUIzTnphQzF5YzINCkVBQUFHQkFNMFJ1NVlMeFBYSXJaSzVCV09UNXAyM041OERlTkJSbTU3aDk2TExlR1pwUlExTDJpTzVUb2ZlU1BnK3VESlMNCnNpeFJ0T2V2V0kxZ1lJaG5mU0tzUGs3RkN4UXlpWjJwTHdKNmtRYnY5Mjl4Vmhxc04yT2htV2U2clBuc0tuNVdBQXEwM0INClpFbE0xNWNrQnVDMTNvamNxK2ZJdHRkR1dhTmtDOUxEMzVZbDFTaExUelFVRHdxNjd0eE9hbXg2b09QMnVjN2tIaHBzZ2UNClpVdFRxSHpHbmZpQXpVeUswcC9mRDJFRGIwMlF4OVBlQmxqbkdqdDUwaEdSWG5Ca1FRc2p4ZmhhcE5ERGJjWEVuaEQxNXANCnZkcVRkOWVLd1lkcXNCd2JWa1lzdWxsRER3bGpjUE1KSlRvM3pFOFZhUkwzK1VnMHcrbUg4UHVuRklobTh5dXVSekFJcDYNCkI3K1gxWTk2QXhFZHJUOU1Fc0VNdnZSY1pZVkZKMXIxVTkrT25FcDFlT2FXNTZRQm13emJqMDFaVWdLM0owWGxmTXZDVmUNCnRIODZhYkRreWhCUlE4OHZvTmwrc0p1eGFsY1lXSVZJUjBDbWxNM0JBdzN3SExoSWZFVHpTOFFIbFRwQVp2NVlsLzNlMCsNCk05RGdjSUM1bWtWK0VHRzQwVDNydmZYR0Z4czFkd0FBQUFNQkFBRUFBQUdBTy9DMitBQ3dyWGJlNVVnWGZ5ZTMvTm1VOUgNCkc3V29qQUNBemNxVVQ0Q0ZjMHk5SWtETlVaVXpWeDlyMitjVmNpcFRtc3V4dlJzbUU5VmlHSnZoekNpWnVteFZ5UVJQa3kNCnVITEMrVmdpNXZ3bHd0NGJ3bzkxbTVCQkJ6dzBuNERidWtWckgwY2toM3E4SG9FTDZZTVVEdkxteklwTnYzVDM3cXhjeGoNCkNpdzh4ZTVkVkVlWXJmWTk0ejg0ZEVUVHlrNVB1VjJNUHdVQVl5YlhZaWhYWTRybTVYazh2d0RMTFNkL1RkRDdzRjdiT3oNCi8wQnR0bnpCSGtselpUNm9sR3o3NWxBbkxxdldyTUNXcllJY2QrSGVZanZVT0pGZ0V2Z2tzbFIvQ1BUYVpsUzZ5cWRPbjkNCjNacHJhTGdhanEzUXdXY3piWjZIY2N0SVRIenlES3VaT0RhNXl0U1d0bW1XU0FIWXozL0IvcEhwT2VaWGFHM2FOUk1vbzQNClozTTRKdk5UUHoyZWl0b1VNcnB2Mk5jRDMvSmFITFZGRkhMOFczSWEzOU91cnNWQ0FCd1VQcGZJb0tONWVFZnNiTERseU8NCnk4V1BvSDZsb2xHTzdWMkszaGxDckhJN0x1YnZlVEY4Sm5UbHhaTndkb0QwN2UvYVdJZlZaQUUrNHFEdXJHZSs5QkFBQUENCndRQ01URFhScis4cnFGK0Y3cW0zcHp0RWxZSXp6dVh3Z29lemU1d0tMWE1ab3E1emlVTTNpTGRCTW51d3dBcTdXcW5xTzUNCkFpK3Q3ck1sS2phMVpla3BSK0dCSnYwNGw2V1l1dzAzdHFNaGVjTERvNUJLUWhyZkpIazRJS3dXeTNSVVRuOFZrOWoxdUMNCmk4Nnh0aXhpcVprY29jZTlabGxLc1Y3NGU0QUFablBmVy9naVFRRnlFU3hNeWlHSkN6THd4WmpjNzFHc0hoTUJYTFdLWG0NCkJyZ2c0OWxaTUZ4TGFwYUhRNFpQbUhOS0p6Y2ZJSjBjcUNWUWFpVVJ1ei9KMUVobFFBQUFEQkFQbWdTOW5yODZsRWxXNTgNCndwbVpycGJOamZPNGVsbFFOaDhkSElNY1lZeXF3QktmOWJrWDNUY3MvdXVDczBYRDhQT0NBVFA5Wjl4Z1JxWW1oL0gwZ2cNCisvMkdQZXBQTE1BQjVnSkowa3N1bEZXcHRCR3R6UDJjVVZxYnc2MUUyZHRvZTFDZkNUUnJxeDBScGh6N2wzbURxeXdjNlINCmNDWUxYN29kZWJ3SmQrU0MvSnhlTHVHaUF0OUhzZDRWa3JlcG8zdE5tQy9ZZHowdjY5N3NDYjEwL01YdC92WWhXTmVZbG0NCjJMT1dDc092MkhvOFg4TVl2TkJ1TWwzRnI2bFFPUStRQUFBTUVBMGs0dnRrZTNYU05aVXpBS1JSdUpQeG5IczRybTdxTVENCkxZcmd3RlQ2NWUyZWpuWjdtRG1RQWJPMjNadFZtcjZDbzlNaVpQdm9zTXFUcUtVMzR4R2xDR0pLcFc0SDNqcUcyWXhWZGkNCms2alFtcUNqODFwYzlJNlBPcjA0WFNPT0YxZDRPTHpONGVSQzBGMXU1YndpSzM4elJxeUVUVFp4Rm9jRG1hdTUvdkM3a00NCmc3RWhuVFdNd292czBPbU9aNUNuRzNUTmQyLzhtZk53eWJsS1RaUDdtL1NxQW4wSFZON0sxR0MzSlUzVG1UdTI3cUtPajINCkJPSmNTdHZQRXRBZ1h2QUFBQUZVRnVaSEpsUUVSRlUwdFVUMUF0VFRFNFZGRlFNZ0VDQXdRRg0KLS0tLS1FTkQgT1BFTlNTSCBQUklWQVRFIEtFWS0tLS0t
+    #   apiVersion: v1
+    #   kind: Secret
+    #   metadata:
+    #     name: airflow-ssh-secret
+    #   data:
+    #     # key needs to be gitSshKey
+    #     gitSshKey: <base64_encoded_data>
     # and specify the name of the secret below
-    sshKeySecret: git-ssh-key
+    sshKeySecret: airflow-ssh-secret
     #
     # If you are using an ssh private key, you can additionally
     # specify the content of your known_hosts file, example:
