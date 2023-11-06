@@ -3,3 +3,5 @@ apache-airflow-providers-cncf-kubernetes==7.2.0
 apache-airflow-providers-google==10.7.0
 apache-airflow-providers-slack==8.1.0
 pendulum==2.1.2
+polars==0.19.12
+shapely==1.8.5
