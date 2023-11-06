@@ -239,7 +239,7 @@ rbac:
 
 # Airflow executor
 # One of: LocalExecutor, LocalKubernetesExecutor, CeleryExecutor, KubernetesExecutor, CeleryKubernetesExecutor
-executor: "KubernetesExecutor"
+executor: "CeleryExecutor"
 
 # If this is true and using LocalExecutor/KubernetesExecutor/CeleryKubernetesExecutor, the scheduler's
 # service account will have access to communicate with the api-server and launch pods.
@@ -271,11 +271,16 @@ volumes:
   - name: gcp-sa
     secret:
       secretName: gcp-sa
+  - name: git-ssh-key
+    secret:
+      secretName: git-ssh-key
 
 # VolumeMounts for all airflow containers
 volumeMounts:
   - name: gcp-sa
     mountPath: "/var/secrets/gcp-sa/"
+  - name: git-ssh-key
+    mountPath: "var/secrets/git-ssh-key"
 
 # Secrets for all airflow containers
 secret: []
@@ -467,7 +472,7 @@ kerberos:
 # Airflow Worker Config
 workers:
   # Number of airflow celery workers in StatefulSet
-  replicas: 1
+  replicas: 2
   # Max number of old replicasets to retain
   revisionHistoryLimit: ~
 
@@ -572,13 +577,13 @@ workers:
     #   cpu: 100m
     #   memory: 128Mi
 
-  resources: {}
-  #  limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  #  requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+  resources:
+   limits:
+    cpu: 4
+    memory: 2Gi
+   requests:
+    cpu: 1
+    memory: 512Mi
 
   # Grace period for tasks to finish after SIGTERM is sent from kubernetes
   terminationGracePeriodSeconds: 600
@@ -1697,13 +1702,13 @@ pgbouncer:
 
 # Configuration for the redis provisioned by the chart
 redis:
-  enabled: false
+  enabled: true
   terminationGracePeriodSeconds: 600
 
   # Create ServiceAccount
   serviceAccount:
     # Specifies whether a ServiceAccount should be created
-    create: false
+    create: true
     # The name of the ServiceAccount to use.
     # If not set and create is true, a name is generated using the release name
     name: ~
@@ -1713,7 +1718,7 @@ redis:
 
   persistence:
     # Enable persistent volumes
-    enabled: false
+    enabled: true
     # Volume size for worker StatefulSet
     size: 1Gi
     # If using a custom storageClass, pass name ref to all statefulSets here
@@ -2031,7 +2036,7 @@ dags:
     #     # key needs to be gitSshKey
     #     gitSshKey: <base64_encoded_data>
     # and specify the name of the secret below
-    # sshKeySecret: airflow-ssh-secret
+    sshKeySecret: git-ssh-key
     #
     # If you are using an ssh private key, you can additionally
     # specify the content of your known_hosts file, example:

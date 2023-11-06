@@ -1,0 +1,67 @@
+[
+  {
+    "name": "month",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "date",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "approach_price",
+    "mode": "NULLABLE",
+    "type": "FLOAT"
+  },
+  {
+    "name": "product_name",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "warehouse",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "start_price",
+    "mode": "NULLABLE",
+    "type": "FLOAT"
+  },
+  {
+    "name": "add_inbound_price",
+    "mode": "NULLABLE",
+    "type": "FLOAT"
+  },
+  {
+    "name": "end_price",
+    "mode": "NULLABLE",
+    "type": "FLOAT"
+  },
+  {
+    "name": "consume_price",
+    "mode": "NULLABLE",
+    "type": "FLOAT"
+  },
+  {
+    "name": "value_start",
+    "mode": "NULLABLE",
+    "type": "FLOAT"
+  },
+  {
+    "name": "value_add",
+    "mode": "NULLABLE",
+    "type": "FLOAT"
+  },
+  {
+    "name": "value_end",
+    "mode": "NULLABLE",
+    "type": "FLOAT"
+  },
+  {
+    "name": "value_consume",
+    "mode": "NULLABLE",
+    "type": "FLOAT"
+  }
+]
