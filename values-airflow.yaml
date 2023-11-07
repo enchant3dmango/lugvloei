@@ -270,7 +270,7 @@ executor: "CeleryExecutor"
 allowPodLaunching: true
 
 # Environment variables for all airflow containers
-env: []
+env:
  - name: PYTHONPATH
    value: "/opt/airflow/dags/repo"
  - name: AIRFLOW__CORE__DEFAULT_TIMEZONE
