@@ -161,6 +161,7 @@ cython_debug/
 
 .vscode
 
-*-updated.yaml
+# Local files
 serviceaccount.json
-git-ssh-key.txt
+gitsshkey.txt
+redispassword.txt

@@ -51,4 +51,4 @@ EOF
 # 6. Create GCP service account
 sa_file_path=serviceaccount.json
 kubectl create ns airflow
-kubectl create secret generic gcp-sa --from-file=${sa_file_path} -n airflow
+kubectl create secret generic airflow-gcp-sa --from-file=${sa_file_path} -n airflow
