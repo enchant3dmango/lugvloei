@@ -256,7 +256,7 @@ env:
  - name: AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE
    value: "Asia/Jakarta"
  - name: GOOGLE_APPLICATION_CREDENTIALS
-   value: /var/secrets/gcp-sa/serviceaccount.json
+   value: /var/secrets/airflow-gcp-sa/serviceaccount.json
  - name: AIRFLOW__WEBSERVER__EXPOSE_CONFIG
    value: "True"
  - name: AIRFLOW__LOGGING__REMOTE_LOGGING
@@ -264,18 +264,18 @@ env:
  - name: AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER
    value: "gs://pocz/airflow/logs"
  - name: AIRFLOW__LOGGING__GOOGLE_KEY_PATH
-   value: /var/secrets/gcp-sa/serviceaccount.json
+   value: /var/secrets/airflow-gcp-sa/serviceaccount.json
 
 # Volumes for all airflow containers
 volumes:
-  - name: gcp-sa
+  - name: airflow-gcp-sa
     secret:
-      secretName: gcp-sa
+      secretName: airflow-gcp-sa
 
 # VolumeMounts for all airflow containers
 volumeMounts:
-  - name: gcp-sa
-    mountPath: "/var/secrets/gcp-sa/"
+  - name: airflow-gcp-sa
+    mountPath: "/var/secrets/airflow-gcp-sa/"
 
 # Secrets for all airflow containers
 secret: []
@@ -467,7 +467,7 @@ kerberos:
 # Airflow Worker Config
 workers:
   # Number of airflow celery workers in StatefulSet
-  replicas: 1
+  replicas: 2
   # Max number of old replicasets to retain
   revisionHistoryLimit: ~
 
@@ -1397,7 +1397,7 @@ dagProcessor:
 flower:
   # Enable flower.
   # If True, and using CeleryExecutor/CeleryKubernetesExecutor, will deploy flower app.
-  enabled: false
+  enabled: true
   # Max number of old replicasets to retain
   revisionHistoryLimit: ~
 
