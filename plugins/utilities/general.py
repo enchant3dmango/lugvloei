@@ -2,10 +2,12 @@ import fnmatch
 import logging
 import os
 import re
+import shutil
 
 import numpy as np
 import pandas as pd
 import pendulum
+import polars as pl
 
 
 def get_config_files(directory, suffix):
@@ -73,9 +75,11 @@ def dataframe_dtypes_casting(dataframe: pd.DataFrame, schema: list, **kwargs) ->
             dataframe[field_name] = pd.to_datetime(
                 dataframe[field_name], errors="coerce", utc=True, format=format_date).dt.date
         elif field_type == "TIMESTAMP" and (format_timestamp is None or isinstance(format_timestamp, str)):
-            format = None; utc = False
+            format = None
+            utc = False
             if format_timestamp:
-                format = format_timestamp; utc = True
+                format = format_timestamp
+                utc = True
             dataframe[field_name] = pd.to_datetime(
                 dataframe[field_name], errors="coerce", utc=utc, format=format)
         elif field_type == "FLOAT":
@@ -118,6 +122,44 @@ def dataframe_to_file(dataframe: pd.DataFrame, dirname: str, filename: str, exte
         raise Exception('Extension is not supported!')
 
 
-def remove_file(name: str) -> None:
-    logging.info(f"Removing {os.path.join('/tmp/', name)}")
-    os.remove(os.path.join('/tmp/', name))
+def remove_file(filename: str) -> None:
+    logging.info(f"Removing {os.path.join('/tmp/', filename)}")
+    os.remove(os.path.join('/tmp/', filename))
+
+
+def remote_multiple_files(dirname: str) -> None:
+    logging.info(f"Removing {os.path.join('/tmp/', dirname)}")
+
+    shutil.rmtree(os.path.join('/tmp/', dirname))
+
+
+def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwargs) -> pl.DataFrame:
+    # Define a mapping of BigQuery data types to Polars data types
+    type_mapping = {
+        "STRING": pl.Utf8,
+        "BOOLEAN": pl.Boolean,
+        "INTEGER": pl.Int64,
+        "FLOAT": pl.Float64,
+        "DATE": pl.Date,
+        "TIME": pl.Time,
+        "TIMESTAMP": pl.Datetime,
+    }
+
+    # Cast the Polars DataFrame schema based on the schema provided
+    dataframe = dataframe.select(
+        [pl.col(field["name"]).cast(type_mapping[field["type"]])
+         for field in schema]
+    )
+
+    logging.info(f'Dataframe dtypes after casted:\n{dataframe.dtypes}')
+
+    return dataframe
+
+
+# TODO: Complete this function, which currently only supports write to parquet
+def polars_dataframe_to_file(dataframe: pl.DataFrame, dirname: str, filename: str, **kwargs) -> None:
+    extension = str(kwargs.get('extension', 'parquet'))
+    target = os.path.join(f'/tmp/{dirname}', f'{filename}.{extension.lower()}')
+    
+    logging.info(f'Writing dataframe into {target}.')
+    dataframe.write_parquet(target)
