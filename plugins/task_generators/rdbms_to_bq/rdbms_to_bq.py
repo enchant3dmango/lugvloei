@@ -198,10 +198,6 @@ class RDBMSToBQGenerator:
         )
         logging.info(f"Data fetched successfully.")
 
-        # Close engine and dispose connection
-        sqlalchemy_connection.close()
-        sqlalchemy_engine.dispose()
-
         for index, dataframe in enumerate(dataframes):
             dataframe = polars_dataframe_type_casting(
                 dataframe=dataframe,
@@ -218,6 +214,10 @@ class RDBMSToBQGenerator:
                 extension=DestinationFormat.PARQUET
             )
         logging.info(f"Total dataframe size: {estimated_size}KB.")
+
+        # Close engine and dispose connection
+        sqlalchemy_connection.close()
+        sqlalchemy_engine.dispose()
 
         # Upload file(s) from a local directory to GCS
         upload_multiple_files_from_local(
