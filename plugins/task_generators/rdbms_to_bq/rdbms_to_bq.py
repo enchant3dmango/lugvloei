@@ -179,7 +179,7 @@ class RDBMSToBQGenerator:
         dirname = kwargs.get('dirname', None)
         filename = kwargs.get('filename', None)
         extract_query = kwargs.get('extract_query', None)
-        rows = 0 # Declare and set the initial value for total row processed
+        rows, estimated_size = 0, 0 # Declare and set the initial value for total row processed
 
         logging.info(f'Onelined extract query: {extract_query}')
 
@@ -194,7 +194,7 @@ class RDBMSToBQGenerator:
             iter_batches=True,
             batch_size=10000
         )
-        logging.info(f"Data fetched successfully.\nDataframe size: {dataframes.estimated_size('mb')} MB.")
+        logging.info(f"Data fetched successfully.")
 
         # Close engine and dispose connection
         sqlalchemy_connection.close()
@@ -206,7 +206,7 @@ class RDBMSToBQGenerator:
                 schema=schema
             )
             logging.info(dataframe.head(1))
-            rows += len(dataframe) 
+            rows += len(dataframe); estimated_size += float("{:.3f}".format(dataframe.estimated_size('kb')))
 
             # Writing dataframe(s) to file(s)
             polars_dataframe_to_file(
@@ -215,6 +215,7 @@ class RDBMSToBQGenerator:
                 filename=f'{filename}__{index}',
                 extension=DestinationFormat.PARQUET
             )
+        logging.info(f"Total dataframe size: {estimated_size}KB.")
 
         # Upload file(s) from a local directory to GCS
         upload_multiple_files_from_local(
