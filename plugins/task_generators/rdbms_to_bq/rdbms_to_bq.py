@@ -9,6 +9,8 @@ import polars as pl
 import yaml
 from google.cloud.bigquery import (DestinationFormat, SourceFormat,
                                    WriteDisposition)
+from sqlalchemy import create_engine
+
 
 from airflow.hooks.base import BaseHook
 from airflow.operators.python import PythonOperator
@@ -184,7 +186,7 @@ class RDBMSToBQGenerator:
         logging.info(f'Onelined extract query: {extract_query}')
 
         # Create engine and connection
-        sqlalchemy_engine = self.sql_hook.get_sqlalchemy_engine()
+        sqlalchemy_engine = create_engine(self.__get_conn().get_uri())
         sqlalchemy_connection = sqlalchemy_engine.connect().execution_options(stream_results=True)
 
         # Fetch data and save into dataframe(s)
