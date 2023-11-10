@@ -159,7 +159,7 @@ class GSheetToBQGenerator:
             )
 
             remove_file(
-                name=f'{dirname}/{filename}'
+                filename=f'{dirname}/{filename}'
             )
 
     def __check_if_file_exists_in_gcs(self, **kwargs):
