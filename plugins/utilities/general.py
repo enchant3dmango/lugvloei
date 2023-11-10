@@ -158,10 +158,22 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
     for field in schema:
         field_name, field_type = field['name'], field['type']
 
-        if field_type == "DATE" and isinstance(format_date, str):
-            dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Date, strict=False))
+        if field_type == "DATE":
+            dataframe = dataframe.with_columns(
+                pl.col(field_name).str.strptime(
+                    format="%Y-%m-%d",
+                    dtype=pl.Date,
+                    strict=False
+                )
+            )
         elif field_type == "TIMESTAMP":
-            dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Datetime, strict=True))
+            dataframe = dataframe.with_columns(
+                pl.col(field_name).str.strptime(
+                    format="%Y-%m-%d %H:%M:%S%#z",
+                    dtype=pl.Datetime,
+                    strict=False
+                )
+            )
         elif field_type == "TIME":
             dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Time, strict=False))
         elif field_type == "FLOAT":
