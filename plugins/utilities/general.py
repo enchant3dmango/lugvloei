@@ -134,24 +134,58 @@ def remote_multiple_files(dirname: str) -> None:
 
 
 def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwargs) -> pl.DataFrame:
-    # Define a mapping of BigQuery data types to Polars data types
-    type_mapping = {
-        "STRING": pl.Utf8,
-        "BOOLEAN": pl.Boolean,
-        "INTEGER": pl.Int64,
-        "FLOAT": pl.Float64,
-        "DATE": pl.Date,
-        "TIME": pl.Time,
-        "TIMESTAMP": pl.Datetime,
-    }
+    """
+    Function to cast polars dataframe data types based on provided schema.
+    """
 
-    # Cast the Polars DataFrame schema based on the schema provided
-    dataframe = dataframe.select(
-        [pl.col(field["name"]).cast(type_mapping[field["type"]])
-         for field in schema]
-    )
+    format_date = kwargs.get('format_date', "%Y-%m-%d")
+    format_timestamp = kwargs.get('format_timestamp', None)
 
-    logging.info(f'Dataframe dtypes after casted:\n{dataframe.dtypes}')
+    if isinstance(format_date, list):
+        for each_format_date in format_date:
+            for date_field, format_date_key in each_format_date.items():
+                dataframe = dataframe.with_columns(date_field, pl.col(
+                    date_field).to_date(format=format_date_key))
+
+    if format_timestamp is not None:
+        for each_format_timestamp in format_timestamp:
+            for timestamp_field, format_timestamp_key in each_format_timestamp.items():
+                dataframe = dataframe.with_columns(timestamp_field, pl.col(
+                    timestamp_field).to_datetime(format=format_timestamp_key))
+
+    NUMERIC_IGNORED_VALUES = ["", " ", "#REF!", "-", "None"]
+
+    for field in schema:
+        field_name, field_type = field['name'], field['type']
+
+        if field_type == "DATE" and isinstance(format_date, str):
+            dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Date, strict=False))
+        elif field_type == "TIMESTAMP" and (format_timestamp is None or isinstance(format_timestamp, str)):
+            dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Datetime, strict=False))
+        elif field_type == "TIME":
+            dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Time, strict=False))
+        elif field_type == "FLOAT":
+            dataframe = dataframe.with_columns(
+                pl.col(field_name).map_elements(
+                    function=lambda val: np.NaN if val in NUMERIC_IGNORED_VALUES else val,
+                    skip_nulls=True,
+                    return_dtype=pl.Float64
+                )
+            )
+        elif field_type == "INTEGER":
+            dataframe = dataframe.with_columns(
+                pl.col(field_name).map_elements(
+                    function=lambda val: np.NaN if val in NUMERIC_IGNORED_VALUES else val,
+                    skip_nulls=True,
+                    return_dtype=pl.Int64
+                )
+            )
+        elif field_type == "BOOLEAN":
+            dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Boolean, strict=False))
+        elif field_type == "STRING":
+            dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Utf8, strict=False))
+
+    print(f'Dataframe dtypes after casted:\n{dataframe.dtypes}')
 
     return dataframe
 
