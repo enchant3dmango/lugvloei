@@ -187,8 +187,7 @@ class RDBMSToBQGenerator:
         logging.info(f'Onelined extract query: {extract_query}')
 
         # Create engine and connection
-        sqlalchemy_uri = self.__get_jdbc_uri()
-        sqlalchemy_engine = create_engine(sqlalchemy_uri)
+        sqlalchemy_engine = self.sql_hook.get_sqlalchemy_engine()
         sqlalchemy_connection = sqlalchemy_engine.connect().execution_options(stream_results=True)
 
         # Fetch data and save into dataframe(s)
@@ -302,16 +301,11 @@ class RDBMSToBQGenerator:
 
     def __get_conn(self, **kwargs) -> Connection:
         return BaseHook.get_connection(self.source_connection)
-    
-    def __get_jdbc_uri(self, **kwargs) -> str:
+
+    def __generate_jdbc_url(self, **kwargs) -> str:
         jdbc_uri = f'jdbc:{self.__get_conn().get_uri()}'
         jdbc_uri.replace(
             'postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri
-
-        return jdbc_uri
-
-    def __generate_jdbc_url(self, **kwargs) -> str:
-        jdbc_uri = self.__get_jdbc_uri()
 
         db_type = jdbc_uri.split("://")[0]
         db_conn = jdbc_uri.split("@")[1].split("?")[0]
