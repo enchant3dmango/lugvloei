@@ -13,6 +13,7 @@ from sqlalchemy import create_engine
 
 
 from airflow.hooks.base import BaseHook
+from airflow.models.connection import Connection
 from airflow.operators.python import PythonOperator
 from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
 from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKubernetesSensor
@@ -186,7 +187,8 @@ class RDBMSToBQGenerator:
         logging.info(f'Onelined extract query: {extract_query}')
 
         # Create engine and connection
-        sqlalchemy_engine = create_engine(self.__get_conn().get_uri())
+        sqlalchemy_uri = self.__get_jdbc_uri()
+        sqlalchemy_engine = create_engine(sqlalchemy_uri)
         sqlalchemy_connection = sqlalchemy_engine.connect().execution_options(stream_results=True)
 
         # Fetch data and save into dataframe(s)
@@ -298,13 +300,18 @@ class RDBMSToBQGenerator:
 
         return get_onelined_string(f'{query}')
 
-    def __get_conn(self, **kwargs) -> str:
+    def __get_conn(self, **kwargs) -> Connection:
         return BaseHook.get_connection(self.source_connection)
-
-    def __generate_jdbc_url(self, **kwargs) -> str:
+    
+    def __get_jdbc_uri(self, **kwargs) -> str:
         jdbc_uri = f'jdbc:{self.__get_conn().get_uri()}'
         jdbc_uri.replace(
             'postgres', 'postgresql') if self.task_type == POSTGRES_TO_BQ else jdbc_uri
+
+        return jdbc_uri
+
+    def __generate_jdbc_url(self, **kwargs) -> str:
+        jdbc_uri = self.__get_jdbc_uri()
 
         db_type = jdbc_uri.split("://")[0]
         db_conn = jdbc_uri.split("@")[1].split("?")[0]
