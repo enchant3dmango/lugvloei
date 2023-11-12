@@ -399,7 +399,7 @@ class RDBMSToBQGenerator:
                 # Extract data from Postgres, then load to GCS
                 extract = PythonOperator(
                     task_id=f"extract_and_upload_to_gcs",
-                    python_callable=self.__extract_and_upload_to_gcs(),
+                    python_callable=self.__extract_and_upload_to_gcs,
                     op_kwargs={
                         "schema": schema,
                         "dirname": dirname,
