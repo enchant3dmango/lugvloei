@@ -198,11 +198,13 @@ def polars_dataframe_to_file(dataframe: pl.DataFrame, dirname: str, filename: st
     dirname = os.path.join('/tmp/', dirname)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
+    filename = f'{filename}.{extension.lower()}'
 
-    target = os.path.join(f'{dirname}', f'{filename}.{extension.lower()}')
+    target = os.path.join(dirname, filename)
 
     logging.info(f'Writing dataframe into {target}.')
     try:
         dataframe.write_parquet(target)
+        logging.info(f'Successfully writing dataframe into {target}.')
     except:
         raise Exception(f'Failed writing dataframe into {target}.')

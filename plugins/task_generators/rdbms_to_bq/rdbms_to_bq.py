@@ -182,7 +182,7 @@ class RDBMSToBQGenerator:
         dirname = kwargs.get('dirname', None)
         filename = kwargs.get('filename', None)
         extract_query = kwargs.get('extract_query', None)
-        rows, estimated_size = 0, 0 # Declare and set the initial value for total row processed
+        rows, estimated_size, dataframe = 0, 0, None
 
         logging.info(f'Onelined extract query: {extract_query}')
 
@@ -220,7 +220,7 @@ class RDBMSToBQGenerator:
         sqlalchemy_connection.close()
         sqlalchemy_engine.dispose()
 
-        if all(False for _ in dataframes):
+        if dataframe is None:
             logging.info('Empty dataframes.')
         else:
             # Upload file(s) from a local directory to GCS
