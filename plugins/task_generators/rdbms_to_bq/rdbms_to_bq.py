@@ -220,18 +220,19 @@ class RDBMSToBQGenerator:
         sqlalchemy_connection.close()
         sqlalchemy_engine.dispose()
 
-        # Upload file(s) from a local directory to GCS
-        upload_multiple_files_from_local(
-            bucket=GCS_DATA_LAKE_BUCKET,
-            dirname=dirname,
-        )
-
-        # Remove file(s) in a local directory
-        remote_multiple_files(
-            dirname=dirname
-        )
-        logging.info('Empty dataframes.') if all(False for _ in dataframes) else logging.info(f'{rows} data extracted and uploaded to GCS successfully.')
-
+        if all(False for _ in dataframes):
+            logging.info('Empty dataframes.')
+        else:
+            # Upload file(s) from a local directory to GCS
+            upload_multiple_files_from_local(
+                bucket=GCS_DATA_LAKE_BUCKET,
+                dirname=dirname,
+            )
+            logging.info(f'{rows} data extracted and uploaded to GCS successfully.')
+            # Remove file(s) in a local directory
+            remote_multiple_files(
+                dirname=dirname
+            )
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
         table_creation_query_type = 'COPY'
@@ -457,9 +458,9 @@ class RDBMSToBQGenerator:
                 gcp_conn_id                       = GCP_CONN_ID,
                 bucket                            = GCS_DATA_LAKE_BUCKET,
                 destination_project_dataset_table = destination_project_dataset_table,
-                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/*.json'],
+                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/*.parquet'],
                 schema_fields                     = schema,
-                source_format                     = SourceFormat.NEWLINE_DELIMITED_JSON,
+                source_format                     = SourceFormat.PARQUET,
                 write_disposition                 = write_disposition,
                 time_partitioning                 = time_partitioning,
                 cluster_fields                    = cluster_fields,
