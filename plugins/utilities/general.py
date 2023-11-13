@@ -193,7 +193,16 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
 # TODO: Complete this function, which currently only supports write to parquet
 def polars_dataframe_to_file(dataframe: pl.DataFrame, dirname: str, filename: str, **kwargs) -> None:
     extension = str(kwargs.get('extension', 'parquet'))
-    target = os.path.join(f'/tmp/{dirname}', f'{filename}.{extension.lower()}')
-    
+
+    # Create local dir if not exists
+    dirname = os.path.join('/tmp/', dirname)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+    target = os.path.join(f'{dirname}', f'{filename}.{extension.lower()}')
+
     logging.info(f'Writing dataframe into {target}.')
-    dataframe.write_parquet(target)
+    try:
+        dataframe.write_parquet(target)
+    except:
+        raise Exception(f'Failed writing dataframe into {target}.')
