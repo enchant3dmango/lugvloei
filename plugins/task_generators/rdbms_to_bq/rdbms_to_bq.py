@@ -451,6 +451,7 @@ class RDBMSToBQGenerator:
             # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
             destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
                 else f'{self.full_target_bq_table_temp}'
+            source_object_dir = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
 
             # Load data from GCS to BigQuery
             load = GCSToBigQueryOperator(
@@ -458,7 +459,7 @@ class RDBMSToBQGenerator:
                 gcp_conn_id                       = GCP_CONN_ID,
                 bucket                            = GCS_DATA_LAKE_BUCKET,
                 destination_project_dataset_table = destination_project_dataset_table,
-                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/*.parquet'],
+                source_objects                    = [f'{source_object_dir}/*.parquet'],
                 schema_fields                     = schema,
                 source_format                     = SourceFormat.PARQUET,
                 write_disposition                 = write_disposition,
