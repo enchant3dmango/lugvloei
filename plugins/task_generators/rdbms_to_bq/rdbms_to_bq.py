@@ -394,7 +394,7 @@ class RDBMSToBQGenerator:
             # Task generator for single connection dag
             if type(self.source_connection) is str:
                 extract_query = self.__generate_extract_query(schema=schema)
-                dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/'
+                dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
                 filename = f'{self.source_table}'
 
                 # Extract data from Postgres, then load to GCS
