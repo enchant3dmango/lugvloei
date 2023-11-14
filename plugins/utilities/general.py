@@ -158,6 +158,7 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
 
     for field in schema:
         field_name, field_type = field['name'], field['type']
+        logging.info(f'BEFORE: {dataframe}')
 
         if field_type == "DATE" and isinstance(format_date, str):
             dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Date, strict=False))
