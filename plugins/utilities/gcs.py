@@ -37,7 +37,12 @@ def check_folder_existence(bucket: str, dirname: str = None, **kwargs):
     Function to folder existence in a GCS bucket.
     """
 
+    logging.info(f'Checking if {dirname} exists in {bucket} bucket.')
     bucket = client.bucket(bucket_name=bucket)
     files = list(client.list_blobs(bucket_or_name=bucket, prefix=dirname))
 
-    return True if len(files) > 0 else False
+    if len(files) > 0:
+        logging.info(f'Folder {dirname} is exists in {bucket} bucket')
+        return True    
+    else:
+        return False
