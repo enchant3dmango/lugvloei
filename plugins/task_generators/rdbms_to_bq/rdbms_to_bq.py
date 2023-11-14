@@ -240,9 +240,9 @@ class RDBMSToBQGenerator:
         if not exists:
             logging.info("Folder and its file(s) not exists, skipping load_to_bq task.")
             return f'end'
-
-        logging.info("Folder and its file(s) exists, executing load_to_bq task.")
-        return f"load_to_bq"
+        else:
+            logging.info("Folder and its file(s) exists, executing load_to_bq task.")
+            return f"load_to_bq"
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
         table_creation_query_type = 'COPY'

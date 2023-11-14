@@ -46,6 +46,6 @@ def check_folder_existence(bucket: str, dirname: str = None, **kwargs) -> bool:
     if len(files) == 0:
         logging.info(f'Folder {dirname} is not exists in {bucket} bucket.')
         return False
-
-    logging.info(f'Folder {dirname} is exists in {bucket} bucket.')
-    return True    
+    else:
+        logging.info(f'Folder {dirname} is exists in {bucket} bucket.')
+        return True    
