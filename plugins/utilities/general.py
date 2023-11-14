@@ -166,7 +166,7 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
                 pl.col(field_name).str.strptime(
                     pl.Datetime,
                     strict=False
-                ).dt.datetime
+                )
             )
         elif field_type == "TIME":
             dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Time, strict=False))
