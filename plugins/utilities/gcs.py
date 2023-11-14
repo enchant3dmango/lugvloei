@@ -41,6 +41,8 @@ def check_folder_existence(bucket: str, dirname: str = None, **kwargs):
     bucket = client.bucket(bucket_name=bucket)
     files = list(client.list_blobs(bucket_or_name=bucket, prefix=dirname))
 
+    logging.info(f'file len {len(files)}')
+
     if len(files) > 0:
         logging.info(f'Folder {dirname} is exists in {bucket} bucket.')
         return True    
