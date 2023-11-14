@@ -169,8 +169,9 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
         elif field_type == "TIMESTAMP":
             dataframe = dataframe.with_columns(
                 pl.col(field_name).str.strptime(
-                    dtype=pl.Datetime,
-                    strict=True
+                    pl.Datetime,
+                    format='%Y-%m-%d %H:%M:%S',
+                    strict=False
                 )
             )
         elif field_type == "TIME":
