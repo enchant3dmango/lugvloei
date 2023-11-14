@@ -388,6 +388,9 @@ class RDBMSToBQGenerator:
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
             ts_nodash = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y%m%dT%H%M%S') }}"
+            extract_query = self.__generate_extract_query(schema=schema)
+            dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
+            filename = f'{self.source_table}'
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
             write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
@@ -403,10 +406,6 @@ class RDBMSToBQGenerator:
 
             # Task generator for single connection dag
             if type(self.source_connection) is str:
-                extract_query = self.__generate_extract_query(schema=schema)
-                dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
-                filename = f'{self.source_table}'
-
                 # Extract data from source database, then load to GCS
                 extract = PythonOperator(
                     task_id="extract_and_upload_to_gcs",
@@ -425,8 +424,7 @@ class RDBMSToBQGenerator:
 
                 for index, connection in enumerate(sorted(self.source_connection)):
                     extract_query = self.__generate_extract_query(schema=schema, database=connection)
-                    dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
-                    filename = f'{self.source_table}_{index+1}'
+                    filename = f'{filename}_{index+1}'
 
                     self.sql_hook = PostgresHook(postgres_conn_id=connection) if self.task_type == POSTGRES_TO_BQ else MySqlHook(mysql_conn_id=connection)
 
