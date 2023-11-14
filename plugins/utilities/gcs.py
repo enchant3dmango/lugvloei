@@ -7,7 +7,7 @@ client = Client()
 
 def upload_multiple_files_from_local(bucket: str, dirname: str = None, privacy: str = "private"):
     """
-    Function to upload multiple local files from a local directory to GCS
+    Function to upload multiple local files from a local directory to GCS.
     """
 
     gcs_bucket = client.bucket(bucket)
@@ -30,3 +30,14 @@ def upload_multiple_files_from_local(bucket: str, dirname: str = None, privacy: 
         blob.make_public()
 
     return blob.public_url
+
+
+def check_folder_existence(bucket: str, dirname: str = None, **kwargs):
+    """
+    Function to folder existence in a GCS bucket.
+    """
+
+    bucket = client.bucket(bucket_name=bucket)
+    files = list(client.list_blobs(bucket_or_name=bucket, prefix=dirname))
+
+    return True if len(files) > 0 else False

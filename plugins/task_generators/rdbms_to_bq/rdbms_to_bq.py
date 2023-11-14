@@ -35,7 +35,7 @@ from plugins.constants.variables import (GCP_CONN_ID, GCS_DATA_LAKE_BUCKET,
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utilities.gcs import upload_multiple_files_from_local
+from plugins.utilities.gcs import check_folder_existence, upload_multiple_files_from_local
 from plugins.utilities.general import get_onelined_string, polars_dataframe_to_file, polars_dataframe_type_casting, remote_multiple_files
 
 
@@ -231,17 +231,13 @@ class RDBMSToBQGenerator:
                 dirname=dirname
             )
 
-    def __check_if_file_exists_in_gcs(self, **kwargs):
-        bucket_name = kwargs.get('bucket', None)
+    def __check_folder_existence_in_gcs(self, **kwargs):
+        bucket = kwargs.get('bucket', None)
         dirname = kwargs.get('dirname', None)
 
-        # Initiate GCS client
-        client = storage.Client()
-        bucket = client.bucket(bucket_name=bucket_name)
+        exists = check_folder_existence(bucket=bucket, dirname=dirname)
 
-        # Determine next task to be executed based on file existence
-        files = list(client.list_blobs(bucket_or_name=bucket, prefix=dirname))
-        if len(files) == 0:
+        if exists:
             logging.info("Folder and its file(s) not exists, skipping load_to_bq task.")
             return f'end'
 
@@ -432,7 +428,7 @@ class RDBMSToBQGenerator:
                     dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
                     filename = f'{self.source_table}_{index+1}'
 
-                    
+
                     self.sql_hook = PostgresHook(postgres_conn_id=connection) if self.task_type == POSTGRES_TO_BQ else MySqlHook(mysql_conn_id=connection)
 
                     # Extract data from source database, then load to GCS
@@ -451,7 +447,7 @@ class RDBMSToBQGenerator:
 
             check = BranchPythonOperator(
                 task_id=f'check_if_file_exists_in_gcs',
-                python_callable=self.__check_if_file_exists_in_gcs,
+                python_callable=self.__check_folder_existence_in_gcs,
                 op_kwargs={
                     'bucket': GCS_DATA_LAKE_BUCKET,
                     'dirname': dirname,
