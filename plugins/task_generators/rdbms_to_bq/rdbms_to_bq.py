@@ -507,7 +507,7 @@ class RDBMSToBQGenerator:
 
                 # Set merge as load downstream, and delete as merge downstream
                 # It's the same as load >> merge >> delete
-                load.set_downstream(merge.set_downstream(delete))
+                load.set_downstream(merge); merge.set_downstream(delete)
 
                 # Early return the task flow for MERGE load method
                 return extract >> check.set_downstream([load, end])
