@@ -509,8 +509,5 @@ class RDBMSToBQGenerator:
                 # It's the same as load >> merge >> delete
                 load.set_downstream(merge); merge.set_downstream(delete)
 
-                # Early return the task flow for MERGE load method
-                return extract >> check.set_downstream([load, end])
-
-            # Task flow for TRUNCATE or APPEND method
-            return extract >> check.set_downstream([load,  end])
+            # Return the DAG task flow
+            return extract >> check >> [load, end]
