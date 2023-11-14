@@ -154,6 +154,7 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
                     timestamp_field).to_datetime(format=format_timestamp_key))
 
     NUMERIC_IGNORED_VALUES = ["", " ", "#REF!", "-", "None"]
+    logging.info(f'BEFORE: {dataframe}')
 
     for field in schema:
         field_name, field_type = field['name'], field['type']
@@ -161,9 +162,12 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
         if field_type == "DATE" and isinstance(format_date, str):
             dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Date, strict=False))
         elif field_type == "TIMESTAMP" and (format_timestamp is None or isinstance(format_timestamp, str)):
-            logging.info(f'BEFORE: {dataframe}')
-            dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Datetime, strict=False))
-            logging.info(f'AFTER: {dataframe}')
+            dataframe = dataframe.with_columns(
+                pl.col(field_name).str.strptime(
+                    pl.Datetime,
+                    strict=False
+                )
+            )
         elif field_type == "TIME":
             dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Time, strict=False))
         elif field_type == "FLOAT":
