@@ -170,14 +170,14 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
             dataframe = dataframe.with_columns(
                 pl.col(field_name).str.strptime(
                     dtype=pl.Datetime,
-                    strict=True
+                    strict=False
                 )
             )
         elif field_type == "TIMESTAMP":
             dataframe = dataframe.with_columns(
                 pl.col(field_name).str.strptime(
                     dtype=pl.Time,
-                    strict=True
+                    strict=False
                 )
             )
         elif field_type == "FLOAT":
