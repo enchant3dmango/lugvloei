@@ -9,8 +9,6 @@ import polars as pl
 import yaml
 from google.cloud.bigquery import (DestinationFormat, SourceFormat,
                                    WriteDisposition)
-from sqlalchemy import create_engine
-
 
 from airflow.hooks.base import BaseHook
 from airflow.models.connection import Connection
@@ -72,12 +70,10 @@ class RDBMSToBQGenerator:
 
         # Set default value based on task type
         if self.task_type == POSTGRES_TO_BQ:
-            self.sql_hook = PostgresHook(postgres_conn_id=self.source_connection)
-            self.quoting = lambda text: f'"{text}"'
+            self.sql_hook, self.quoting = PostgresHook(postgres_conn_id=self.source_connection), lambda text: f'"{text}"'
             self.string_type = 'TEXT'
         elif self.task_type == MYSQL_TO_BQ:
-            self.sql_hook = MySqlHook(mysql_conn_id=self.source_connection)
-            self.quoting = lambda text: f'`{text}`'
+            self.sql_hook, self.quoting = MySqlHook(mysql_conn_id=self.source_connection), lambda text: f'`{text}`'
             self.string_type = 'CHAR'
         else:
             raise Exception('Task type is not supported!')
