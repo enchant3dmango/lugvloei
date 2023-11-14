@@ -123,8 +123,9 @@ def dataframe_to_file(dataframe: pd.DataFrame, dirname: str, filename: str, exte
 
 
 def remove_file(filename: str) -> None:
-    logging.info(f"Removing {os.path.join('/tmp/', filename)}")
+    logging.info(f"Removing all files in {os.path.join('/tmp/', filename)}.")
     os.remove(os.path.join('/tmp/', filename))
+    logging.info(f"Successfully remove all files in {os.path.join('/tmp/', filename)}.")
 
 
 def remote_multiple_files(dirname: str) -> None:
@@ -154,7 +155,7 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
                     timestamp_field).to_datetime(format=format_timestamp_key))
 
     NUMERIC_IGNORED_VALUES = ["", " ", "#REF!", "-", "None"]
-    logging.info(f'BEFORE: {dataframe}')
+    print(f'Dataframe dtypes before casted:\n{dataframe.head(0)}')
 
     for field in schema:
         field_name, field_type = field['name'], field['type']
@@ -222,7 +223,7 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
         elif field_type == "STRING":
             dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Utf8, strict=False))
 
-    print(f'Dataframe dtypes after casted:\n{dataframe.dtypes}')
+    logging.info(f'Dataframe dtypes after casted:\n{dataframe.ehad(0)}')
 
     return dataframe
 
@@ -242,6 +243,6 @@ def polars_dataframe_to_file(dataframe: pl.DataFrame, dirname: str, filename: st
     logging.info(f'Writing dataframe into {target}.')
     try:
         dataframe.write_parquet(target)
-        logging.info(f'Successfully writing dataframe into {target}.')
+        logging.info(f'Successfully write dataframe into {target}.')
     except:
-        raise Exception(f'Failed writing dataframe into {target}.')
+        raise Exception(f'Failed to write dataframe into {target}.')

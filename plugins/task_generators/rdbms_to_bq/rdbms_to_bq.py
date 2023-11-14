@@ -200,7 +200,6 @@ class RDBMSToBQGenerator:
                 dataframe=dataframe,
                 schema=schema
             )
-            logging.info(dataframe.head(1))
             rows += len(dataframe); estimated_size += float("{:.3f}".format(dataframe.estimated_size('kb')))
 
             # Writing dataframe(s) to file(s)
