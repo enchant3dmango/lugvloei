@@ -413,7 +413,7 @@ class RDBMSToBQGenerator:
 
                 # Extract data from source database, then load to GCS
                 extract = PythonOperator(
-                    task_id=f"extract_and_upload_to_gcs",
+                    task_id="extract_and_upload_to_gcs",
                     python_callable=self.__extract_and_upload_to_gcs,
                     op_kwargs={
                         "schema": schema,
@@ -434,7 +434,7 @@ class RDBMSToBQGenerator:
 
                     # Extract data from source database, then load to GCS
                     __extract = PythonOperator(
-                        task_id=f"extract_and_upload_to_gcs",
+                        task_id=f"extract_and_upload_to_gcs__{index+1}",
                         python_callable=self.__extract_and_upload_to_gcs,
                         op_kwargs={
                             "schema": schema,
@@ -505,6 +505,8 @@ class RDBMSToBQGenerator:
                     ignore_if_missing      = True
                 )
 
+                # Set merge as load downstream, and delete as merge downstream
+                # It's the same as load >> merge >> delete
                 load.set_downstream(merge.set_downstream(delete))
 
                 # Early return the task flow for MERGE load method
