@@ -216,14 +216,14 @@ class RDBMSToBQGenerator:
         sqlalchemy_engine.dispose()
 
         if dataframe is None:
-            logging.info('Empty dataframes.')
+            logging.info('Empty dataframe.')
         else:
             # Upload file(s) from a local directory to GCS
             upload_multiple_files_from_local(
                 bucket=GCS_DATA_LAKE_BUCKET,
                 dirname=dirname,
             )
-            logging.info(f'{rows} data extracted and uploaded to GCS successfully.')
+            logging.info(f'{rows} row(s) extracted and uploaded to GCS successfully.')
             # Remove file(s) in a local directory
             remote_multiple_files(
                 dirname=dirname
