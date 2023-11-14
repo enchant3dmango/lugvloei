@@ -172,7 +172,9 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
                     pl.Utf8
                 ).str.strptime(
                     pl.Datetime,
-                    format='%Y-%m-%d %H:%M:%S'
+                    format='%Y-%m-%d %H:%M:%S',
+                    strict=False,
+                    exact=False
                 ).cast(
                     pl.Datetime,
                     strict=False
