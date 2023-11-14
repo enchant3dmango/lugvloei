@@ -232,20 +232,20 @@ class RDBMSToBQGenerator:
             )
 
     def __check_if_file_exists_in_gcs(self, **kwargs):
-        bucket = kwargs.get('bucket', None)
+        bucket_name = kwargs.get('bucket', None)
         dirname = kwargs.get('dirname', None)
 
         # Initiate GCS client
         client = storage.Client()
-        gcs_bucket = client.bucket(bucket_name=bucket)
+        bucket = client.bucket(bucket_name=bucket_name)
 
         # Determine next task to be executed based on file existence
-        file_exists = storage.Blob(name=dirname, bucket=gcs_bucket).exists()
-        if not file_exists:
-            logging.info("Folder not exists, skipping load_to_bq task.")
+        files = list(client.list_blobs(bucket_or_name=bucket, prefix=dirname))
+        if len(files) == 0:
+            logging.info("Folder and its file(s) not exists, skipping load_to_bq task.")
             return f'end'
 
-        logging.info("Folder exists, executing load_to_bq task.")
+        logging.info("Folder and its file(s) exists, executing load_to_bq task.")
         return f"load_to_bq"
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
