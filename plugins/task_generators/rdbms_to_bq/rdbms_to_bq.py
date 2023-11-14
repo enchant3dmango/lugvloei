@@ -7,12 +7,14 @@ from urllib.parse import urlencode
 
 import polars as pl
 import yaml
+from google.cloud import storage
 from google.cloud.bigquery import (DestinationFormat, SourceFormat,
                                    WriteDisposition)
 
 from airflow.hooks.base import BaseHook
 from airflow.models.connection import Connection
-from airflow.operators.python import PythonOperator
+from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
 from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKubernetesSensor
 from airflow.providers.google.cloud.operators.bigquery import (
@@ -229,6 +231,23 @@ class RDBMSToBQGenerator:
                 dirname=dirname
             )
 
+    def __check_if_file_exists_in_gcs(self, **kwargs):
+        bucket = kwargs.get('bucket', None)
+        dirname = kwargs.get('dirname', None)
+
+        # Initiate GCS client
+        client = storage.Client()
+        gcs_bucket = client.bucket(bucket_name=bucket)
+
+        # Determine next task to be executed based on file existence
+        file_exists = storage.Blob(name=dirname, bucket=gcs_bucket).exists()
+        if not file_exists:
+            logging.info("Folder not exists, skipping load_to_bq task.")
+            return f'end'
+
+        logging.info("Folder exists, executing load_to_bq task.")
+        return f"load_to_bq"
+
     def __generate_merge_query(self, schema, **kwargs) -> str:
         table_creation_query_type = 'COPY'
         partition_filter = ''
@@ -392,7 +411,7 @@ class RDBMSToBQGenerator:
                 dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
                 filename = f'{self.source_table}'
 
-                # Extract data from Postgres, then load to GCS
+                # Extract data from source database, then load to GCS
                 extract = PythonOperator(
                     task_id=f"extract_and_upload_to_gcs",
                     python_callable=self.__extract_and_upload_to_gcs,
@@ -410,38 +429,33 @@ class RDBMSToBQGenerator:
 
                 for index, connection in enumerate(sorted(self.source_connection)):
                     extract_query = self.__generate_extract_query(schema=schema, database=connection)
-                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/{self.source_table}_{index+1}' + '__{}.json'
+                    dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
+                    filename = f'{self.source_table}_{index+1}'
 
-                    # Extract data from Postgres, then load to GCS
-                    if self.task_type == POSTGRES_TO_BQ:
-                        __extract = PostgresToGCSOperator(
-                            task_id                    = f'extract_and_upload_to_gcs__{index+1}',
-                            postgres_conn_id           = connection,
-                            gcp_conn_id                = GCP_CONN_ID,
-                            sql                        = extract_query,
-                            bucket                     = GCS_DATA_LAKE_BUCKET,
-                            export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                            filename                   = filename,
-                            approx_max_file_size_bytes = 200000000,
-                            write_on_empty             = True,
-                            schema                     = schema
-                        )
-
-                    # Extract data from MySQL, then load to GCS
-                    elif self.task_type == MYSQL_TO_BQ:
-                        __extract = MySQLToGCSOperator(
-                            task_id                    = f'extract_and_upload_to_gcs__{index+1}',
-                            mysql_conn_id              = connection,
-                            gcp_conn_id                = GCP_CONN_ID,
-                            sql                        = extract_query,
-                            bucket                     = GCS_DATA_LAKE_BUCKET,
-                            export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                            filename                   = filename,
-                            write_on_empty             = True,
-                            schema                     = schema
-                        )
+                    # Extract data from source database, then load to GCS
+                    __extract = PythonOperator(
+                        task_id=f"extract_and_upload_to_gcs",
+                        python_callable=self.__extract_and_upload_to_gcs,
+                        op_kwargs={
+                            "schema": schema,
+                            "dirname": dirname,
+                            "filename": filename,
+                            "extract_query": extract_query
+                        }
+                    )
 
                     extract.append(__extract)
+
+            check = BranchPythonOperator(
+                task_id=f'check_if_file_exists_in_gcs',
+                python_callable=self.__check_if_file_exists_in_gcs,
+                op_kwargs={
+                    'bucket': GCS_DATA_LAKE_BUCKET,
+                    'dirname': dirname,
+                }
+            )
+
+            end = EmptyOperator(task_id='end')
 
             # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
             destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
@@ -491,8 +505,10 @@ class RDBMSToBQGenerator:
                     ignore_if_missing      = True
                 )
 
+                load.set_downstream(merge.set_downstream(delete))
+
                 # Early return the task flow for MERGE load method
-                return extract >> load >> merge >> delete
+                return extract >> check.set_downstream([load, end])
 
             # Task flow for TRUNCATE or APPEND method
-            return extract >> load
+            return extract >> check.set_downstream([load,  end])
