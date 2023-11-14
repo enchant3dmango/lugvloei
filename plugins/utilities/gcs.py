@@ -32,7 +32,7 @@ def upload_multiple_files_from_local(bucket: str, dirname: str = None, privacy: 
     return blob.public_url
 
 
-def check_folder_existence(bucket: str, dirname: str = None, **kwargs):
+def check_folder_existence(bucket: str, dirname: str = None, **kwargs) -> bool:
     """
     Function to folder existence in a GCS bucket.
     """
@@ -43,8 +43,9 @@ def check_folder_existence(bucket: str, dirname: str = None, **kwargs):
 
     logging.info(f'file len {len(files)}')
 
-    if len(files) > 0:
-        logging.info(f'Folder {dirname} is exists in {bucket} bucket.')
-        return True    
-    else:
+    if len(files) == 0:
+        logging.info(f'Folder {dirname} is not exists in {bucket} bucket.')
         return False
+
+    logging.info(f'Folder {dirname} is exists in {bucket} bucket.')
+    return True    
