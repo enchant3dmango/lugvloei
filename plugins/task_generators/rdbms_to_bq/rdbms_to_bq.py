@@ -237,7 +237,7 @@ class RDBMSToBQGenerator:
 
         exists = check_folder_existence(bucket=bucket, dirname=dirname)
 
-        if exists:
+        if not exists:
             logging.info("Folder and its file(s) not exists, skipping load_to_bq task.")
             return f'end'
 
