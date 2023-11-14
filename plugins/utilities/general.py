@@ -223,7 +223,7 @@ def polars_dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwarg
         elif field_type == "STRING":
             dataframe = dataframe.with_columns(pl.col(field_name).cast(dtype=pl.Utf8, strict=False))
 
-    logging.info(f'Dataframe dtypes after casted:\n{dataframe.ehad(0)}')
+    logging.info(f'Dataframe dtypes after casted:\n{dataframe.head(0)}')
 
     return dataframe
 
