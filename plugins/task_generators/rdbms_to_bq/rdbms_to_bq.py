@@ -428,7 +428,6 @@ class RDBMSToBQGenerator:
                     dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
                     filename = f'{self.source_table}_{index+1}'
 
-
                     self.sql_hook = PostgresHook(postgres_conn_id=connection) if self.task_type == POSTGRES_TO_BQ else MySqlHook(mysql_conn_id=connection)
 
                     # Extract data from source database, then load to GCS
