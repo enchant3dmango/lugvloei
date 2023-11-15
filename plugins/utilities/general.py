@@ -74,11 +74,9 @@ def dataframe_dtypes_casting(dataframe: pd.DataFrame, schema: list, **kwargs) ->
             dataframe[field_name] = pd.to_datetime(
                 dataframe[field_name], errors="coerce", utc=True, format=format_date).dt.date
         elif field_type == "TIMESTAMP" and (format_timestamp is None or isinstance(format_timestamp, str)):
-            format = None
-            utc = False
+            format = None; utc = False
             if format_timestamp:
-                format = format_timestamp
-                utc = True
+                format = format_timestamp; utc = True
             dataframe[field_name] = pd.to_datetime(
                 dataframe[field_name], errors="coerce", utc=utc, format=format)
         elif field_type == "FLOAT":
