@@ -7,7 +7,6 @@ from urllib.parse import urlencode
 
 import polars as pl
 import yaml
-from google.cloud import storage
 from google.cloud.bigquery import (DestinationFormat, SourceFormat,
                                    WriteDisposition)
 
@@ -20,8 +19,6 @@ from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKube
 from airflow.providers.google.cloud.operators.bigquery import (
     BigQueryDeleteTableOperator, BigQueryInsertJobOperator)
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
-from airflow.providers.google.cloud.transfers.mysql_to_gcs import MySQLToGCSOperator
-from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from plugins.constants.types import (AIRFLOW, APPEND, DATABASE, DELSERT,
@@ -36,8 +33,8 @@ from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
 from plugins.utilities.gcs import check_folder_existence, upload_multiple_files_from_local
-from plugins.utilities.general import get_onelined_string, polars_dataframe_to_file, polars_dataframe_type_casting, remote_multiple_files
-
+from plugins.utilities.general import get_onelined_string, remote_multiple_files
+from plugins.utilities.polars import dataframe_to_file, dataframe_type_casting
 
 class RDBMSToBQGenerator:
     """
@@ -198,14 +195,14 @@ class RDBMSToBQGenerator:
         logging.info(f"Data fetched successfully.")
 
         for index, dataframe in enumerate(dataframes):
-            dataframe = polars_dataframe_type_casting(
+            dataframe = dataframe_type_casting(
                 dataframe=dataframe,
                 schema=schema
             )
             rows += len(dataframe); estimated_size += float("{:.3f}".format(dataframe.estimated_size('kb')))
 
             # Writing dataframe(s) to file(s)
-            polars_dataframe_to_file(
+            dataframe_to_file(
                 dataframe=dataframe,
                 dirname=dirname,
                 filename=f'{filename}__{index}',
