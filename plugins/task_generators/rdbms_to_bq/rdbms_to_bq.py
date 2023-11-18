@@ -64,8 +64,9 @@ class RDBMSToBQGenerator:
         self.target_bq_load_method               : str                   = config['target']['bq']['load_method']
         self.target_bq_partition_field           : str                   = config['target']['bq']['partition_field']
         self.target_bq_cluster_fields            : List[str]             = config['target']['bq']['cluster_fields']
+        self.ts_nodash                           : str                   = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y%m%dT%H%M%S') }}"
         self.full_target_bq_table                : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
-        self.full_target_bq_table_temp           : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
+        self.full_target_bq_table_temp           : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{self.ts_nodash}'
 
         # Set default value based on task type
         if self.task_type == POSTGRES_TO_BQ:
@@ -382,9 +383,8 @@ class RDBMSToBQGenerator:
 
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
-            ts_nodash = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y%m%dT%H%M%S') }}"
             extract_query = self.__generate_extract_query(schema=schema)
-            dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
+            dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{self.ts_nodash}'
             filename = f'{self.source_table}'
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
@@ -455,7 +455,7 @@ class RDBMSToBQGenerator:
             # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
             destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
                 else f'{self.full_target_bq_table_temp}'
-            source_object_dir = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
+            source_object_dir = f'{self.target_bq_dataset}/{self.target_bq_table}/{self.ts_nodash}'
 
             # Load data from GCS to BigQuery
             load = GCSToBigQueryOperator(
