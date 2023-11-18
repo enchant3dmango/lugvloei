@@ -190,7 +190,7 @@ class RDBMSToBQGenerator:
             query=extract_query,
             connection=sqlalchemy_connection,
             iter_batches=True,
-            batch_size=10000
+            batch_size=1000000
         )
         logging.info(f"Data fetched successfully.")
 
