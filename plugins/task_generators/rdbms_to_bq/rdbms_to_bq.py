@@ -5,18 +5,22 @@ from ast import literal_eval
 from typing import List, Union
 from urllib.parse import urlencode
 
+import polars as pl
 import yaml
 from google.cloud.bigquery import (DestinationFormat, SourceFormat,
                                    WriteDisposition)
 
 from airflow.hooks.base import BaseHook
+from airflow.models.connection import Connection
+from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
 from airflow.providers.cncf.kubernetes.sensors.spark_kubernetes import SparkKubernetesSensor
 from airflow.providers.google.cloud.operators.bigquery import (
     BigQueryDeleteTableOperator, BigQueryInsertJobOperator)
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
-from airflow.providers.google.cloud.transfers.mysql_to_gcs import MySQLToGCSOperator
-from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
+from airflow.providers.mysql.hooks.mysql import MySqlHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from plugins.constants.types import (AIRFLOW, APPEND, DATABASE, DELSERT,
                                      EXTENDED_SCHEMA, MERGE, MYSQL_TO_BQ,
                                      POSTGRES_TO_BQ, PYTHONPATH, SPARK,
@@ -28,8 +32,9 @@ from plugins.constants.variables import (GCP_CONN_ID, GCS_DATA_LAKE_BUCKET,
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
     UPSERT_QUERY)
-from plugins.utilities.general import get_onelined_string
-
+from plugins.utilities.gcs import check_folder_existence, upload_multiple_files_from_local
+from plugins.utilities.general import get_onelined_string, remote_multiple_files
+from plugins.utilities.polars import dataframe_to_file, dataframe_type_casting
 
 class RDBMSToBQGenerator:
     """
@@ -59,21 +64,21 @@ class RDBMSToBQGenerator:
         self.target_bq_load_method               : str                   = config['target']['bq']['load_method']
         self.target_bq_partition_field           : str                   = config['target']['bq']['partition_field']
         self.target_bq_cluster_fields            : List[str]             = config['target']['bq']['cluster_fields']
+        self.ts_nodash                           : str                   = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y%m%dT%H%M%S') }}"
         self.full_target_bq_table                : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}'
-        self.full_target_bq_table_temp           : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{{{{ ts_nodash }}}}'
+        self.full_target_bq_table_temp           : str                   = f'{self.target_bq_project}.{self.target_bq_dataset}.{self.target_bq_table}_temp__{self.ts_nodash}'
 
+        # Set default value based on task type
         if self.task_type == POSTGRES_TO_BQ:
-            self.quoting = lambda text: f'"{text}"'
-            self.string_type = 'TEXT'
+            self.quoting, self.string_type = lambda text: f'"{text}"', 'TEXT'
         elif self.task_type == MYSQL_TO_BQ:
-            self.quoting = lambda text: f'`{text}`'
-            self.string_type = 'CHAR'
+            self.quoting, self.string_type = lambda text: f'`{text}`', 'CHAR'
         else:
             raise Exception('Task type is not supported!')
 
         # Set source_start_window_expansion default value, set both value and unit to 0 and minutes if one of them is not provided
         if self.source_start_window_expansion_value is None or self.source_start_window_expansion_unit is None:
-            self.source_start_window_expansion_value = 0; self.source_start_window_expansion_unit = 'minutes'
+            self.source_start_window_expansion_value, self.source_start_window_expansion_unit = 0, 'minutes'
 
         self.dag_base_path = f'{os.environ["PYTHONPATH"]}/dags/{self.target_bq_dataset}/{self.target_bq_table}'
 
@@ -166,6 +171,75 @@ class RDBMSToBQGenerator:
 
         return get_onelined_string(source_extract_query)
 
+    def __extract_and_upload_to_gcs(self, sql_hook: Union[PostgresHook, MySqlHook], **kwargs) -> None:
+        schema = kwargs.get('schema', None)
+        dirname = kwargs.get('dirname', None)
+        filename = kwargs.get('filename', None)
+        extract_query = kwargs.get('extract_query', None)
+        rows, estimated_size, dataframe = 0, 0, None
+
+        logging.info(f'Onelined extract query: {extract_query}')
+
+        # Create engine and connection
+        sqlalchemy_engine = sql_hook.get_sqlalchemy_engine()
+        sqlalchemy_connection = sqlalchemy_engine.connect().execution_options(stream_results=True)
+
+        # Fetch data and save into dataframe(s)
+        dataframes = pl.read_database(
+            query=extract_query,
+            connection=sqlalchemy_connection,
+            iter_batches=True,
+            batch_size=1000000
+        )
+        logging.info(f"Data fetched successfully.")
+
+        for index, dataframe in enumerate(dataframes):
+            dataframe = dataframe_type_casting(
+                dataframe=dataframe,
+                schema=schema
+            )
+            rows += len(dataframe); estimated_size += float("{:.3f}".format(dataframe.estimated_size('kb')))
+
+            # Writing dataframe(s) to file(s)
+            dataframe_to_file(
+                dataframe=dataframe,
+                dirname=dirname,
+                filename=f'{filename}__{index}',
+                extension=DestinationFormat.PARQUET
+            )
+        logging.info(f"Total dataframe size: {estimated_size}KB.")
+
+        # Close engine and dispose connection
+        sqlalchemy_connection.close()
+        sqlalchemy_engine.dispose()
+
+        if dataframe is None:
+            logging.info('Empty dataframe.')
+        else:
+            # Upload file(s) from a local directory to GCS
+            upload_multiple_files_from_local(
+                bucket=GCS_DATA_LAKE_BUCKET,
+                dirname=dirname,
+            )
+            logging.info(f'{rows} row(s) extracted and uploaded to GCS successfully.')
+            # Remove file(s) in a local directory
+            remote_multiple_files(
+                dirname=dirname
+            )
+
+    def __check_folder_existence_in_gcs(self, **kwargs):
+        bucket = kwargs.get('bucket', None)
+        dirname = kwargs.get('dirname', None)
+
+        exists = check_folder_existence(bucket=bucket, dirname=dirname)
+
+        if not exists:
+            logging.info("Folder and its file(s) not exists, skipping load_to_bq task.")
+            return f'end'
+        else:
+            logging.info("Folder and its file(s) exists, executing load_to_bq task.")
+            return f"load_to_bq"
+
     def __generate_merge_query(self, schema, **kwargs) -> str:
         table_creation_query_type = 'COPY'
         partition_filter = ''
@@ -232,7 +306,7 @@ class RDBMSToBQGenerator:
 
         return get_onelined_string(f'{query}')
 
-    def __get_conn(self, **kwargs) -> str:
+    def __get_conn(self, **kwargs) -> Connection:
         return BaseHook.get_connection(self.source_connection)
 
     def __generate_jdbc_url(self, **kwargs) -> str:
@@ -309,7 +383,9 @@ class RDBMSToBQGenerator:
 
         elif self.task_mode == AIRFLOW:
             schema = self.__generate_schema()
-            ts_nodash = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y%m%dT%H%M%S') }}"
+            extract_query = self.__generate_extract_query(schema=schema)
+            dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{self.ts_nodash}'
+            filename = f'{self.source_table}'
 
             # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
             write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
@@ -325,38 +401,20 @@ class RDBMSToBQGenerator:
 
             # Task generator for single connection dag
             if type(self.source_connection) is str:
-                extract_query = self.__generate_extract_query(schema=schema)
-                filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/{self.source_table}' + '__{}.json'
+                sql_hook = PostgresHook(postgres_conn_id=self.source_connection) if self.task_type == POSTGRES_TO_BQ else MySqlHook(mysql_conn_id=self.source_connection)
 
-                # Extract data from Postgres, then load to GCS
-                if self.task_type == POSTGRES_TO_BQ:
-                    extract = PostgresToGCSOperator(
-                        task_id                    = f'extract_and_load_to_gcs',
-                        postgres_conn_id           = self.source_connection,
-                        gcp_conn_id                = GCP_CONN_ID,
-                        sql                        = extract_query,
-                        bucket                     = GCS_DATA_LAKE_BUCKET,
-                        export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                        filename                   = filename,
-                        approx_max_file_size_bytes = 200000000,
-                        write_on_empty             = True,
-                        schema                     = schema
-                    )
-
-                # Extract data from MySQL, then load to GCS
-                elif self.task_type == MYSQL_TO_BQ:
-                    extract = MySQLToGCSOperator(
-                        task_id                    = f'extract_and_load_to_gcs',
-                        mysql_conn_id              = self.source_connection,
-                        gcp_conn_id                = GCP_CONN_ID,
-                        sql                        = extract_query,
-                        bucket                     = GCS_DATA_LAKE_BUCKET,
-                        export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                        filename                   = filename,
-                        approx_max_file_size_bytes = 200000000,
-                        write_on_empty             = True,
-                        schema                     = schema
-                    )
+                # Extract data from source database, then load to GCS
+                extract = PythonOperator(
+                    task_id="extract_and_upload_to_gcs",
+                    python_callable=self.__extract_and_upload_to_gcs,
+                    op_kwargs={
+                        "sql_hook": sql_hook,
+                        "schema": schema,
+                        "dirname": dirname,
+                        "filename": filename,
+                        "extract_query": extract_query
+                    }
+                )
 
             # Task generator for multiple connection dag
             elif type(self.source_connection) is list:
@@ -364,42 +422,40 @@ class RDBMSToBQGenerator:
 
                 for index, connection in enumerate(sorted(self.source_connection)):
                     extract_query = self.__generate_extract_query(schema=schema, database=connection)
-                    filename = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/{self.source_table}_{index+1}' + '__{}.json'
+                    filename = f'{filename}_{index+1}'
 
-                    # Extract data from Postgres, then load to GCS
-                    if self.task_type == POSTGRES_TO_BQ:
-                        __extract = PostgresToGCSOperator(
-                            task_id                    = f'extract_and_load_to_gcs__{index+1}',
-                            postgres_conn_id           = connection,
-                            gcp_conn_id                = GCP_CONN_ID,
-                            sql                        = extract_query,
-                            bucket                     = GCS_DATA_LAKE_BUCKET,
-                            export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                            filename                   = filename,
-                            approx_max_file_size_bytes = 200000000,
-                            write_on_empty             = True,
-                            schema                     = schema
-                        )
+                    sql_hook = PostgresHook(postgres_conn_id=connection) if self.task_type == POSTGRES_TO_BQ else MySqlHook(mysql_conn_id=connection)
 
-                    # Extract data from MySQL, then load to GCS
-                    elif self.task_type == MYSQL_TO_BQ:
-                        __extract = MySQLToGCSOperator(
-                            task_id                    = f'extract_and_load_to_gcs__{index+1}',
-                            mysql_conn_id              = connection,
-                            gcp_conn_id                = GCP_CONN_ID,
-                            sql                        = extract_query,
-                            bucket                     = GCS_DATA_LAKE_BUCKET,
-                            export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                            filename                   = filename,
-                            write_on_empty             = True,
-                            schema                     = schema
-                        )
+                    # Extract data from source database, then load to GCS
+                    __extract = PythonOperator(
+                        task_id=f"extract_and_upload_to_gcs__{index+1}",
+                        python_callable=self.__extract_and_upload_to_gcs,
+                        op_kwargs={
+                            "sql_hook": sql_hook,
+                            "schema": schema,
+                            "dirname": dirname,
+                            "filename": filename,
+                            "extract_query": extract_query
+                        }
+                    )
 
                     extract.append(__extract)
+
+            check = BranchPythonOperator(
+                task_id=f'check_if_file_exists_in_gcs',
+                python_callable=self.__check_folder_existence_in_gcs,
+                op_kwargs={
+                    'bucket': GCS_DATA_LAKE_BUCKET,
+                    'dirname': dirname,
+                }
+            )
+
+            end = EmptyOperator(task_id='end')
 
             # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
             destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
                 else f'{self.full_target_bq_table_temp}'
+            source_object_dir = f'{self.target_bq_dataset}/{self.target_bq_table}/{self.ts_nodash}'
 
             # Load data from GCS to BigQuery
             load = GCSToBigQueryOperator(
@@ -407,9 +463,9 @@ class RDBMSToBQGenerator:
                 gcp_conn_id                       = GCP_CONN_ID,
                 bucket                            = GCS_DATA_LAKE_BUCKET,
                 destination_project_dataset_table = destination_project_dataset_table,
-                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/*.json'],
+                source_objects                    = [f'{source_object_dir}/*.parquet'],
                 schema_fields                     = schema,
-                source_format                     = SourceFormat.NEWLINE_DELIMITED_JSON,
+                source_format                     = SourceFormat.PARQUET,
                 write_disposition                 = write_disposition,
                 time_partitioning                 = time_partitioning,
                 cluster_fields                    = cluster_fields,
@@ -444,8 +500,9 @@ class RDBMSToBQGenerator:
                     ignore_if_missing      = True
                 )
 
-                # Early return the task flow for MERGE load method
-                return extract >> load >> merge >> delete
+                # Set merge as load downstream, and delete as merge downstream
+                # It's the same as load >> merge >> delete
+                load.set_downstream(merge); merge.set_downstream(delete)
 
-            # Task flow for TRUNCATE or APPEND method
-            return extract >> load
+            # Return the DAG task flow
+            return extract >> check >> [load, end]

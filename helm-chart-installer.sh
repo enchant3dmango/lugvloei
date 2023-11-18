@@ -1,8 +1,9 @@
-# Add and update Helm repository
+# Add helm repository
 helm repo add apache-airflow https://airflow.apache.org
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add spark-operator https://googlecloudplatform.github.io/spark-on-k8s-operator
 
+# Update helm repository
 helm repo update
 
 # Install Airflow

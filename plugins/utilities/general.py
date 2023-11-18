@@ -2,6 +2,7 @@ import fnmatch
 import logging
 import os
 import re
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -118,6 +119,13 @@ def dataframe_to_file(dataframe: pd.DataFrame, dirname: str, filename: str, exte
         raise Exception('Extension is not supported!')
 
 
-def remove_file(name: str) -> None:
-    logging.info(f"Removing {os.path.join('/tmp/', name)}")
-    os.remove(os.path.join('/tmp/', name))
+def remove_file(filename: str) -> None:
+    logging.info(f"Removing all files in {os.path.join('/tmp/', filename)}.")
+    os.remove(os.path.join('/tmp/', filename))
+    logging.info(f"Successfully remove {os.path.join('/tmp/', filename)}.")
+
+
+def remote_multiple_files(dirname: str) -> None:
+    logging.info(f"Removing {os.path.join('/tmp/', dirname)}")
+    shutil.rmtree(os.path.join('/tmp/', dirname))
+    logging.info(f"Successfully remove all files in {os.path.join('/tmp/', dirname)}.")

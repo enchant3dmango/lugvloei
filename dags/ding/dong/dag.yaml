@@ -11,7 +11,7 @@ dag:
   tags:
     - postgres
     - bigquery
-    - upsert
+    - truncate
   owner: example@email.com
   priority_weight: 1
 task:
@@ -22,18 +22,15 @@ task:
     schema: public
     table: dong
     start_window_expansion:
-      value: 120
-      unit: minutes
-    timestamp_keys:
-      - created_at
-      - updated_at
-    unique_keys:
-      - id
+      value: ~
+      unit: ~
+    timestamp_keys: ~
+    unique_keys: ~
   target:
     bq:
       project: pocz-389704
       dataset: ding
       table: dong
-      load_method: upsert
+      load_method: truncate
       partition_field: created_at
       cluster_fields: ~
