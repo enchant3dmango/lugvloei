@@ -27,7 +27,7 @@ def dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwargs) -> p
                     timestamp_field).to_datetime(format=format_timestamp_key))
 
     NUMERIC_IGNORED_VALUES = ["", " ", "#REF!", "-", "None"]
-    print(f'Dataframe dtypes before casted:\n{dataframe.head(0)}')
+    logging.info(f'Dataframe dtypes before casted:\n{dataframe.schema}')
 
     for field in schema:
         field_name, field_type = field['name'], field['type']
@@ -97,7 +97,7 @@ def dataframe_type_casting(dataframe: pl.DataFrame, schema: list, **kwargs) -> p
             dataframe = dataframe.with_columns(
                 pl.col(field_name).cast(dtype=pl.Utf8, strict=False))
 
-    logging.info(f'Dataframe dtypes after casted:\n{dataframe.head(0)}')
+    logging.info(f'Dataframe dtypes after casted:\n{dataframe.schema}')
 
     return dataframe
 
