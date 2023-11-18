@@ -69,11 +69,9 @@ class RDBMSToBQGenerator:
 
         # Set default value based on task type
         if self.task_type == POSTGRES_TO_BQ:
-            self.sql_hook, self.quoting = PostgresHook(postgres_conn_id=self.source_connection), lambda text: f'"{text}"'
-            self.string_type = 'TEXT'
+            self.quoting, self.string_type = lambda text: f'"{text}"', 'TEXT'
         elif self.task_type == MYSQL_TO_BQ:
-            self.sql_hook, self.quoting = MySqlHook(mysql_conn_id=self.source_connection), lambda text: f'`{text}`'
-            self.string_type = 'CHAR'
+            self.quoting, self.string_type = lambda text: f'`{text}`', 'CHAR'
         else:
             raise Exception('Task type is not supported!')
 
@@ -172,7 +170,7 @@ class RDBMSToBQGenerator:
 
         return get_onelined_string(source_extract_query)
 
-    def __extract_and_upload_to_gcs(self, **kwargs) -> None:
+    def __extract_and_upload_to_gcs(self, sql_hook: Union[PostgresHook, MySqlHook], **kwargs) -> None:
         schema = kwargs.get('schema', None)
         dirname = kwargs.get('dirname', None)
         filename = kwargs.get('filename', None)
@@ -182,7 +180,7 @@ class RDBMSToBQGenerator:
         logging.info(f'Onelined extract query: {extract_query}')
 
         # Create engine and connection
-        sqlalchemy_engine = self.sql_hook.get_sqlalchemy_engine()
+        sqlalchemy_engine = sql_hook.get_sqlalchemy_engine()
         sqlalchemy_connection = sqlalchemy_engine.connect().execution_options(stream_results=True)
 
         # Fetch data and save into dataframe(s)
@@ -403,11 +401,14 @@ class RDBMSToBQGenerator:
 
             # Task generator for single connection dag
             if type(self.source_connection) is str:
+                sql_hook = PostgresHook(postgres_conn_id=self.source_connection) if self.task_type == POSTGRES_TO_BQ else MySqlHook(mysql_conn_id=self.source_connection)
+
                 # Extract data from source database, then load to GCS
                 extract = PythonOperator(
                     task_id="extract_and_upload_to_gcs",
                     python_callable=self.__extract_and_upload_to_gcs,
                     op_kwargs={
+                        "sql_hook": sql_hook,
                         "schema": schema,
                         "dirname": dirname,
                         "filename": filename,
@@ -423,13 +424,14 @@ class RDBMSToBQGenerator:
                     extract_query = self.__generate_extract_query(schema=schema, database=connection)
                     filename = f'{filename}_{index+1}'
 
-                    self.sql_hook = PostgresHook(postgres_conn_id=connection) if self.task_type == POSTGRES_TO_BQ else MySqlHook(mysql_conn_id=connection)
+                    sql_hook = PostgresHook(postgres_conn_id=connection) if self.task_type == POSTGRES_TO_BQ else MySqlHook(mysql_conn_id=connection)
 
                     # Extract data from source database, then load to GCS
                     __extract = PythonOperator(
                         task_id=f"extract_and_upload_to_gcs__{index+1}",
                         python_callable=self.__extract_and_upload_to_gcs,
                         op_kwargs={
+                            "sql_hook": sql_hook,
                             "schema": schema,
                             "dirname": dirname,
                             "filename": filename,
