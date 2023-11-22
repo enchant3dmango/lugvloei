@@ -65,7 +65,7 @@ def generate_dag():
 
     executor_task = BashOperator(
         task_id='executor',
-        bash_command='airflow dags backfill --disable-retry -s {start_date} -e {end_date} {dag_id}'.format(
+        bash_command='airflow dags backfill --disable-retry --rerun-failed-tasks --reset-dagruns  -s {start_date} -e {end_date} {dag_id}'.format(
             start_date="{{ dag_run.conf['start_date'] }}",
             end_date="{{ dag_run.conf['end_date'] }}",
             dag_id="{{ dag_run.conf['dag_id'] }}"
