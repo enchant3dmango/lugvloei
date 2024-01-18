@@ -6,7 +6,7 @@ RDBMS_TO_BQ_APPLICATION_FILE = Variable.get(
 BQ_TO_PARQUET_APPLICATION_FILE = Variable.get(
     'BQ_TO_PARQUET_APPLICATION_FILE', None)
 
-if int(Variable.get('DAG_GENERATOR_FEATURE_FLAG')) in [0, 1]:
+if int(Variable.get('DAG_GENERATOR_FEATURE_FLAG', 0)) in [0, 1]:
     DAG_GENERATOR_FEATURE_FLAG = False if int(
         Variable.get('DAG_GENERATOR_FEATURE_FLAG')) == 0 else True
 else:
