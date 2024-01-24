@@ -2274,6 +2274,7 @@ config:
     # For Airflow 1.10, backward compatibility; moved to [logging] in 2.0
     colored_console_log: 'False'
     remote_logging: '{{- ternary "True" "False" .Values.elasticsearch.enabled }}'
+    lazy_load_plugins: 'False'
   logging:
     remote_logging: '{{- ternary "True" "False" .Values.elasticsearch.enabled }}'
     colored_console_log: 'False'
@@ -2332,6 +2333,8 @@ config:
     multi_namespace_mode: '{{ ternary "True" "False" .Values.multiNamespaceMode }}'
   triggerer:
     default_capacity: 1000
+  datahub:
+    enabled: 'True'
 # yamllint enable rule:line-length
 
 # Whether Airflow can launch workers and/or pods in multiple namespaces
