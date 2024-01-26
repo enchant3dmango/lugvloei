@@ -11,6 +11,16 @@
   },
   {
     "mode": "NULLABLE",
+    "name": "birthday",
+    "type": "DATE"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "birthtime",
+    "type": "TIME"
+  },
+  {
+    "mode": "NULLABLE",
     "name": "created_at",
     "type": "TIMESTAMP"
   },
@@ -18,10 +28,5 @@
     "mode": "NULLABLE",
     "name": "updated_at",
     "type": "TIMESTAMP"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "birthday",
-    "type": "DATE"
   }
 ]
