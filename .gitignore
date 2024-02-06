@@ -163,5 +163,5 @@ cython_debug/
 
 # Local files
 serviceaccount.json
-gitsshkey.txt
-redispassword.txt
+gitSshKey
+redispassword
