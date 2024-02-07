@@ -16,7 +16,7 @@ tags = [
 
 # Take a timestamp of 3 months ago as the limit
 now = pendulum.now('Asia/Jakarta')
-three_months_ago = now.subtract(months=3)
+retention_period = now.subtract(months=1)
 
 default_args = {
     'owner': DE_DAG_OWNER_NAME,
@@ -37,7 +37,7 @@ def generate_dag():
     executor_task = BashOperator(
         task_id='executor',
         bash_command='airflow db clean --clean-before-timestamp {clean_before_timestamp} --skip-archive --verbose --yes --tables {tables}'.format(
-            clean_before_timestamp=three_months_ago,
+            clean_before_timestamp=retention_period,
             tables='callback_request,celery_taskmeta,celery_tasksetmeta,dag,dag_run,dataset_event,import_error,job,log,session,sla_miss,task_fail,task_instance,task_reschedule,xcom'
         )
     )
