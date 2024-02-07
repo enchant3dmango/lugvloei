@@ -5,6 +5,8 @@ dag:
     start_date: ~
     depends_on_past: ~
     catch_up: ~
+    dagrun_timeout: ~
+    max_active_runs: ~
     retry:
       count: ~
       delay_in_minute: ~
@@ -26,4 +28,3 @@ task:
       project: ~
       bucket: ~
       hive_partition_key: ~
-
