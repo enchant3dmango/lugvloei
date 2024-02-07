@@ -13,13 +13,12 @@ def test_get_config_files(mocker):
     # Create a mock for os.walk
     mocker.patch(
         'os.walk',
-        return_value=
-        [
+        return_value=[
             (os.path.normpath('/path/to/directory'),
              [],
              ['file-1.txt', 'file-2.txt'])
         ]
-        )
+    )
 
     # Replace 'directory' and 'suffix' with your test values
     directory = '/path/to/directory'
