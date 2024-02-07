@@ -13,7 +13,7 @@ fi
 
 # 2. Create kind cluster with containerd registry config dir enabled
 cluster_name='aircube'
-kind create cluster --name "${cluster_name}" --config kind-cluster.yaml
+kind create cluster --name "${cluster_name}" --config scripts/kind-cluster.yaml
 
 # 3. Add the registry config to the nodes
 # This is necessary because localhost resolves to loopback addresses that are network-namespace local.
