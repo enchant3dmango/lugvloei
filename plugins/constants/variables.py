@@ -8,7 +8,7 @@ BQ_TO_PARQUET_APPLICATION_FILE = Variable.get(
 
 if int(Variable.get('DAG_GENERATOR_FEATURE_FLAG', 0)) in [0, 1]:
     DAG_GENERATOR_FEATURE_FLAG = False if int(
-        Variable.get('DAG_GENERATOR_FEATURE_FLAG')) == 0 else True
+        Variable.get('DAG_GENERATOR_FEATURE_FLAG', 0)) == 0 else True
 else:
     raise ValueError("DAG_GENERATOR_FEATURE_FLAG must be 0 or 1.")
 
