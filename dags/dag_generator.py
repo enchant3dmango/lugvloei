@@ -35,6 +35,8 @@ if DAG_GENERATOR_FEATURE_FLAG:
         retries = dag_behavior['retry']['count']
         retry_delay = timedelta(
             minutes=dag_behavior['retry']['delay_in_minute'])
+        dagrun_timeout = dag_behavior['dagrun_timeout']
+        max_active_runs = dag_behavior['max_active_runs']
 
         default_args = {
             'owner': dag_owner,
@@ -48,7 +50,8 @@ if DAG_GENERATOR_FEATURE_FLAG:
 
         @dag(catchup=catchup, dag_id=dag_id, default_args=default_args, schedule=schedule,
              start_date=pendulum.datetime(*start_date, tz='Asia/Jakarta'), tags=dag_tags,
-             template_searchpath=PYTHONPATH)
+             template_searchpath=PYTHONPATH, dagrun_timeout=timedelta(minutes=dagrun_timeout),
+             max_active_runs=max_active_runs)
         def generate_dag():
             generate_tasks(dag_id=dag_id, config=config.get('task'))
         generate_dag()
