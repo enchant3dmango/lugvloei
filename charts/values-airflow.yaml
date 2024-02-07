@@ -121,7 +121,7 @@ images:
     pullPolicy: IfNotPresent
   gitSync:
     repository: registry.k8s.io/git-sync/git-sync
-    tag: v3.6.9
+    tag: v4.2.0
     pullPolicy: IfNotPresent
 
 # Select certain nodes for airflow pods.
@@ -648,11 +648,11 @@ workers:
 
   resources:
    limits:
-    cpu: 6
-    memory: 6Gi
+    cpu: 4
+    memory: 4Gi
    requests:
-    cpu: 2
-    memory: 2Gi
+    cpu: 0.01
+    memory: 1Gi
 
   # Grace period for tasks to finish after SIGTERM is sent from kubernetes
   terminationGracePeriodSeconds: 600
@@ -2332,8 +2332,6 @@ config:
     multi_namespace_mode: '{{ ternary "True" "False" .Values.multiNamespaceMode }}'
   triggerer:
     default_capacity: 1000
-  # datahub:
-  #   enabled: 'False'
 # yamllint enable rule:line-length
 
 # Whether Airflow can launch workers and/or pods in multiple namespaces
@@ -2388,7 +2386,7 @@ dags:
     # git repo clone url
     # ssh example: git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
-    repo: https://github.com/enchant3dmango/aircube.git
+    repo: git@github.com:enchant3dmango/aircube.git
     branch: staging
     rev: HEAD
     depth: 1
@@ -2423,7 +2421,7 @@ dags:
     #     # key needs to be gitSshKey
     #     gitSshKey: <base64_encoded_data>
     # and specify the name of the secret below
-    # sshKeySecret: airflow-ssh-secret
+    sshKeySecret: airflow-ssh-secret
     #
     # If you are using an ssh private key, you can additionally
     # specify the content of your known_hosts file, example:

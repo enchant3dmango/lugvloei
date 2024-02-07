@@ -1,7 +1,7 @@
-# acryl-datahub-airflow-plugin[plugin-v2]==0.12.1.5
+acryl-datahub-airflow-plugin[plugin-v2]==0.12.1.5
 apache-airflow-providers-apache-spark==4.1.1
 apache-airflow-providers-cncf-kubernetes==7.2.0
 apache-airflow-providers-google==10.7.0
 apache-airflow-providers-slack==8.1.0
-polars==0.19.12
+polars==0.20.7
 Shapely==1.8.5
