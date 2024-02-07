@@ -5,6 +5,8 @@ dag:
     start_date: ~
     depends_on_past: ~
     catch_up: ~
+    dagrun_timeout: 60
+    max_active_runs: 4
     retry:
       count: ~
       delay_in_minute: ~

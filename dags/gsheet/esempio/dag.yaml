@@ -5,8 +5,10 @@ dag:
     start_date: 2023, 10, 26
     depends_on_past: True
     catch_up: False
+    dagrun_timeout: 60
+    max_active_runs: 4
     retry:
-      count: 2
+      count: 0
       delay_in_minute: 1
   tags:
     - gsheet
