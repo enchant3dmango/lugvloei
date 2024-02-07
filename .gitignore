@@ -161,7 +161,6 @@ cython_debug/
 
 .vscode
 
-# Local files
-serviceaccount.json
-gitSshKey
-redispassword
+# Ignore all local files
+files/*
+!files/README.md
