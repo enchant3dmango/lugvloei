@@ -1,5 +1,5 @@
 dag:
-  name: gsheet.consumables
+  name: gsheet.esempio
   behavior:
     schedule: 43 11 * * *
     start_date: 2023, 10, 26
@@ -27,7 +27,7 @@ task:
     bq:
       project: pocz-389704
       dataset: gsheet
-      table: consumables
+      table: esempio
       load_method: truncate
       partition_field: load_timestamp
       cluster_fields: ~
