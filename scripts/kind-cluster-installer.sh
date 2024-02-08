@@ -49,10 +49,10 @@ data:
 EOF
 
 # 6. Create GCP service account
-sa_file_path=serviceaccount.json
+sa_file_path=files/serviceaccount.json
 kubectl create ns airflow
 kubectl create secret generic airflow-gcp-sa --from-file=${sa_file_path} -n airflow
 
 # 7. Create Git SSH key
-ssh_key_file_path=gitSshKey
+ssh_key_file_path=files/gitSshKey
 kubectl create secret generic airflow-ssh-secret --from-file=${ssh_key_file_path} -n airflow
