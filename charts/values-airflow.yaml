@@ -121,7 +121,7 @@ images:
     pullPolicy: IfNotPresent
   gitSync:
     repository: registry.k8s.io/git-sync/git-sync
-    tag: v4.2.0
+    tag: v3.6.9
     pullPolicy: IfNotPresent
 
 # Select certain nodes for airflow pods.
@@ -2386,7 +2386,7 @@ dags:
     # git repo clone url
     # ssh example: git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
-    repo: git@github.com:enchant3dmango/aircube.git
+    repo: https://github.com/enchant3dmango/aircube.git
     branch: staging
     rev: HEAD
     depth: 1
@@ -2421,7 +2421,7 @@ dags:
     #     # key needs to be gitSshKey
     #     gitSshKey: <base64_encoded_data>
     # and specify the name of the secret below
-    sshKeySecret: airflow-ssh-secret
+    # sshKeySecret: airflow-ssh-secret
     #
     # If you are using an ssh private key, you can additionally
     # specify the content of your known_hosts file, example:
@@ -2433,7 +2433,7 @@ dags:
     # interval between git sync attempts in seconds
     # high values are more likely to cause DAGs to become out of sync between different components
     # low values cause more traffic to the remote git repository
-    wait: 5
+    wait: 60
     containerName: git-sync
     uid: 65533
 
