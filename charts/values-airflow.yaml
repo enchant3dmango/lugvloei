@@ -275,6 +275,10 @@ env:
    value: "/opt/airflow/dags/repo"
  - name: AIRFLOW__CORE__DEFAULT_TIMEZONE
    value: "Asia/Jakarta"
+ - name: AIRFLOW__CORE__PLUGINS_FOLDER
+   value: "/opt/airflow/dags/repo/plugins/customs"
+ - name: AIRFLOW__CORE__LAZY_LOAD_PLUGINS
+   value: "True"
  - name: AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE
    value: "Asia/Jakarta"
  - name: GOOGLE_APPLICATION_CREDENTIALS
@@ -2332,6 +2336,8 @@ config:
     multi_namespace_mode: '{{ ternary "True" "False" .Values.multiNamespaceMode }}'
   triggerer:
     default_capacity: 1000
+  datahub:
+    enabled: True
 # yamllint enable rule:line-length
 
 # Whether Airflow can launch workers and/or pods in multiple namespaces
