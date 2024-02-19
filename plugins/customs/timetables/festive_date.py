@@ -1,20 +1,23 @@
 from datetime import timedelta
 from typing import Optional
 
-from pendulum import Date, DateTime, Time
-
 from airflow.plugins_manager import AirflowPlugin
 from airflow.timetables.base import (DagRunInfo, DataInterval, TimeRestriction,
                                      Timetable)
+from pendulum import Date, DateTime, Time
 
 
 class FestiveDateSchedule(Timetable):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     # Set data interval configuration
     def infer_manual_data_interval(self, *, run_after: DateTime) -> DataInterval:
         if run_after.month == run_after.day or run_after.day == 25:
             delta = timedelta(hours=1)
         else:
             delta = timedelta(minutes=15)
+
         return DataInterval(start=run_after, end=(run_after + delta))
 
     # Set next schedule configuration
