@@ -7,7 +7,6 @@ from airflow.decorators import dag
 from airflow.operators.bash import BashOperator
 
 from plugins.constants.types import DE_DAG_OWNER_NAME
-from plugins.customs.timetables.festive_date import FestiveDateSchedule
 from plugins.utilities.slack import on_failure_callback, on_success_callback
 
 start_date = pendulum.datetime(2023, 8, 1, tz='Asia/Jakarta')
@@ -32,7 +31,7 @@ default_args = {
 
 
 @dag(catchup=False, dag_id='metadata_cleaner', default_args=default_args,
-     start_date=start_date, tags=tags, timetable=FestiveDateSchedule())
+     start_date=start_date, tags=tags, schedule='@monthly')
 def generate_dag():
 
     executor_task = BashOperator(
