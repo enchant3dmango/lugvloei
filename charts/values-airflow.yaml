@@ -275,8 +275,6 @@ env:
    value: "/opt/airflow/dags/repo"
  - name: GOOGLE_APPLICATION_CREDENTIALS
    value: /var/secrets/airflow-gcp-sa/serviceaccount.json
- - name: AIRFLOW__LOGGING__REMOTE_LOGGING
-   value: "True"
 
 # Volumes for all airflow containers
 volumes:
@@ -2263,12 +2261,12 @@ config:
     executor: '{{ .Values.executor }}'
     # For Airflow 1.10, backward compatibility; moved to [logging] in 2.0
     colored_console_log: 'False'
-    remote_logging: '{{- ternary "True" "False" .Values.elasticsearch.enabled }}'
+    remote_logging: 'True'
     plugins_folder: '/opt/airflow/dags/repo/plugins/customs'
     lazy_load_plugins: 'True'
     default_timezone: 'Asia/Jakarta'
   logging:
-    remote_logging: '{{- ternary "True" "False" .Values.elasticsearch.enabled }}'
+    remote_logging: 'True'
     colored_console_log: 'False'
     remote_base_log_folder: 'gs://pocz/airflow/logs'
     google_key_path: '/var/secrets/airflow-gcp-sa/serviceaccount.json'
