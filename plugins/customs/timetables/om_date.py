@@ -7,12 +7,20 @@ from airflow.plugins_manager import AirflowPlugin
 from airflow.timetables.base import (DagRunInfo, DataInterval, TimeRestriction,
                                      Timetable)
 
+OM_DATE = [23, 24, 25, 26, 27, 28]
+
 
 class OMDateSchedule(Timetable):
+
     # Set data interval configuration
     def infer_manual_data_interval(self, *, run_after: DateTime) -> DataInterval:
+        if (run_after.month == run_after.day or run_after.month == run_after.day - 1 or
+                run_after.month == run_after.day - 2 or run_after.month == run_after.day + 1 or
+            run_after.month == run_after.day + 2 or run_after.month == run_after.day + 3) or \
+                run_after.day in OM_DATE:
+            delta = timedelta(hours=3)
 
-        return None
+        return DataInterval(start=run_after, end=(run_after + delta))
 
     # Set next schedule configuration
     def next_dagrun_info(
@@ -24,13 +32,12 @@ class OMDateSchedule(Timetable):
 
         if last_automated_data_interval is not None:
             last_start = last_automated_data_interval.start
-            om_date = [23, 24, 25, 26, 27, 28]
 
             # H-2, H-1, H, H+1, H+2, H+3 Twin Dates every 09.00, 12.00, 15.00, 18.00, 21.00, 00.00
             if (last_start.month == last_start.day or last_start.month == last_start.day - 1 or
-                last_start.month == last_start.day - 2 or last_start.month == last_start.day + 1 or
-                    last_start.month == last_start.day + 2 or last_start.month == last_start.day + 3) or \
-                    last_start.day in om_date:
+                    last_start.month == last_start.day - 2 or last_start.month == last_start.day + 1 or
+                last_start.month == last_start.day + 2 or last_start.month == last_start.day + 3) or \
+                    last_start.day in OM_DATE:
                 if last_start.hour >= 9 and last_start.hour <= 0:
                     delta = timedelta(hours=3)
         else:
