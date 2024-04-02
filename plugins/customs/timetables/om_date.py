@@ -48,6 +48,6 @@ class OMDateSchedule(Timetable):
         return DagRunInfo.interval(start=next_start, end=(next_start + delta))
 
 
-class FestiveDateTimetablePlugin(AirflowPlugin):
+class OMDateTimetablePlugin(AirflowPlugin):
     name = "om_date_timetable_plugin"
     timetables = [OMDateSchedule]
