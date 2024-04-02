@@ -8,6 +8,7 @@ from airflow.operators.bash import BashOperator
 
 from plugins.constants.types import DE_DAG_OWNER_NAME
 from plugins.utilities.slack import on_failure_callback, on_success_callback
+from om_date import OMDateSchedule
 
 start_date = pendulum.datetime(2023, 8, 1, tz='Asia/Jakarta')
 tags = [
@@ -31,7 +32,7 @@ default_args = {
 
 
 @dag(catchup=False, dag_id='metadata_cleaner', default_args=default_args,
-     start_date=start_date, tags=tags, schedule='@monthly')
+     start_date=start_date, tags=tags, schedule=OMDateSchedule())
 def generate_dag():
 
     executor_task = BashOperator(
