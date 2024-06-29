@@ -12,8 +12,8 @@ if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true
 fi
 
 # 2. Create kind cluster with containerd registry config dir enabled
-cluster_name='aircube'
-kind create cluster --name "${cluster_name}" --config scripts/kind-cluster.yaml
+cluster_name='enchant3dmango'
+kind create cluster --name "${cluster_name}" --config ./scripts/kind-cluster.yaml
 
 # 3. Add the registry config to the nodes
 # This is necessary because localhost resolves to loopback addresses that are network-namespace local.
@@ -49,13 +49,13 @@ data:
 EOF
 
 # 6. Create GCP service account
-sa_file_path=files/serviceaccount.json
+# Create a file named serviceaccount.json inside ./files/ containing your GCP service account json
+sa_file_path=./files/serviceaccount.json
 kubectl create ns airflow
 kubectl create secret generic airflow-gcp-sa --from-file=${sa_file_path} -n airflow
 
+# Extra step: uncomment this step and create a file named gitSshKey inside ./files/ containing the git ssh key
+# https://airflow.apache.org/docs/helm-chart/stable/manage-dags-files.html#mounting-dags-from-a-private-github-repo-using-git-sync-sidecar
 # 7. Create Git SSH key
-ssh_key_file_path=files/gitSshKey
-kubectl create secret generic airflow-ssh-secret --from-file=${ssh_key_file_path} -n airflow
-
-# 8. Create git-credentials
-kubectl create secret generic git-credentials --from-file=GIT_SYNC_USERNAME=files/GIT_SYNC_USERNAME --from-file=GIT_SYNC_PASSWORD=files/GIT_SYNC_PASSWORD -n airflow
+# ssh_key_file_path=./files/gitSshKey
+# kubectl create secret generic airflow-ssh-secret --from-file=${ssh_key_file_path} -n airflow
