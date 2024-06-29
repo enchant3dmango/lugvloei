@@ -1,18 +1,23 @@
 from datetime import timedelta
-
-from pendulum import Date, DateTime, Time
 from typing import Optional
+
 from airflow.plugins_manager import AirflowPlugin
-from airflow.timetables.base import DagRunInfo, DataInterval, TimeRestriction, Timetable
+from airflow.timetables.base import (DagRunInfo, DataInterval, TimeRestriction,
+                                     Timetable)
+from pendulum import Date, DateTime, Time
 
 
 class FestiveDateSchedule(Timetable):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     # Set data interval configuration
     def infer_manual_data_interval(self, *, run_after: DateTime) -> DataInterval:
         if run_after.month == run_after.day or run_after.day == 25:
             delta = timedelta(hours=1)
         else:
             delta = timedelta(minutes=15)
+
         return DataInterval(start=run_after, end=(run_after + delta))
 
     # Set next schedule configuration
@@ -30,10 +35,13 @@ class FestiveDateSchedule(Timetable):
             else:
                 delta = timedelta(minutes=15)
             next_start = last_start + delta
+
         elif restriction.earliest is None:
             return None
+
         elif not restriction.catchup:
             next_start = DateTime.combine(Date.today(), Time.min)
+
         else:
             next_start = restriction.earliest
 
@@ -43,6 +51,6 @@ class FestiveDateSchedule(Timetable):
         return DagRunInfo.interval(start=next_start, end=(next_start + delta))
 
 
-class UnevenIntervalsTimetablePlugin(AirflowPlugin):
-    name = "uneven_intervals_timetable_plugin"
+class FestiveDateTimetablePlugin(AirflowPlugin):
+    name = "festive_date_timetable_plugin"
     timetables = [FestiveDateSchedule]

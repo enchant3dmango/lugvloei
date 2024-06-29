@@ -4,7 +4,7 @@ set -o errexit
 # 1. Add and update helm repository
 helm repo add apache-airflow https://airflow.apache.org
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo add spark-operator https://googlecloudplatform.github.io/spark-on-k8s-operator
+helm repo add spark-operator https://kubeflow.github.io/spark-operator
 helm repo add datahub https://helm.datahubproject.io/
 helm repo update
 
