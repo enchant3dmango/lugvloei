@@ -124,7 +124,8 @@ class RDBMSToBQGenerator:
             extended_fields = [schema_detail["name"]
                                for schema_detail in EXTENDED_SCHEMA]
             # Wrap extended_fields and DATABASE field into excluded_fields
-            excluded_fields = extended_fields; extended_fields.append(DATABASE) 
+            excluded_fields = extended_fields
+            extended_fields.append(DATABASE) 
 
             selected_fields = [
                 (
