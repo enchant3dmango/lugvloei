@@ -18,7 +18,6 @@ dag:
   priority_weight: 1
 task:
   type: postgres_to_bq
-  mode: airflow
   source:
     connection: pg_ding
     schema: public

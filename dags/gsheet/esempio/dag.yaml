@@ -18,7 +18,6 @@ dag:
   priority_weight: 2
 task:
   type: gsheet_to_bq
-  mode: airflow
   source:
     spreadsheet_id: 1G0LKxJYC9ek3CAeqnwRHWpBmySUSZljhxNqA3Pia1uY
     sheet_name: Raw Data
