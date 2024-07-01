@@ -36,7 +36,6 @@ class RDBMSToBQGenerator:
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
         self.dag_id                              : str                   = dag_id
         self.task_type                           : str                   = config['type']
-        self.task_mode                           : str                   = config['mode']
         self.source_connection                   : Union[str, List[str]] = config['source']['connection']
         self.source_schema                       : str                   = config['source']['schema']
         self.source_table                        : str                   = config['source']['table']
