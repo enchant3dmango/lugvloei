@@ -14,7 +14,7 @@ from airflow.providers.google.cloud.transfers.mysql_to_gcs import MySQLToGCSOper
 from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
 from plugins.constants.types import (APPEND, DATABASE, DELSERT,
                                      EXTENDED_SCHEMA, MERGE, MYSQL_TO_BQ,
-                                     POSTGRES_TO_BQ, SPARK, UPSERT)
+                                     POSTGRES_TO_BQ, PYTHONPATH, UPSERT)
 from plugins.constants.variables import (GCP_CONN_ID, GCS_DATA_LAKE_BUCKET)
 from plugins.task_generators.rdbms_to_bq.types import (
     DELSERT_QUERY, SOURCE_EXTRACT_QUERY, TEMP_TABLE_PARTITION_DATE_QUERY,
@@ -84,7 +84,7 @@ class RDBMSToBQGenerator:
             self.source_start_window_expansion_unit = 'minutes'
 
         self.base_path_name = self.dag_id.split(".")
-        self.dag_base_path = f'{os.environ["PYTHONPATH"]}/dags/{self.base_path_name[0]}/{self.base_path_name[1]}'
+        self.dag_base_path = f'{PYTHONPATH}/dags/{self.base_path_name[0]}/{self.base_path_name[1]}'
 
     def __generate_schema(self, **kwargs) -> list:
         schema_file = os.path.join(self.dag_base_path, "assets/schema.json")
@@ -184,9 +184,6 @@ class RDBMSToBQGenerator:
 
         logging.info(f'Extract query: {source_extract_query}')
 
-        if self.task_mode == SPARK:
-            source_extract_query = f'({source_extract_query}) AS cte'
-
         return get_onelined_string(source_extract_query)
 
     def __generate_merge_query(self, schema, **kwargs) -> str:
@@ -272,6 +269,41 @@ class RDBMSToBQGenerator:
             logging.info(f'Upsert query: {query}')
 
         return get_onelined_string(f'{query}')
+    
+    def __generate_rdbms_to_gcs_task(self, schema: list, extract_query: str, filename: str):
+        # Extract data from Postgres, then load to GCS
+        if self.task_type == POSTGRES_TO_BQ:
+            extract = PostgresToGCSOperator(
+                task_id                    = 'extract_and_load_to_gcs',
+                postgres_conn_id           = self.source_connection,
+                gcp_conn_id                = GCP_CONN_ID,
+                sql                        = extract_query,
+                bucket                     = GCS_DATA_LAKE_BUCKET,
+                export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                filename                   = filename,
+                approx_max_file_size_bytes = 200000000,
+                write_on_empty             = True,
+                schema                     = schema,
+                stringify_dict             = True
+            )
+
+        # Extract data from MySQL, then load to GCS
+        elif self.task_type == MYSQL_TO_BQ:
+            extract = MySQLToGCSOperator(
+                task_id                    = 'extract_and_load_to_gcs',
+                mysql_conn_id              = self.source_connection,
+                gcp_conn_id                = GCP_CONN_ID,
+                sql                        = extract_query,
+                bucket                     = GCS_DATA_LAKE_BUCKET,
+                export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
+                filename                   = filename,
+                approx_max_file_size_bytes = 200000000,
+                write_on_empty             = True,
+                schema                     = schema,
+                stringify_dict             = True
+            )
+
+        return extract
 
     def generate_tasks(self):
         schema = self.__generate_schema()
@@ -298,37 +330,7 @@ class RDBMSToBQGenerator:
             else:
                 filename = f'{self.target_bq_dataset}/{self.target_bq_table}/job_execution_timestamp={ts_nodash}/{self.source_table}' + '__{}.json'
 
-            # Extract data from Postgres, then load to GCS
-            if self.task_type == POSTGRES_TO_BQ:
-                extract = PostgresToGCSOperator(
-                    task_id                    = 'extract_and_load_to_gcs',
-                    postgres_conn_id           = self.source_connection,
-                    gcp_conn_id                = GCP_CONN_ID,
-                    sql                        = extract_query,
-                    bucket                     = GCS_DATA_LAKE_BUCKET,
-                    export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                    filename                   = filename,
-                    approx_max_file_size_bytes = 200000000,
-                    write_on_empty             = True,
-                    schema                     = schema,
-                    stringify_dict             = True
-                )
-
-            # Extract data from MySQL, then load to GCS
-            elif self.task_type == MYSQL_TO_BQ:
-                extract = MySQLToGCSOperator(
-                    task_id                    = 'extract_and_load_to_gcs',
-                    mysql_conn_id              = self.source_connection,
-                    gcp_conn_id                = GCP_CONN_ID,
-                    sql                        = extract_query,
-                    bucket                     = GCS_DATA_LAKE_BUCKET,
-                    export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                    filename                   = filename,
-                    approx_max_file_size_bytes = 200000000,
-                    write_on_empty             = True,
-                    schema                     = schema,
-                    stringify_dict             = True
-                )
+            extract = self.__generate_rdbms_to_gcs_task(schema=schema, extract_query=extract_query, filename=filename)
 
         # Task generator for multiple connection dag
         elif type(self.source_connection) is list:
@@ -342,37 +344,7 @@ class RDBMSToBQGenerator:
                 else:
                     filename = f'{self.target_bq_dataset}/{self.target_bq_table}/job_execution_timestamp={ts_nodash}/{self.source_table}_{index+1}' + '__{}.json'
 
-                # Extract data from Postgres, then load to GCS
-                if self.task_type == POSTGRES_TO_BQ:
-                    __extract = PostgresToGCSOperator(
-                        task_id                    = f'extract_and_load_to_gcs__{index+1}',
-                        postgres_conn_id           = connection,
-                        gcp_conn_id                = GCP_CONN_ID,
-                        sql                        = extract_query,
-                        bucket                     = GCS_DATA_LAKE_BUCKET,
-                        export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                        filename                   = filename,
-                        approx_max_file_size_bytes = 200000000,
-                        write_on_empty             = True,
-                        schema                     = schema,
-                        stringify_dict             = True
-                    )
-
-                # Extract data from MySQL, then load to GCS
-                elif self.task_type == MYSQL_TO_BQ:
-                    __extract = MySQLToGCSOperator(
-                        task_id                    = f'extract_and_load_to_gcs__{index+1}',
-                        mysql_conn_id              = connection,
-                        gcp_conn_id                = GCP_CONN_ID,
-                        sql                        = extract_query,
-                        bucket                     = GCS_DATA_LAKE_BUCKET,
-                        export_format              = DestinationFormat.NEWLINE_DELIMITED_JSON,
-                        filename                   = filename,
-                        approx_max_file_size_bytes = 200000000,
-                        write_on_empty             = True,
-                        schema                     = schema,
-                        stringify_dict             = True
-                    )
+                __extract = self.__generate_rdbms_to_gcs_task(schema=schema, extract_query=extract_query, filename=filename)
 
                 extract.append(__extract)
 
