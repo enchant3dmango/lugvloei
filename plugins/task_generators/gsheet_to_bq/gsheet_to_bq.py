@@ -179,67 +179,66 @@ class GSheetToBQGenerator:
             return "end_pipeline"
 
     def generate_task(self):
-        if self.task_mode == AIRFLOW:
-            schema = self.__generate_schema()
+        schema = self.__generate_schema()
 
-            # Generate bucket directory name and filename
-            ts_nodash =  '{{ macros.ds_format(ts_nodash, "%Y%m%dT%H%M%S", "%Y-%m-%d %H:%M:%S") }}'
-            dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/job_execution_timestamp={ts_nodash}'
-            filename = f'{self.target_bq_table}.{self.extension}'
+        # Generate bucket directory name and filename
+        ts_nodash =  '{{ macros.ds_format(ts_nodash, "%Y%m%dT%H%M%S", "%Y-%m-%d %H:%M:%S") }}'
+        dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/job_execution_timestamp={ts_nodash}'
+        filename = f'{self.target_bq_table}.{self.extension}'
 
-            # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
-            write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
+        # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
+        write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
 
-            # TimePartitioning, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TimePartitioning
-            time_partitioning = {
-                "type": "DAY",
-                "field": self.target_bq_partition_field
-            } if self.target_bq_partition_field else None
+        # TimePartitioning, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TimePartitioning
+        time_partitioning = {
+            "type": "DAY",
+            "field": self.target_bq_partition_field
+        } if self.target_bq_partition_field else None
 
-            # Clustering, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Clustering
-            cluster_fields = self.target_bq_cluster_fields if self.target_bq_cluster_fields else None
+        # Clustering, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Clustering
+        cluster_fields = self.target_bq_cluster_fields if self.target_bq_cluster_fields else None
 
-            extract = PythonOperator(
-                task_id="extract_and_load_to_gcs",
-                python_callable=self.__extract_data_from_spreadsheet,
-                op_kwargs={
-                    "schema": schema,
-                    "dirname": dirname,
-                    "filename": filename,
-                    "format_date": self.format_date,
-                    "format_timestamp": self.format_timestamp
-                }
-            )
+        extract = PythonOperator(
+            task_id="extract_and_load_to_gcs",
+            python_callable=self.__extract_data_from_spreadsheet,
+            op_kwargs={
+                "schema": schema,
+                "dirname": dirname,
+                "filename": filename,
+                "format_date": self.format_date,
+                "format_timestamp": self.format_timestamp
+            }
+        )
 
-            branch_task = BranchPythonOperator(
-                task_id="check_if_file_exists_in_gcs",
-                python_callable=self.__check_if_file_exists_in_gcs,
-                op_kwargs={
-                    'bucket': GCS_DATA_LAKE_BUCKET,
-                    'dirname': dirname,
-                    'filename': filename
-                }
-            )
+        branch_task = BranchPythonOperator(
+            task_id="check_if_file_exists_in_gcs",
+            python_callable=self.__check_if_file_exists_in_gcs,
+            op_kwargs={
+                'bucket': GCS_DATA_LAKE_BUCKET,
+                'dirname': dirname,
+                'filename': filename
+            }
+        )
 
-            # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
-            destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
-                else f'{self.full_target_bq_table_temp}'
+        # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
+        destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
+            else f'{self.full_target_bq_table_temp}'
 
-            load = GCSToBigQueryOperator(
-                task_id                           = "load_to_bq",
-                gcp_conn_id                       = GCP_CONN_ID,
-                bucket                            = GCS_DATA_LAKE_BUCKET,
-                destination_project_dataset_table = destination_project_dataset_table,
-                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/job_execution_timestamp={ts_nodash}/*.{self.extension}'],
-                schema_fields                     = schema,
-                source_format                     = SourceFormat.PARQUET,
-                write_disposition                 = write_disposition,
-                create_disposition                = CreateDisposition.CREATE_IF_NEEDED,
-                time_partitioning                 = time_partitioning,
-                cluster_fields                    = cluster_fields,
-                autodetect                        = False
-            )
+        load = GCSToBigQueryOperator(
+            task_id                           = "load_to_bq",
+            gcp_conn_id                       = GCP_CONN_ID,
+            bucket                            = GCS_DATA_LAKE_BUCKET,
+            destination_project_dataset_table = destination_project_dataset_table,
+            source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/job_execution_timestamp={ts_nodash}/*.{self.extension}'],
+            schema_fields                     = schema,
+            source_format                     = SourceFormat.PARQUET,
+            write_disposition                 = write_disposition,
+            create_disposition                = CreateDisposition.CREATE_IF_NEEDED,
+            time_partitioning                 = time_partitioning,
+            cluster_fields                    = cluster_fields,
+            autodetect                        = False
+        )
 
-            end_pipeline = EmptyOperator(task_id='end_pipeline')
+        end_pipeline = EmptyOperator(task_id='end_pipeline')
 
-            return extract >> branch_task >> [load, end_pipeline]
+        return extract >> branch_task >> [load, end_pipeline]
