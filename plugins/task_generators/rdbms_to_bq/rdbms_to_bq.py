@@ -269,11 +269,13 @@ class RDBMSToBQGenerator:
 
         return get_onelined_string(f'{query}')
     
-    def __generate_rdbms_to_gcs_task(self, schema: list, extract_query: str, filename: str):
+    def __generate_rdbms_to_gcs_task(self, schema: list, extract_query: str, filename: str, index: int = None):
         # Extract data from Postgres, then load to GCS
+        task_id = "extract_and_load_to_gcs" if index is None else f"extract_and_load_to_gcs__{index+1}"
+
         if self.task_type == POSTGRES_TO_BQ:
             extract = PostgresToGCSOperator(
-                task_id                    = 'extract_and_load_to_gcs',
+                task_id                    = task_id,
                 postgres_conn_id           = self.source_connection,
                 gcp_conn_id                = GCP_CONN_ID,
                 sql                        = extract_query,
@@ -289,7 +291,7 @@ class RDBMSToBQGenerator:
         # Extract data from MySQL, then load to GCS
         elif self.task_type == MYSQL_TO_BQ:
             extract = MySQLToGCSOperator(
-                task_id                    = 'extract_and_load_to_gcs',
+                task_id                    = task_id,
                 mysql_conn_id              = self.source_connection,
                 gcp_conn_id                = GCP_CONN_ID,
                 sql                        = extract_query,
@@ -343,7 +345,7 @@ class RDBMSToBQGenerator:
                 else:
                     filename = f'{self.target_bq_dataset}/{self.target_bq_table}/job_execution_timestamp={ts_nodash}/{self.source_table}_{index+1}' + '__{}.json'
 
-                __extract = self.__generate_rdbms_to_gcs_task(schema=schema, extract_query=extract_query, filename=filename)
+                __extract = self.__generate_rdbms_to_gcs_task(schema=schema, extract_query=extract_query, filename=filename, index=index)
 
                 extract.append(__extract)
 
