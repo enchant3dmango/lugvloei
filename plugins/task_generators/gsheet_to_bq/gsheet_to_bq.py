@@ -1,9 +1,9 @@
 import json
 import logging
 import os
+from datetime import datetime
 from typing import List
 
-from datetime import datetime
 import pandas as pd
 from google.cloud import storage
 from google.cloud.bigquery import (CreateDisposition, SourceFormat,
@@ -16,9 +16,9 @@ from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from plugins.constants.types import AIRFLOW, APPEND, EXTENDED_SCHEMA, MERGE
 from plugins.constants.variables import GCP_CONN_ID, GCS_DATA_LAKE_BUCKET
+from plugins.utilities.file import delete_file
 from plugins.utilities.gcs import upload_multiple_files_from_local
-from plugins.utilities.general import (dataframe_dtypes_casting,
-                                       dataframe_to_file, remove_file)
+from plugins.utilities.pandas import get_casted_dataframe, get_dataframe_file
 
 
 class GSheetToBQGenerator:
@@ -37,7 +37,6 @@ class GSheetToBQGenerator:
     def __init__(self, dag_id: str, config: dict, **kwargs) -> None:
         self.dag_id                    : str        = dag_id
         self.task_type                 : str        = config['type']
-        self.task_mode                 : str        = config['mode']
         self.spreadsheet_id            : str        = config['source']['spreadsheet_id']
         self.sheet_name                : str        = config['source']['sheet_name']
         self.sheet_columns             : str        = config['source']['sheet_columns']
@@ -104,7 +103,7 @@ class GSheetToBQGenerator:
         )
 
         # Initiate the Sheets API
-        service = discovery.build('sheets', 'v4', credentials=credentials)
+        service = discovery.build('sheets', 'v4', credentials=credentials, cache_discovery=False)
 
         # Read the data from spreadsheet
         if "," in self.sheet_columns:
@@ -136,7 +135,7 @@ class GSheetToBQGenerator:
         dataframe['load_timestamp'] = datetime.now()
 
         # Transform data type based on schema
-        dataframe = dataframe_dtypes_casting(
+        dataframe = get_casted_dataframe(
             dataframe=dataframe,
             schema=schema, 
             format_date=format_date, 
@@ -146,7 +145,7 @@ class GSheetToBQGenerator:
 
         # Upload dataframe files to GCS
         if not dataframe.empty:
-            dataframe_to_file(
+            get_dataframe_file(
                 dataframe=dataframe,
                 dirname=dirname,
                 filename=filename,
@@ -158,7 +157,7 @@ class GSheetToBQGenerator:
                 dirname=dirname,
             )
 
-            remove_file(
+            delete_file(
                 filename=f'{dirname}/{filename}'
             )
 
@@ -174,73 +173,72 @@ class GSheetToBQGenerator:
         file_exists = storage.Blob(name=name, bucket=gcs_bucket).exists()
         if file_exists:
             logging.info("File exists, executing load_to_bq task.")
-            return f"load_to_bq"
+            return "load_to_bq"
         else:
             logging.info("File not exists, executing end_pipeline task.")
-            return f'end_pipeline'
+            return "end_pipeline"
 
     def generate_task(self):
-        if self.task_mode == AIRFLOW:
-            schema = self.__generate_schema()
+        schema = self.__generate_schema()
 
-            # Generate bucket directory name and filename
-            ts_nodash = "{{ ts_nodash }}"
-            dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}'
-            filename = f'{self.target_bq_table}.{self.extension}'
+        # Generate bucket directory name and filename
+        ts_nodash =  '{{ macros.ds_format(ts_nodash, "%Y%m%dT%H%M%S", "%Y-%m-%d %H:%M:%S") }}'
+        dirname = f'{self.target_bq_dataset}/{self.target_bq_table}/job_execution_timestamp={ts_nodash}'
+        filename = f'{self.target_bq_table}.{self.extension}'
 
-            # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
-            write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
+        # Use WRITE_APPEND if the load method is APPEND, else, use WRITE_TRUNCATE
+        write_disposition = WriteDisposition.WRITE_APPEND if self.target_bq_load_method == APPEND else WriteDisposition.WRITE_TRUNCATE
 
-            # TimePartitioning, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TimePartitioning
-            time_partitioning = {
-                "type": "DAY",
-                "field": self.target_bq_partition_field
-            } if self.target_bq_partition_field else None
+        # TimePartitioning, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TimePartitioning
+        time_partitioning = {
+            "type": "DAY",
+            "field": self.target_bq_partition_field
+        } if self.target_bq_partition_field else None
 
-            # Clustering, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Clustering
-            cluster_fields = self.target_bq_cluster_fields if self.target_bq_cluster_fields else None
+        # Clustering, https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Clustering
+        cluster_fields = self.target_bq_cluster_fields if self.target_bq_cluster_fields else None
 
-            extract = PythonOperator(
-                task_id=f"extract_and_load_to_gcs",
-                python_callable=self.__extract_data_from_spreadsheet,
-                op_kwargs={
-                    "schema": schema,
-                    "dirname": dirname,
-                    "filename": filename,
-                    "format_date": self.format_date,
-                    "format_timestamp": self.format_timestamp
-                }
-            )
+        extract = PythonOperator(
+            task_id="extract_and_load_to_gcs",
+            python_callable=self.__extract_data_from_spreadsheet,
+            op_kwargs={
+                "schema": schema,
+                "dirname": dirname,
+                "filename": filename,
+                "format_date": self.format_date,
+                "format_timestamp": self.format_timestamp
+            }
+        )
 
-            branch_task = BranchPythonOperator(
-                task_id=f'check_if_file_exists_in_gcs',
-                python_callable=self.__check_if_file_exists_in_gcs,
-                op_kwargs={
-                    'bucket': GCS_DATA_LAKE_BUCKET,
-                    'dirname': dirname,
-                    'filename': filename
-                }
-            )
+        branch_task = BranchPythonOperator(
+            task_id="check_if_file_exists_in_gcs",
+            python_callable=self.__check_if_file_exists_in_gcs,
+            op_kwargs={
+                'bucket': GCS_DATA_LAKE_BUCKET,
+                'dirname': dirname,
+                'filename': filename
+            }
+        )
 
-            # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
-            destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
-                else f'{self.full_target_bq_table_temp}'
+        # Directly load the data into BigQuery main table if the load method is TRUNCATE or APPEND, else, load it to temporary table first
+        destination_project_dataset_table = f'{self.full_target_bq_table}' if self.target_bq_load_method not in MERGE.__members__ \
+            else f'{self.full_target_bq_table_temp}'
 
-            load = GCSToBigQueryOperator(
-                task_id                           = f'load_to_bq',
-                gcp_conn_id                       = GCP_CONN_ID,
-                bucket                            = GCS_DATA_LAKE_BUCKET,
-                destination_project_dataset_table = destination_project_dataset_table,
-                source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/{ts_nodash}/*.{self.extension}'],
-                schema_fields                     = schema,
-                source_format                     = SourceFormat.PARQUET,
-                write_disposition                 = write_disposition,
-                create_disposition                = CreateDisposition.CREATE_IF_NEEDED,
-                time_partitioning                 = time_partitioning,
-                cluster_fields                    = cluster_fields,
-                autodetect                        = False
-            )
+        load = GCSToBigQueryOperator(
+            task_id                           = "load_to_bq",
+            gcp_conn_id                       = GCP_CONN_ID,
+            bucket                            = GCS_DATA_LAKE_BUCKET,
+            destination_project_dataset_table = destination_project_dataset_table,
+            source_objects                    = [f'{self.target_bq_dataset}/{self.target_bq_table}/job_execution_timestamp={ts_nodash}/*.{self.extension}'],
+            schema_fields                     = schema,
+            source_format                     = SourceFormat.PARQUET,
+            write_disposition                 = write_disposition,
+            create_disposition                = CreateDisposition.CREATE_IF_NEEDED,
+            time_partitioning                 = time_partitioning,
+            cluster_fields                    = cluster_fields,
+            autodetect                        = False
+        )
 
-            end_pipeline = EmptyOperator(task_id='end_pipeline')
+        end_pipeline = EmptyOperator(task_id='end_pipeline')
 
-            return extract >> branch_task >> [load, end_pipeline]
+        return extract >> branch_task >> [load, end_pipeline]

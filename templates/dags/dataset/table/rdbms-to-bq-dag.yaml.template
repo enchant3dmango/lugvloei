@@ -16,7 +16,6 @@ dag:
   priority_weight: ~
 task:
   type: ~
-  mode: ~
   source:
     connection: ~
     schema: ~
