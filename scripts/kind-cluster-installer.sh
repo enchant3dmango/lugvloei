@@ -12,8 +12,9 @@ if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true
 fi
 
 # 2. Create kind cluster with containerd registry config dir enabled
-cluster_name='enchant3dmango'
-kind create cluster --name "${cluster_name}" --config ./scripts/kind-cluster.yaml
+# Get the cluster name from the first argument
+cluster_name=$1
+kind create cluster --name "${cluster_name}" --config scripts/kind-cluster.yaml
 
 # 3. Add the registry config to the nodes
 # This is necessary because localhost resolves to loopback addresses that are network-namespace local.
@@ -49,8 +50,8 @@ data:
 EOF
 
 # 6. Create GCP service account
-# Create a file named serviceaccount.json inside ./files/ containing your GCP service account json
-sa_file_path=./files/serviceaccount.json
+# Create a file named serviceaccount.json inside files/ containing your GCP service account json
+sa_file_path='files/serviceaccount.json'
 kubectl create ns airflow
 kubectl create secret generic airflow-gcp-sa --from-file=${sa_file_path} -n airflow
 
