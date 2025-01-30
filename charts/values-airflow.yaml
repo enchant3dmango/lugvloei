@@ -65,6 +65,7 @@ containerLifecycleHooks: {}
 airflowHome: /opt/airflow
 
 # Default airflow repository -- overridden by all the specific images below
+# TODO: Update defaultAirflowRepository to your repository (if any)
 defaultAirflowRepository: andresitorusz/airflow
 
 # Default airflow tag to deploy
@@ -2268,6 +2269,7 @@ config:
   logging:
     remote_logging: 'True'
     colored_console_log: 'False'
+    # TODO: Update remote_base_log_folder, just update 'pocz' to your GCS bucket name (you need to create one)
     remote_base_log_folder: 'gs://pocz/airflow/logs'
     google_key_path: '/var/secrets/airflow-gcp-sa/serviceaccount.json'
   metrics:
@@ -2384,6 +2386,7 @@ dags:
     # git repo clone url
     # ssh example: git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
+    # TODO: Update this repo to your own
     repo: https://github.com/enchant3dmango/aircube.git
     branch: main
     rev: HEAD
