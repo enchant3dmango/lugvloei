@@ -5,7 +5,6 @@ set -o errexit
 helm repo add apache-airflow https://airflow.apache.org
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add spark-operator https://kubeflow.github.io/spark-operator
-helm repo add datahub https://helm.datahubproject.io/
 helm repo update
 
 # 2. Install Airflow
@@ -24,9 +23,3 @@ kubectl create role spark-app-airflow-role --verb=get,list,watch,create --resour
 kubectl create rolebinding spark-app-airflow-role-bind --role=spark-app-airflow-role --serviceaccount=airflow:airflow-worker -n spark
 kubectl create role spark-pod-airflow-role --verb=get,list,watch --resource=pods,pods/log,pods/status -n spark
 kubectl create rolebinding spark-pod-airflow-role-bind --role=spark-pod-airflow-role --serviceaccount=airflow:airflow-worker -n spark
-
-# 6. Install Datahub and its prerequisites
-kubectl create ns datahub
-kubectl create secret generic -n datahub mysql-secrets --from-literal=mysql-root-password=root
-helm install prerequisites datahub/datahub-prerequisites --values charts/values-datahub.yaml --namespace datahub --debug --wait=false --timeout 20m
-helm install datahub datahub/datahub --namespace datahub --debug --wait=false --timeout 20m
