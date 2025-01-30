@@ -1,6 +1,6 @@
 from airflow.providers.slack.operators.slack_webhook import SlackWebhookOperator
 
-from plugins.constants.connections import SLACK_WEBHOOK_CONNECTION_ID
+from constants.connections import SLACK_WEBHOOK_CONNECTION_ID
 
 
 def generate_failure_message(context):

@@ -6,10 +6,10 @@ import pendulum
 from airflow.decorators import dag
 from airflow.operators.bash import BashOperator
 
-from plugins.constants.types import DE_DAG_OWNER_NAME
-from plugins.utilities.slack import on_failure_callback, on_success_callback
+from utilities.constants.types import DE_DAG_OWNER_NAME
+from utilities.slack import on_failure_callback, on_success_callback
 
-start_date = pendulum.datetime(2023, 8, 1, tz="Asia/Jakarta")
+start_date = pendulum.datetime(2025, 1, 25, tz="Asia/Jakarta")
 tags = ["utility"]
 
 # Take a timestamp of 3 months ago as the limit
