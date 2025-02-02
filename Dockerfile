@@ -7,4 +7,5 @@ COPY requirements.txt /tmp/requirements.txt
 
 # Upgrade pip and install dependencies in requirements.txt
 RUN pip install --upgrade --ignore-installed pip & \
-    pip install --no-cache-dir -r /tmp/requirements.txt
+    pip install --no-cache-dir -r /tmp/requirements.txt & \
+    rm /tmp/requirements.txt
