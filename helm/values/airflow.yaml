@@ -66,7 +66,8 @@ airflowHome: /opt/airflow
 
 # Default airflow repository -- overridden by all the specific images below
 # TODO: Update defaultAirflowRepository to your repository (if any)
-defaultAirflowRepository: andresitorusz/airflow
+# localhost:5001/airflow refers to the local docker registry (5001 is the default port, check reg_port in kind-cluster-installer.sh)
+defaultAirflowRepository: localhost:5001/airflow
 
 # Default airflow tag to deploy
 defaultAirflowTag: "2.9.3-python3.11"
