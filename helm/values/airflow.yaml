@@ -2388,7 +2388,7 @@ dags:
     # ssh example: git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
     # TODO: Update this repo to your own
-    repo: https://github.com/enchant3dmango/aircube.git
+    repo: https://github.com/enchant3dmango/lugvloei.git
     branch: main
     rev: HEAD
     depth: 1
