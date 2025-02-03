@@ -4,21 +4,30 @@ set -o errexit
 # 1. Create registry container unless it already exists
 reg_name='kind-registry'
 reg_port='5001'
+CLUSTER_NAME=$1
 
 if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)" != 'true' ]; then
   docker run \
-    -d --restart=always -p "127.0.0.1:${reg_port}:5000" --name "${reg_name}" \
+    -d --restart=always -p "127.0.0.1:${reg_port}:5000" --network bridge --name "${reg_name}" \
     registry:2
 fi
 
 # 2. Create kind cluster with containerd registry config dir enabled
-# Get the cluster name from the first argument
-cluster_name=$1
-kind create cluster --name "${cluster_name}" --config k8s/kind-cluster.yaml
+# TODO: kind will eventually enable this by default and this patch will
+# be unnecessary.
+#
+# See:
+# https://github.com/kubernetes-sigs/kind/issues/2875
+# https://github.com/containerd/containerd/blob/main/docs/cri/config.md#registry-configuration
+# See: https://github.com/containerd/containerd/blob/main/docs/hosts.md
+kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-cluster.yaml
 
 # 3. Add the registry config to the nodes
-# This is necessary because localhost resolves to loopback addresses that are network-namespace local.
+#
+# This is necessary because localhost resolves to loopback addresses that are
+# network-namespace local.
 # In other words: localhost in the container is not localhost on the host.
+#
 # We want a consistent name that works from both ends, so we tell containerd to
 # alias localhost:${reg_port} to the registry container when pulling images
 REGISTRY_DIR="/etc/containerd/certs.d/localhost:${reg_port}"
