@@ -14,7 +14,7 @@ fi
 # 2. Create kind cluster with containerd registry config dir enabled
 # Get the cluster name from the first argument
 cluster_name=$1
-kind create cluster --name "${cluster_name}" --config scripts/kind-cluster.yaml
+kind create cluster --name "${cluster_name}" --config k8s/kind-cluster.yaml
 
 # 3. Add the registry config to the nodes
 # This is necessary because localhost resolves to loopback addresses that are network-namespace local.
