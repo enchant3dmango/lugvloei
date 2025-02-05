@@ -1,5 +1,7 @@
 -include .env
 
+.PHONY: provision-kind-cluster delete-kind-cluster build-airflow-image tag-airlfow-image push-airflow-image add-all-repos install-airflow install-mysql-db install-postgresql-db install-spark-on-k8s-operator create-spark-airflow-rb pf-airflow-webserver
+
 provision-kind-cluster:
 	@./k8s/provision.sh $(CLUSTER_NAME)
 
