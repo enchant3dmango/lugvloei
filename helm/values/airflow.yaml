@@ -65,8 +65,7 @@ containerLifecycleHooks: {}
 airflowHome: /opt/airflow
 
 # Default airflow repository -- overridden by all the specific images below
-# TODO: Update defaultAirflowRepository to your repository (if any)
-# localhost:5001/airflow refers to the local docker registry (5001 is the default port, check reg_port in kind-cluster-installer.sh)
+# localhost:5001/airflow refers to the local docker registry (5001 is the default port, check REG_PORT in provision.sh)
 defaultAirflowRepository: localhost:5001/airflow
 
 # Default airflow tag to deploy
@@ -431,11 +430,13 @@ data:
 
 # Fernet key settings
 # Note: fernetKey can only be set during install, not upgrade
-fernetKey: TmlMQlZ6SWN0UUtreE1tQThUOVRCWW16THQyRTJNNjM=
+# Fill the FERNET_KEY value in the .env file!
+fernetKey:
 fernetKeySecretName: ~
 
 # Flask secret key for Airflow Webserver: `[webserver] secret_key` in airflow.cfg
-webserverSecretKey: 44b07935f0d93c0b0ed3f8b460c0d6e4
+# Fill the WEBSERVER_SECRET_KEY value in the .env file!
+webserverSecretKey:
 webserverSecretKeySecretName: ~
 
 # In order to use kerberos you need to create secret containing the keytab file
@@ -2270,8 +2271,8 @@ config:
   logging:
     remote_logging: 'True'
     colored_console_log: 'False'
-    # TODO: Update remote_base_log_folder, just update 'pocz' to your GCS bucket name (you need to create one)
-    remote_base_log_folder: 'gs://pocz/airflow/logs'
+    # Fill the REMOTE_BASE_LOG_FOLDER value in the .env file! 
+    remote_base_log_folder:
     google_key_path: '/var/secrets/airflow-gcp-sa/serviceaccount.json'
   metrics:
     statsd_on: '{{ ternary "True" "False" .Values.statsd.enabled }}'
@@ -2387,8 +2388,8 @@ dags:
     # git repo clone url
     # ssh example: git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
-    # TODO: Update this repo to your own
-    repo: https://github.com/enchant3dmango/lugvloei.git
+    # Fill the REPO value in the .env file!
+    repo:
     branch: main
     rev: HEAD
     depth: 1
