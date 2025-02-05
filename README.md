@@ -46,6 +46,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     make provision-kind-cluster
     ```
     Check below image to see the expected result.
+
     ![Kind Cluster](docs/assets/kind-cluster.png)
 3. Add Airflow helm repositories.
     ```sh
@@ -55,12 +56,13 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     ```sh
     make install-airflow
     ```
-    Check the pods
+    Check the pods.
     ```sh
     kubectl get pods -n airflow --watch
     ```
-    ![Airflow Pods](docs/assets/airflow-pods.png)
     :hourglass_flowing_sand: Wait until the Airflow Webserver pod status changed to **Running**, then continue to the next step.
+
+    ![Airflow Pods](docs/assets/airflow-pods.png)
 5. Forward the Airflow Webserver port to your local so you can open the Airflow Webserver in your browser.
     ```sh
     make pf-airflow-webserver
@@ -68,4 +70,5 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     Go to http://localhost:8080/ to check Airflow Webserver. Try to login using **admin**:**admin** if you didn't change the default credentials.
 
     You should see this page after login.
+
     ![Airflow Webserver](docs/assets/airflow-webserver.png)
