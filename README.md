@@ -19,10 +19,10 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 #### Environment Setup
 1. Fork this repository, then clone the forked repository to your device and open it using your favorite IDE.
 2. Create `.env` file from the `.env.template`. You can use the example value for `CLUSTER_NAME`, `FERNET_KEY`, and `WEBSERVER_SECRET_KEY`. But, if you want to have your own key, you can generate it using this [guide](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/fernet.html#generating-fernet-key) for `FERNET_KEY` and this [guide](https://airflow.apache.org/docs/helm-chart/stable/production-guide.html#webserver-secret-key) for `WEBSERVER_SECRET_KEY`.
-3. Create a GCP service account, that has read and write access to GCS (for remote logging), and save the service account key as `serviceaccount.json` in the `files/` directory.
-4. Create a GCS (Google Cloud Storage) bucket, then replace the `<your-bucket-name>` placeholder in the `REMOTE_BASE_LOG_FOLDER` value in `.env` file value to the created bucket name.
+3. Create a GCS (Google Cloud Storage) bucket, then replace the `<your-bucket-name>` placeholder in the `REMOTE_BASE_LOG_FOLDER` value in `.env` file value to the created bucket name.
+4. Create a GCP service account, that has read and write access to GCS (for remote logging), and save the service account key as `serviceaccount.json` in the `files/` directory.
 5. Update the `<your-github-username>` placeholder in the `REPO` value in `.env` file to your GitHub username, and make sure you don't skip **Step 1**!
-6. To make the Airflow dependencies available in your local device, execute the following scripts.
+6. (Optional) To make the Airflow dependencies available in your local device, execute the following scripts.
     ```sh
     # Create Python virtual environment
     python -m venv venv
