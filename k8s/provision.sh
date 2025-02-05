@@ -2,13 +2,13 @@
 set -o errexit
 
 # 1. Create registry container unless it already exists
-reg_name='kind-registry'
-reg_port='5001'
-cluster_name=$1
+REG_NAME='kind-registry'
+REG_PORT='5001'
+CLUSTER_NAME=$1
 
-if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)" != 'true' ]; then
+if [ "$(docker inspect -f '{{.State.Running}}' "${REG_NAME}" 2>/dev/null || true)" != 'true' ]; then
   docker run \
-    -d --restart=always -p "127.0.0.1:${reg_port}:5000" --network bridge --name "${reg_name}" \
+    -d --restart=always -p "127.0.0.1:${REG_PORT}:5000" --network bridge --name "${REG_NAME}" \
     registry:2
 fi
 
@@ -20,7 +20,7 @@ fi
 # https://github.com/kubernetes-sigs/kind/issues/2875
 # https://github.com/containerd/containerd/blob/main/docs/cri/config.md#registry-configuration
 # See: https://github.com/containerd/containerd/blob/main/docs/hosts.md
-kind create cluster --name ${cluster_name} --config k8s/kind-cluster.yaml
+kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-cluster.yaml
 
 # 3. Add the registry config to the nodes
 #
@@ -29,19 +29,19 @@ kind create cluster --name ${cluster_name} --config k8s/kind-cluster.yaml
 # In other words: localhost in the container is not localhost on the host.
 #
 # We want a consistent name that works from both ends, so we tell containerd to
-# alias localhost:${reg_port} to the registry container when pulling images
-REGISTRY_DIR="/etc/containerd/certs.d/localhost:${reg_port}"
-for node in $(kind get nodes --name ${cluster_name}); do
+# alias localhost:${REG_PORT} to the registry container when pulling images
+REGISTRY_DIR="/etc/containerd/certs.d/localhost:${REG_PORT}"
+for node in $(kind get nodes --name ${CLUSTER_NAME}); do
   docker exec "${node}" mkdir -p "${REGISTRY_DIR}"
   cat <<EOF | docker exec -i "${node}" cp /dev/stdin "${REGISTRY_DIR}/hosts.toml"
-[host."http://${reg_name}:5000"]
+[host."http://${REG_NAME}:5000"]
 EOF
 done
 
 # 4. Connect the registry to the cluster network if not already connected
 # This allows kind to bootstrap the network but ensures they're on the same network
-if [ "$(docker inspect -f='{{json .NetworkSettings.Networks.kind}}' "${reg_name}")" = 'null' ]; then
-  docker network connect "kind" "${reg_name}"
+if [ "$(docker inspect -f='{{json .NetworkSettings.Networks.kind}}' "${REG_NAME}")" = 'null' ]; then
+  docker network connect "kind" "${REG_NAME}"
 fi
 
 # 5. Document the local registry
@@ -54,15 +54,15 @@ metadata:
   namespace: kube-public
 data:
   localRegistryHosting.v1: |
-    host: "localhost:${reg_port}"
+    host: "localhost:${REG_PORT}"
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
 
 # 6. Create GCP service account
 # Create a file named serviceaccount.json inside files/ containing your GCP service account json
-sa_file_path='files/serviceaccount.json'
+SA_FILE_PATH='files/serviceaccount.json'
 kubectl create ns airflow
-kubectl create secret generic airflow-gcp-sa --from-file=${sa_file_path} -n airflow
+kubectl create secret generic airflow-gcp-sa --from-file=${SA_FILE_PATH} -n airflow
 
 # Extra step: uncomment this step and create a file named gitSshKey inside ./files/ containing the git ssh key
 # https://airflow.apache.org/docs/helm-chart/stable/manage-dags-files.html#mounting-dags-from-a-private-github-repo-using-git-sync-sidecar
