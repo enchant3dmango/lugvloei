@@ -41,17 +41,37 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     make tag-airlfow-image
     make push-airflow-image
     ```
+
 2. Provision the cluster.
     ```sh
     make provision-kind-cluster
     ```
-    Check below image to see the expected result.
+    The following is the expected result.
+    ```sh
+    Creating cluster "kind" ...
+    ✓ Ensuring node image (kindest/node:v1.32.0) 🖼
+    ✓ Preparing nodes 📦 📦 📦
+    ✓ Writing configuration 📜
+    ✓ Starting control-plane 🕹️
+    ✓ Installing CNI 🔌
+    ✓ Installing StorageClass 💾
+    ✓ Joining worker nodes 🚜
+    Set kubectl context to "kind-kind"
+    You can now use your cluster with:
 
-    ![Kind Cluster](docs/assets/kind-cluster.png)
+    kubectl cluster-info --context kind-kind
+
+    Thanks for using kind! 😊
+    configmap/local-registry-hosting created
+    namespace/airflow created
+    secret/airflow-gcp-sa create
+    ```
+
 3. Add Airflow helm repositories.
     ```sh
     make add-airflow-repo
     ```
+
 4. Install Airflow in the cluster.
     ```sh
     make install-airflow
@@ -60,9 +80,18 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     ```sh
     kubectl get pods -n airflow --watch
     ```
-    :hourglass_flowing_sand: Wait until the Airflow Webserver pod status changed to **Running**, then continue to the next step.
+    :hourglass_flowing_sand: Wait until the Airflow Webserver pod status changed to **Running**, then continue to the next step. The following is the expected result.
+    ```sh
+    NAME                                 READY   STATUS    RESTARTS   AGE
+    airflow-postgresql-0                 1/1     Running   0          3m23s
+    airflow-redis-0                      1/1     Running   0          3m23s
+    airflow-scheduler-556555fd95-7tnnn   3/3     Running   0          3m23s
+    airflow-statsd-d76fb476b-zv4ms       1/1     Running   0          3m23s
+    airflow-triggerer-0                  3/3     Running   0          3m23s
+    airflow-webserver-78d4758d7-jnhzl    1/1     Running   0          3m23s
+    airflow-worker-0                     3/3     Running   0          3m23s
+    ```
 
-    ![Airflow Pods](docs/assets/airflow-pods.png)
 5. Forward the Airflow Webserver port to your local so you can open the Airflow Webserver in your browser.
     ```sh
     make pf-airflow-webserver
