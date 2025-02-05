@@ -17,10 +17,8 @@ tag-airlfow-image:
 push-airflow-image:
 	docker push localhost:5001/airflow:2.9.3-python3.11
 
-add-all-repos:
+add-airflow-repo:
 	helm repo add apache-airflow https://airflow.apache.org && \
-	helm repo add bitnami https://charts.bitnami.com/bitnami && \
-	helm repo add spark-operator https://kubeflow.github.io/spark-operator && \
 	helm repo update
 
 install-airflow:
@@ -31,11 +29,23 @@ install-airflow:
 	--set config.logging.remote_base_log_folder=$(REMOTE_BASE_LOG_FOLDER) \
 	--namespace airflow --debug --wait=false --timeout 20m
 
+# PF stands for port-forward
+pf-airflow-webserver:
+	kubectl port-forward svc/airflow-webserver 8080:8080 --namespace airflow
+
+add-bitnami-repo:
+	helm repo add bitnami https://charts.bitnami.com/bitnami && \
+	helm repo update
+
 install-mysql-db:
 	helm install mysql-db -f helm/values/mysql.yaml bitnami/mysql --namespace mysql --create-namespace
 
 install-postgresql-db:
 	helm install postgresql-db -f helm/values/postgresql.yaml bitnami/postgresql --namespace postgresql --create-namespace
+
+add-spark-operator-repo:
+	helm repo add spark-operator https://kubeflow.github.io/spark-operator && \
+	helm repo update
 
 install-spark-on-k8s-operator:
 	helm install spark -f helm/values/spark-on-k8s-operator.yaml spark-operator/spark-operator --namespace spark --create-namespace --set sparkJobNamespace=spark --set webhook.enable=true
@@ -47,7 +57,8 @@ create-spark-airflow-rb:
 	kubectl create role spark-pod-airflow-role --verb=get,list,watch --resource=pods,pods/log,pods/status -n spark && \
 	kubectl create rolebinding spark-pod-airflow-role-bind --role=spark-pod-airflow-role --serviceaccount=airflow:airflow-worker -n spark
 
-# PF stands for port-forward
-pf-airflow-webserver:
-	kubectl port-forward svc/airflow-webserver 8080:8080 --namespace airflow
-
+add-all-repos:
+	helm repo add apache-airflow https://airflow.apache.org && \
+	helm repo add bitnami https://charts.bitnami.com/bitnami && \
+	helm repo add spark-operator https://kubeflow.github.io/spark-operator && \
+	helm repo update
