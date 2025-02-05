@@ -4,7 +4,7 @@ set -o errexit
 # 1. Create registry container unless it already exists
 reg_name='kind-registry'
 reg_port='5001'
-CLUSTER_NAME=$1
+cluster_name=$1
 
 if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)" != 'true' ]; then
   docker run \
@@ -20,7 +20,7 @@ fi
 # https://github.com/kubernetes-sigs/kind/issues/2875
 # https://github.com/containerd/containerd/blob/main/docs/cri/config.md#registry-configuration
 # See: https://github.com/containerd/containerd/blob/main/docs/hosts.md
-kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-cluster.yaml
+kind create cluster --name ${cluster_name} --config k8s/kind-cluster.yaml
 
 # 3. Add the registry config to the nodes
 #
@@ -31,7 +31,7 @@ kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-cluster.yaml
 # We want a consistent name that works from both ends, so we tell containerd to
 # alias localhost:${reg_port} to the registry container when pulling images
 REGISTRY_DIR="/etc/containerd/certs.d/localhost:${reg_port}"
-for node in $(kind get nodes); do
+for node in $(kind get nodes --name ${cluster_name}); do
   docker exec "${node}" mkdir -p "${REGISTRY_DIR}"
   cat <<EOF | docker exec -i "${node}" cp /dev/stdin "${REGISTRY_DIR}/hosts.toml"
 [host."http://${reg_name}:5000"]
