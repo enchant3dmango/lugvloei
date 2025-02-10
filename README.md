@@ -33,7 +33,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     # Install additional dependencies
     pip install -r airflow.requirements.txt
     ```
-7. Adjust your Docker memory limit, set the limit to (recommended) 8GB to avoid failure while installing the kind cluster.
+7. (Recommended) Adjust your Docker memory limit, set the limit to 8GB to avoid failure while installing the kind cluster.
 
 #### Cluster & Airflow Installation
 1. Build, tag, and push Airflow image to the cluster registry.
