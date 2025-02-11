@@ -2264,7 +2264,6 @@ config:
     executor: '{{ .Values.executor }}'
     # For Airflow 1.10, backward compatibility; moved to [logging] in 2.0
     colored_console_log: 'False'
-    remote_logging: 'True'
     plugins_folder: '/opt/airflow/plugins'
     lazy_load_plugins: 'True'
     default_timezone: 'Asia/Jakarta'
