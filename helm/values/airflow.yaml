@@ -2268,6 +2268,7 @@ config:
     lazy_load_plugins: 'True'
     default_timezone: 'Asia/Jakarta'
   logging:
+    # Set remote_logging to 'False' if you are not using remote logging
     remote_logging: 'True'
     colored_console_log: 'False'
     # Fill the REMOTE_BASE_LOG_FOLDER value in the .env file! 
