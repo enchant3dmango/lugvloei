@@ -1,6 +1,9 @@
 -include .env
 
-.PHONY: provision-kind-cluster delete-kind-cluster build-airflow-image tag-airlfow-image push-airflow-image add-airflow-repo install-airflow pf-airflow-webserver add-bitnami-repo install-mysql-db install-postgresql-db add-spark-operator-repo install-spark-on-k8s-operator create-spark-airflow-rb add-all-repos
+.PHONY: provision-kind-cluster delete-kind-cluster \
+	build-airflow-image tag-airlfow-image push-airflow-image add-airflow-repo install-airflow pf-airflow-webserver \
+	add-bitnami-repo install-postgresql-db uninstall-postgresql-db pf-postgresql-db \
+	add-spark-operator-repo install-spark-on-k8s-operator create-spark-airflow-rb
 
 provision-kind-cluster:
 	@./k8s/provision.sh $(CLUSTER_NAME)
@@ -40,11 +43,17 @@ add-bitnami-repo:
 	helm repo add bitnami https://charts.bitnami.com/bitnami && \
 	helm repo update
 
-install-mysql-db:
-	helm install mysql-db -f helm/values/mysql.yaml bitnami/mysql --namespace mysql --create-namespace
-
 install-postgresql-db:
-	helm install postgresql-db -f helm/values/postgresql.yaml bitnami/postgresql --namespace postgresql --create-namespace
+	@helm install postgresql-db -f helm/values/postgresql.yaml bitnami/postgresql \
+	--set auth.username=$(POSTGRESQL_AUTH_USERNAME) \
+	--set auth.password=$(POSTGRESQL_AUTH_PASSWORD) \
+	--namespace postgresql --create-namespace
+
+uninstall-postgresql-db:
+	helm uninstall postgresql-db --namespace postgresql
+
+pf-postgresql-db:
+	kubectl port-forward svc/postgresql-db 5432:5432 --namespace postgresql
 
 add-spark-operator-repo:
 	helm repo add spark-operator https://kubeflow.github.io/spark-operator && \
@@ -59,9 +68,3 @@ create-spark-airflow-rb:
 	kubectl create rolebinding spark-app-airflow-role-bind --role=spark-app-airflow-role --serviceaccount=airflow:airflow-worker -n spark && \
 	kubectl create role spark-pod-airflow-role --verb=get,list,watch --resource=pods,pods/log,pods/status -n spark && \
 	kubectl create rolebinding spark-pod-airflow-role-bind --role=spark-pod-airflow-role --serviceaccount=airflow:airflow-worker -n spark
-
-add-all-repos:
-	helm repo add apache-airflow https://airflow.apache.org && \
-	helm repo add bitnami https://charts.bitnami.com/bitnami && \
-	helm repo add spark-operator https://kubeflow.github.io/spark-operator && \
-	helm repo update
