@@ -9,7 +9,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 
 ### Prerequisites
 - Docker (v27.4.0)
-- GCP (Google Cloud Platform) Project
+- Personal Google Cloud Platform (GCP) project
 - kind (v0.26.0)
 - kubectl (v1.32.1)
 - GNU Make (v3.81)
@@ -19,7 +19,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 #### Environment Setup
 1. Fork this repository, then clone the forked repository to your device and open it using your favorite IDE.
 2. Create `.env` file from the `.env.template`. You can use the example value for `CLUSTER_NAME`, `FERNET_KEY`, and `WEBSERVER_SECRET_KEY`. But, if you want to have your own key, you can generate it using this [guide](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/fernet.html#generating-fernet-key) for `FERNET_KEY` and this [guide](https://airflow.apache.org/docs/helm-chart/stable/production-guide.html#webserver-secret-key) for `WEBSERVER_SECRET_KEY`.
-3. Create a GCS (Google Cloud Storage) bucket, then replace the `<your-bucket-name>` placeholder in the `REMOTE_BASE_LOG_FOLDER` value in `.env` file value to the created bucket name.
+3. Create a Google Cloud Storage (GCS) bucket, then replace the `<your-bucket-name>` placeholder in the `REMOTE_BASE_LOG_FOLDER` value in `.env` file value to the created bucket name.
 4. Create a GCP service account, that has read and write access to GCS (for remote logging), and save the service account key as `serviceaccount.json` in the `files/` directory.
 5. Update the `<your-github-username>` placeholder in the `REPO` value in `.env` file to your GitHub username, and make sure you don't skip **Step 1**!
 6. (Optional) To make the Airflow dependencies available in your local device, execute the following scripts.
@@ -68,7 +68,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     secret/airflow-gcp-sa create
     ```
 
-3. Add Airflow helm repositories.
+3. Add Airflow helm repository.
     ```sh
     make add-airflow-repo
     ```
@@ -102,3 +102,34 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     You should see this page after login.
 
     ![Airflow Webserver](docs/assets/airflow-webserver.png)
+
+#### PostgreSQL Installation
+1. Add Bitnami helm repository.
+    ```sh
+    make add-bitnami-repo
+    ```
+
+2. Install postgresql in the cluster.
+    ```sh
+    make install-postgresql-db
+    ```
+    Check the pods.
+    ```sh
+    kubectl get pods -n postgresql --watch
+    ```
+    :hourglass_flowing_sand: Wait until the postgresql pod status changed to **Running**, then continue to the next step. The following is the expected result.
+    ```sh
+    NAME         READY   STATUS    RESTARTS   AGE
+    postgresql-db-0   1/1     Running   0          3m39s
+    ```
+
+3. Forward the postgresql database port to your local so you can open the database using your favorite database manager.
+    ```sh
+    make pf-postgresql-db
+    ```
+    The following is the expected result.
+    ```sh
+    kubectl port-forward svc/postgresql-db 5432:5432 --namespace postgresql
+    Forwarding from 127.0.0.1:5432 -> 5432
+    Forwarding from [::1]:5432 -> 5432
+    ```
