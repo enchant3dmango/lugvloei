@@ -29,6 +29,9 @@ install-airflow:
 	--set webserverSecretKey=$(AIRFLOW_WEBSERVER_SECRET_KEY) \
 	--namespace airflow --debug --wait=false --timeout 20m
 
+uninstall-airflow:
+	helm uninstall airflow -namespace airflow
+
 # PF stands for port-forward
 pf-airflow-webserver:
 	kubectl port-forward svc/airflow-webserver 8080:8080 --namespace airflow
