@@ -430,12 +430,12 @@ data:
 
 # Fernet key settings
 # Note: fernetKey can only be set during install, not upgrade
-# Fill the FERNET_KEY value in the .env file!
+# Fill the AIRFLOW_FERNET_KEY value in the .env file!
 fernetKey:
 fernetKeySecretName: ~
 
 # Flask secret key for Airflow Webserver: `[webserver] secret_key` in airflow.cfg
-# Fill the WEBSERVER_SECRET_KEY value in the .env file!
+# Fill the AIRFLOW_WEBSERVER_SECRET_KEY value in the .env file!
 webserverSecretKey:
 webserverSecretKeySecretName: ~
 
@@ -2271,7 +2271,7 @@ config:
     # Set remote_logging to 'False' if you are not using remote logging
     remote_logging: 'True'
     colored_console_log: 'False'
-    # Fill the REMOTE_BASE_LOG_FOLDER value in the .env file! 
+    # Fill the AIRFLOW_REMOTE_BASE_LOG_FOLDER value in the .env file! 
     remote_base_log_folder:
     google_key_path: '/var/secrets/airflow-gcp-sa/serviceaccount.json'
   metrics:
@@ -2388,7 +2388,7 @@ dags:
     # git repo clone url
     # ssh example: git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
-    # Fill the REPO value in the .env file!
+    # Fill the AIRFLOW_DAGS_GIT_SYNC_REPO value in the .env file!
     repo:
     branch: main
     rev: HEAD

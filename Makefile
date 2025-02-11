@@ -23,10 +23,10 @@ add-airflow-repo:
 
 install-airflow:
 	@helm install airflow -f helm/values/airflow.yaml apache-airflow/airflow \
-	--set fernetKey=$(FERNET_KEY) \
-	--set webserverSecretKey=$(WEBSERVER_SECRET_KEY) \
-	--set dags.gitSync.repo=$(REPO) \
-	--set config.logging.remote_base_log_folder=$(REMOTE_BASE_LOG_FOLDER) \
+	--set dags.gitSync.repo=$(AIRFLOW_DAGS_GIT_SYNC_REPO) \
+	--set fernetKey=$(AIRFLOW_FERNET_KEY) \
+	--set config.logging.remote_base_log_folder=$(AIRFLOW_REMOTE_BASE_LOG_FOLDER) \
+	--set webserverSecretKey=$(AIRFLOW_WEBSERVER_SECRET_KEY) \
 	--namespace airflow --debug --wait=false --timeout 20m
 
 # PF stands for port-forward
