@@ -119,7 +119,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     ```
     :hourglass_flowing_sand: Wait until the postgresql pod status changed to **Running**, then continue to the next step. The following is the expected result.
     ```sh
-    NAME         READY   STATUS    RESTARTS   AGE
+    NAME              READY   STATUS    RESTARTS   AGE
     postgresql-db-0   1/1     Running   0          3m39s
     ```
 
