@@ -18,10 +18,10 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 ### Steps
 #### Environment Setup
 1. Fork this repository, then clone the forked repository to your device and open it using your favorite IDE.
-2. Create `.env` file from the `.env.template`. You can use the example value for `CLUSTER_NAME`, `FERNET_KEY`, and `WEBSERVER_SECRET_KEY`. But, if you want to have your own key, you can generate it using this [guide](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/fernet.html#generating-fernet-key) for `FERNET_KEY` and this [guide](https://airflow.apache.org/docs/helm-chart/stable/production-guide.html#webserver-secret-key) for `WEBSERVER_SECRET_KEY`.
-3. Create a Google Cloud Storage (GCS) bucket, then replace the `<your-bucket-name>` placeholder in the `REMOTE_BASE_LOG_FOLDER` value in `.env` file value to the created bucket name.
+2. Create `.env` file from the `.env.template`. You can use the example value for `CLUSTER_NAME`, `AIRFLOW_FERNET_KEY`, and `AIRFLOW_WEBSERVER_SECRET_KEY`. But, if you want to have your own key, you can generate it using this [guide](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/fernet.html#generating-fernet-key) for `AIRFLOW_FERNET_KEY` and this [guide](https://airflow.apache.org/docs/helm-chart/stable/production-guide.html#webserver-secret-key) for `AIRFLOW_WEBSERVER_SECRET_KEY`.
+3. Create a Google Cloud Storage (GCS) bucket, then replace the `<your-bucket-name>` placeholder in the `AIRFLOW_REMOTE_BASE_LOG_FOLDER` value in the `.env` file value to the created bucket name.
 4. Create a GCP service account, that has read and write access to GCS (for remote logging), and save the service account key as `serviceaccount.json` in the `files/` directory.
-5. Update the `<your-github-username>` placeholder in the `REPO` value in `.env` file to your GitHub username, and make sure you don't skip **Step 1**!
+5. Update the `<your-github-username>` placeholder in the `AIRFLOW_DAGS_GIT_SYNC_REPO` value in the `.env` file to your GitHub username, and make sure you don't skip **Step 1**!
 6. (Optional) To make the Airflow dependencies available in your local device, execute the following scripts.
     ```sh
     # Create Python virtual environment
@@ -34,6 +34,8 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     pip install -r airflow.requirements.txt
     ```
 7. (Recommended) Adjust your Docker memory limit, set the limit to 8GB to avoid failure while installing the kind cluster.
+8. Fill the `POSTGRESQL_AUTH_USERNAME` and `POSTGRESQL_AUTH_PASSWORD` value in the `.env` file.
+9. (Optional) Install any database manager. Fyi, as I write this documentation, I'm using **Beekeper Studio**.
 
 #### Cluster & Airflow Installation
 1. Build, tag, and push Airflow image to the cluster registry.
