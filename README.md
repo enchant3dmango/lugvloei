@@ -140,11 +140,11 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     Forwarding from [::1]:5432 -> 5432
     ```
 
-2. Connect to the PostgreSQL database using your preferred way. Fill in the connection details using the value you used in step 8 in [Environment Setup](#environment-setup). It will look like this if you are also using **Beekeeper Studio**. Then, click **Connect**.
+2. Connect to the PostgreSQL database using your preferred way. Fill in the connection details using the value you used in step 8 in [Environment Setup](#environment-setup). It will look like this if you are also using **Beekeeper Studio**. Then, click the **Connect** button.
 
     ![Beekeeper Studio Connection Test](docs/assets/beekeeper-studio-connection-test.png)
 
-3. Copy and paste the query in ![PostgreSQL-DDL](docs/ddl/postgresql-ddl.sql) to the query window, and run it to create two tables and populate dummy data for each table in schema **public**.
+3. Copy and paste the query in [PostgreSQL-DDL](docs/ddl/postgresql-ddl.sql) to the query window, and run it to create two tables and populate dummy data for each table in schema **public**.
 
 ##### Connecting Airflow With PostgreSQL
 [WIP]
