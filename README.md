@@ -37,7 +37,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     pip install -r airflow.requirements.txt
     ```
 7. (Recommended) Adjust your Docker memory limit, set the limit to 8GB to avoid failure while installing the kind cluster.
-8. Fill the `POSTGRESQL_AUTH_USERNAME` and `POSTGRESQL_AUTH_PASSWORD` value in the `.env` file.
+8. Fill the `POSTGRESQL_DATABASE`, `POSTGRESQL_AUTH_USERNAME`, and `POSTGRESQL_AUTH_PASSWORD` value in the `.env` file.
 9. (Optional) Install any database manager. FYI, I'm using **Beekeeper Studio** as I write this documentation.
 
 #### Cluster & Airflow Installation
@@ -128,7 +128,8 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     postgresql-db-0   1/1     Running   0          3m39s
     ```
 
-3. Forward the PostgreSQL database port to your local so you can open the database using your favorite database manager.
+##### Populating the PostgreSQL Database
+1. Forward the PostgreSQL database port to your local so you can open the database using your favorite database manager.
     ```sh
     make pf-postgresql-db
     ```
@@ -139,8 +140,11 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     Forwarding from [::1]:5432 -> 5432
     ```
 
-##### Populating the PostgreSQL Database
-[WIP]
+2. Connect to the PostgreSQL database using your preferred way. Fill in the connection details using the value you used in step 8 in [Environment Setup](#environment-setup). It will look like this if you are also using **Beekeeper Studio**. Then, click **Connect**.
+
+    ![Beekeeper Studio Connection Test](docs/assets/beekeeper-studio-connection-test.png)
+
+3. Copy and paste the query in ![PostgreSQL-DDL](docs/ddl/postgresql-ddl.sql) to the query window, and run it to create two tables and populate dummy data for each table in schema **public**.
 
 ##### Connecting Airflow With PostgreSQL
 [WIP]
