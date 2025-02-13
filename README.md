@@ -3,7 +3,10 @@
 ## Background
 Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose only to make the repository name unique.
 
-## Setup
+## High-Level Architecture
+[WIP]
+
+## Setup & Installation
 ### Disclaimer
 :warning: I tested this setup guide only on macOS Sequoia 15.0.1. If you are using a different OS, you might need to adjust several things.
 
@@ -135,3 +138,9 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     Forwarding from 127.0.0.1:5432 -> 5432
     Forwarding from [::1]:5432 -> 5432
     ```
+
+##### Populating the PostgreSQL Database
+[WIP]
+
+##### Connecting Airflow With PostgreSQL
+[WIP]
