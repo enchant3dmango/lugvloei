@@ -45,6 +45,7 @@ add-bitnami-repo:
 
 install-postgresql-db:
 	@helm install postgresql-db -f helm/values/postgresql.yaml bitnami/postgresql \
+	--set auth.database=$(POSTGRESQL_AUTH_DATABASE) \
 	--set auth.username=$(POSTGRESQL_AUTH_USERNAME) \
 	--set auth.password=$(POSTGRESQL_AUTH_PASSWORD) \
 	--namespace postgresql --create-namespace
