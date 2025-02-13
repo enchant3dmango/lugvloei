@@ -114,7 +114,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     make add-bitnami-repo
     ```
 
-2. Install postgresql in the cluster.
+2. Install PostgreSQL in the cluster.
     ```sh
     make install-postgresql-db
     ```
@@ -128,7 +128,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     postgresql-db-0   1/1     Running   0          3m39s
     ```
 
-3. Forward the postgresql database port to your local so you can open the database using your favorite database manager.
+3. Forward the PostgreSQL database port to your local so you can open the database using your favorite database manager.
     ```sh
     make pf-postgresql-db
     ```
