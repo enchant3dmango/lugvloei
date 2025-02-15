@@ -2267,6 +2267,7 @@ config:
     plugins_folder: '/opt/airflow/plugins'
     lazy_load_plugins: 'True'
     default_timezone: 'Asia/Jakarta'
+    test_connection: 'Enabled'
   logging:
     # Set remote_logging to 'False' if you are not using remote logging
     remote_logging: 'True'
