@@ -153,6 +153,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     Connection Id: pg_lugvloei
     Connection Type: Postgres
     # The format for the host is <svc>.<namespace>.svc.cluster.local
+    # To get the svc name, you can run `kubectl get svc -n postgresql`
     # You actually the details previously when you run `make install-postgresql-db`
     Host: postgresql-db.postgresql.svc.cluster.local
     Database: lugvloei
