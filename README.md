@@ -36,6 +36,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     # Install additional dependencies
     pip install -r airflow.requirements.txt
     ```
+
 7. (Recommended) Adjust your Docker memory limit, set the limit to 8GB to avoid failure while installing the kind cluster.
 8. Fill or use the default value for `POSTGRESQL_DATABASE`, `POSTGRESQL_AUTH_USERNAME`, and `POSTGRESQL_AUTH_PASSWORD` values in the `.env` file.
 9. (Optional) Install any database manager. FYI, I'm using **Beekeeper Studio** as I write this documentation.
@@ -148,7 +149,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 
 ##### Connecting Airflow With PostgreSQL
 1. Open Airflow Webserver UI, hover the **Admin** dropdown on the top of the UI, then click **Connections**.
-2. If you are using the default values in the [.env.template](.env.template), add these connection details.
+2. If you are using the default values in the [.env.template](.env.template), add these connection details. You can adjust the connection details if you are not using the default values.
     ```sh
     Connection Id: pg_lugvloei
     Connection Type: Postgres
@@ -161,7 +162,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     Password: postgres
     Port: 5432
     ```
-    You can adjust the connection details if you are not using the default values.
+
 3. Click the **Test :rocket:** button. You should see a green light above the connection details with the **Connection successfully tested** text.
 
     ![Airflow Webserver UI PostgreSQL Connection Test](docs/assets/airflow-webserver-ui-pg-connection-test.png)
