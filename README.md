@@ -21,7 +21,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 ### Steps
 #### Environment Setup
 1. Fork this repository, then clone the forked repository to your device and open it using your favorite IDE.
-2. Create `.env` file from the `.env.template`. You can use the example value for `CLUSTER_NAME`, `AIRFLOW_FERNET_KEY`, and `AIRFLOW_WEBSERVER_SECRET_KEY`. But, if you want to have your own key, you can generate it using this [guide](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/fernet.html#generating-fernet-key) for `AIRFLOW_FERNET_KEY` and this [guide](https://airflow.apache.org/docs/helm-chart/stable/production-guide.html#webserver-secret-key) for `AIRFLOW_WEBSERVER_SECRET_KEY`.
+2. Create `.env` file from the [.env.template](.env.template). You can use the example value for `CLUSTER_NAME`, `AIRFLOW_FERNET_KEY`, and `AIRFLOW_WEBSERVER_SECRET_KEY`. But, if you want to have your own key, you can generate it using this [guide](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/fernet.html#generating-fernet-key) for `AIRFLOW_FERNET_KEY` and this [guide](https://airflow.apache.org/docs/helm-chart/stable/production-guide.html#webserver-secret-key) for `AIRFLOW_WEBSERVER_SECRET_KEY`.
 3. Create a Google Cloud Storage (GCS) bucket, then replace the `<your-bucket-name>` placeholder in the `AIRFLOW_REMOTE_BASE_LOG_FOLDER` value in the `.env` file value to the created bucket name.
 4. Create a GCP service account, that has read and write access to GCS (for remote logging), and save the service account key as `serviceaccount.json` in the `files/` directory.
 5. Update the `<your-github-username>` placeholder in the `AIRFLOW_DAGS_GIT_SYNC_REPO` value in the `.env` file to your GitHub username, and make sure you don't skip **Step 1**!
@@ -37,7 +37,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     pip install -r airflow.requirements.txt
     ```
 7. (Recommended) Adjust your Docker memory limit, set the limit to 8GB to avoid failure while installing the kind cluster.
-8. Fill the `POSTGRESQL_DATABASE`, `POSTGRESQL_AUTH_USERNAME`, and `POSTGRESQL_AUTH_PASSWORD` value in the `.env` file.
+8. Fill or use the default value for `POSTGRESQL_DATABASE`, `POSTGRESQL_AUTH_USERNAME`, and `POSTGRESQL_AUTH_PASSWORD` values in the `.env` file.
 9. (Optional) Install any database manager. FYI, I'm using **Beekeeper Studio** as I write this documentation.
 
 #### Cluster & Airflow Installation
@@ -98,15 +98,15 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     airflow-worker-0                     3/3     Running   0          3m23s
     ```
 
-5. Forward the Airflow Webserver port to your local so you can open the Airflow Webserver in your browser.
+5. Forward the Airflow Webserver port to your local so you can open the Airflow Webserver UI in your browser.
     ```sh
     make pf-airflow-webserver
     ```
-    Go to http://localhost:8080/ to check Airflow Webserver. Try to login using **admin**:**admin** if you didn't change the default credentials.
+    Go to http://localhost:8080/ to check Airflow Webserver UI. Try to login using **admin**:**admin** if you didn't change the default credentials.
 
     You should see this page after login.
 
-    ![Airflow Webserver](docs/assets/airflow-webserver.png)
+    ![Airflow Webserver UI](docs/assets/airflow-webserver-ui.png)
 
 #### PostgreSQL Installation
 1. Add Bitnami helm repository.
@@ -147,4 +147,20 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 3. Copy and paste the query in [PostgreSQL-DDL](docs/ddl/postgresql-ddl.sql) to the query window, and run it to create two tables and populate dummy data for each table in schema **public**.
 
 ##### Connecting Airflow With PostgreSQL
-[WIP]
+1. Open Airflow Webserver UI, hover the **Admin** dropdown on the top of the UI, then click **Connections**.
+2. If you are using the default values in the [.env.template](.env.template), add these connection details.
+    ```sh
+    Connection Id: pg_lugvloei
+    Connection Type: Postgres
+    # The format is <svc>.<namespace>.svc.cluster.local
+    # You get the details previously when you run `make install-postgresql-db`
+    Host: postgresql-db.postgresql.svc.cluster.local
+    Database: lugvloei
+    Login: postgres
+    Password: postgres
+    Port: 5432
+    ```
+    You can adjust the connection details if you are not using the default values.
+3. Click the **Test :rocket:** button. You should see a green light above the connection details with the **Connection successfully tested** text.
+
+    ![Airflow Webserver UI PostgreSQL Connection Test](docs/assets/airflow-webserver-ui-pg-connection-test.png)
