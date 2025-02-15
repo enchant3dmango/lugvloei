@@ -1,7 +1,7 @@
 auth:
+  database: # Fill the POSTGRESQL_AUTH_DATABASE value in the .env file!
   username: # Fill the POSTGRESQL_AUTH_USERNAME value in the .env file!
   password: # Fill the POSTGRESQL_AUTH_PASSWORD value in the .env file!
-  database: # Fill the POSTGRESQL_DATABASE value in the .env file!
 
 primary:
   persistence:
