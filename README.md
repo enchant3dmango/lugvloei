@@ -12,6 +12,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 
 ### Prerequisites
 - Docker (v27.4.0)
+- Helm (v3.17.0)
 - Personal Google Cloud Platform (GCP) project
 - kind (v0.26.0)
 - kubectl (v1.32.1)
