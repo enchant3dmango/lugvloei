@@ -149,7 +149,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 
 ##### Connecting Airflow With PostgreSQL
 1. Open Airflow Webserver UI, hover the **Admin** dropdown on the top of the UI, then click **Connections**.
-2. If you are using the default values in the [.env.template](.env.template), add these connection details. You can adjust the connection details if you are not using the default values.
+2. If you are using the default values in the [.env.template](.env.template) for your `.env` values, just add connection details below, otherwise, adjust the connection details to your `.env` values.
     ```sh
     Connection Id: pg_lugvloei
     Connection Type: Postgres
