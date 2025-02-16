@@ -166,3 +166,15 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 3. Click the **Test :rocket:** button. You should see a green light above the connection details with the **Connection successfully tested** text.
 
     ![Airflow Webserver UI PostgreSQL Connection Test](docs/assets/airflow-webserver-ui-pg-connection-test.png)
+
+##### Creating [PostgreSQL -> GCS -> BigQuery] DAGs
+1. Create a GCS bucket, then create a `GCS_DATA_LAKE_BUCKET` variable in Airflow, and use the name of the bucket you created as the value of the variable.
+2. Create a `google_cloud_default` connection in Airflow, only fill in the **Project Id** and **Keyfile Path**, then create a GCP_CONN_ID variable, and set google_cloud_default as the value of the variable. If you didn't change the default values related to the service account in the [provision.sh](k8s/provision.sh) or [airflow.yaml](helm/values/airflow.yaml), you can use `/var/secrets/airflow-gcp-sa/serviceaccount.json` to fill the **Keyfile Path** value.
+3. Create a new dataset in BigQuery and name it `lugvloei`. Choose the region that is the same as the bucket you created previously.
+4. Enable the `pg_lugvloei_orders` and `pg_lugvloei_users` DAGs in the Airflow Webserver UI.
+
+    ![Airflow Webserver UI - Running DAGs](docs/assets/airflow-webserver-ui-running-dags.png)
+
+    You can check the logs and other details by clicking the DAG name.
+
+Akh, there you go!
