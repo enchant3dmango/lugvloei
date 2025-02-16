@@ -38,7 +38,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     ```
 
 7. (Recommended) Adjust your Docker memory limit, set the limit to 8GB to avoid failure while installing the kind cluster.
-8. Fill or use the default value for `POSTGRESQL_DATABASE`, `POSTGRESQL_AUTH_USERNAME`, and `POSTGRESQL_AUTH_PASSWORD` values in the `.env` file.
+8. Fill or use the default value for `POSTGRESQL_AUTH_DATABASE`, `POSTGRESQL_AUTH_USERNAME`, and `POSTGRESQL_AUTH_PASSWORD` values in the `.env` file.
 9. (Optional) Install any database manager. FYI, I'm using **Beekeeper Studio** as I write this documentation.
 
 #### Cluster & Airflow Installation
