@@ -1,7 +1,7 @@
 -include .env
 
 .PHONY: provision-kind-cluster delete-kind-cluster \
-	build-airflow-image tag-airlfow-image push-airflow-image add-airflow-repo install-airflow pf-airflow-webserver \
+	build-airflow-image tag-airlfow-image push-airflow-image add-airflow-repo install-airflow uninstall-airflow pf-airflow-webserver \
 	add-bitnami-repo install-postgresql-db uninstall-postgresql-db pf-postgresql-db \
 	add-spark-operator-repo install-spark-on-k8s-operator create-spark-airflow-rb
 
