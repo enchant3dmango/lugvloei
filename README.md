@@ -177,4 +177,6 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 
     You can check the logs and other details by clicking the DAG name.
 
+5. Check the result in your GCS bucket and BigQuery dataset.
+
 Akh, there you go!
