@@ -6,8 +6,6 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 ## High-Level Architecture
 ![High-Level Architecture](docs/assets/hla.png)
 
-P.S. I also use Helm to manage Kubernetes applications, GitHub as the DAGs repository, and Slack. I will add them later on to the High-Level Architecture above.
-
 ## Setup & Installation
 ### Disclaimer
 :warning: I tested this setup guide only on macOS Sequoia 15.0.1. If you are using a different OS, you might need to adjust several things.
