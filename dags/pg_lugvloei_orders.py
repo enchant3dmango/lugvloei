@@ -36,12 +36,7 @@ default_args = {
     schedule="@daily",
 )
 def generate_dag():
-    # Create a GCS bucket, then create a GCS_DATA_LAKE_BUCKET variable in Airflow,
-    # use the name of the bucket you created as the value
     GCS_DATA_LAKE_BUCKET = Variable.get("GCS_DATA_LAKE_BUCKET", None)
-    # Create a google_cloud_default connection in Airflow,
-    # only fill the `Project Id` and `Keyfile Path`,
-    # (Optional) then create a GCP_CONN_ID variable, fill google_cloud_default as the value
     GCP_CONN_ID = Variable.get("GCP_CONN_ID", "google_cloud_default")
     ts_nodash = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y-%m-%d %H:%M:%S') }}"
     filename = f"lugvloei/orders/{ts_nodash}/orders"
