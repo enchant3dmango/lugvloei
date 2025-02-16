@@ -44,7 +44,7 @@ def generate_dag():
     # (Optional) then create a GCP_CONN_ID variable, fill google_cloud_default as the value
     GCP_CONN_ID = Variable.get("GCP_CONN_ID", "google_cloud_default")
     ts_nodash = "{{ data_interval_start.astimezone(dag.timezone).strftime('%Y-%m-%d %H:%M:%S') }}"
-    filename = f"lugvloei/orders/{ts_nodash}/orders" + "__{}.json"
+    filename = f"lugvloei/orders/{ts_nodash}/orders"
 
     extract = PostgresToGCSOperator(
         task_id="extract",
@@ -52,7 +52,7 @@ def generate_dag():
         gcp_conn_id=GCP_CONN_ID,
         bucket=GCS_DATA_LAKE_BUCKET,
         export_format=DestinationFormat.NEWLINE_DELIMITED_JSON,
-        filename=filename,
+        filename=filename + "__{}.json",
         sql="SELECT * FROM lugvloei.orders",
         write_on_empty=True
     )
@@ -61,6 +61,7 @@ def generate_dag():
         task_id="load",
         bucket=GCS_DATA_LAKE_BUCKET,
         destination_project_dataset_table="lugvloei.orders",
+        source_objects=[filename + "*.json"],
         source_format=SourceFormat.NEWLINE_DELIMITED_JSON,
         gcp_conn_id=GCP_CONN_ID,
         write_disposition=WriteDisposition.WRITE_TRUNCATE
