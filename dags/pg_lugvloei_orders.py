@@ -48,7 +48,7 @@ def generate_dag():
         bucket=GCS_DATA_LAKE_BUCKET,
         export_format=DestinationFormat.NEWLINE_DELIMITED_JSON,
         filename=filename + "__{}.json",
-        sql="SELECT * FROM orders",
+        sql="SELECT id, amount, status, user_id, created_at, updated_at FROM orders",
         write_on_empty=True
     )
 
