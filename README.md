@@ -4,7 +4,9 @@
 Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose only to make the repository name unique.
 
 ## High-Level Architecture
-[WIP]
+![High-Level Architecture](docs/assets/hla.png)
+
+P.S. I also use Helm to manage Kubernetes applications, GitHub as the DAGs repository, and Slack. I will add them later on to the High-Level Architecture above.
 
 ## Setup & Installation
 ### Disclaimer
