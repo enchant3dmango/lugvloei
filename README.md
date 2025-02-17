@@ -59,12 +59,7 @@ The project sets up a local data pipeline system orchestrated using Apache Airfl
 9. (Optional) Install any database manager. FYI, I'm using **Beekeeper Studio** as I write this documentation.
 
 #### Cluster & Airflow Installation
-1. Build, tag, and push Airflow image to the cluster registry.
-    ```sh
-    make airflow-build
-    ```
-
-2. Provision the cluster.
+1. Provision the cluster.
     ```sh
     make install
     ```
@@ -87,6 +82,11 @@ The project sets up a local data pipeline system orchestrated using Apache Airfl
     configmap/local-registry-hosting created
     namespace/airflow created
     secret/airflow-gcp-sa create
+    ```
+
+2. Build, tag, and push Airflow image to the `kind-registry`.
+    ```sh
+    make airflow-build
     ```
 
 3. Install Airflow in the cluster.
