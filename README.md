@@ -1,26 +1,26 @@
 # Lugvloei
 
 ## Background
-“Lugvloei” is Afrikaans for “Airflow.” I chose Afrikaans randomly just to make the repository name unique. This project serves both as my learning documentation and as a playground for experimentation.
+"Lugvloei" is Afrikaans for "Airflow." I chose Afrikaans randomly to make the repository name unique. This project serves both as a learning experience and a playground for experimentation.
 
 ## High-Level Architecture
 ![High-Level Architecture](docs/assets/hla.png)
 
-The project sets up a local data pipeline system orchestrated using Apache Airflow that runs inside Kubernetes in Docker (kind) cluster.
+The project sets up a local data pipeline system orchestrated using Apache Airflow (referred to as **Airflow** in this documentation) that runs inside Kubernetes in Docker (kind) cluster.
 
 1. Build & Deployment
     - The kind cluster runs inside a Docker container.
-    - The Apache Airflow custom image is built, tagged, and then pushed to `kind-registry` so that the kind cluster can read the image.
+    - The Airflow custom image is built, tagged, and then pushed to `kind-registry` so that the kind cluster can read the image.
     - Helm manages the installation and configuration of all applications inside the kind cluster.
 2. Orchestration
-    - Apache Airflow runs inside the kind cluster.
-    - Apache Airflow uses PostgreSQL as the metadata and result backend database that is defined in the [airflow.yaml](helm/values/airflow.yaml) (it's not PostgreSQL in the [High-Level Architecture](#high-level-architecture)). Read more about it [here](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-up-database.html).
-    - Apache Airflow uses Git-sync to sync Directed Acyclic Graph (DAG) files from GitHub. Read more about it [here](https://airflow.apache.org/docs/helm-chart/stable/manage-dags-files.html#using-git-sync).
+    - Airflow runs inside the kind cluster.
+    - Airflow uses PostgreSQL as the metadata and result backend database that is defined in the [airflow.yaml](helm/values/airflow.yaml) (it's not PostgreSQL in the [High-Level Architecture](#high-level-architecture)). Read more about it [here](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-up-database.html).
+    - Airflow uses Git-sync to sync Directed Acyclic Graph (DAG) files from GitHub. Read more about it [here](https://airflow.apache.org/docs/helm-chart/stable/manage-dags-files.html#using-git-sync).
 3. Data Pipeline
     - The data pipeline extracts data from a PostgreSQL database that runs inside the kind cluster, uploads the data into Google Cloud Storage (GCS) as a JSON file, and then loads it to BigQuery. The processes are executed using Python.
 4. Logging
-    - Apache Airflow stores the DAG logs into GCS.
-    - Apache Airflow sends notifications of DAG completion and failure to Slack.
+    - Airflow stores the DAG logs into GCS.
+    - Airflow sends notifications of DAG completion and failure to Slack.
 
 ## Setup & Installation
 ### Disclaimer
