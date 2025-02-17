@@ -6,6 +6,21 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 ## High-Level Architecture
 ![High-Level Architecture](docs/assets/hla.png)
 
+The project sets up a local data pipeline system orchestrated using Apache Airflow that runs inside Kubernetes in Docker (kind) cluster.
+
+1. Build & Deploy
+    - Helm manages the installation and configuration of all applications inside the kind cluster.
+    - The Apache Airflow custom docker image is built, tagged, and then pushed to kind-registry so that the kind cluster can pull the image.
+2. Orchestration
+    - Apache Airflow runs inside the kind cluster.
+    - Apache Airflow has its own PostgreSQL database to store its metadata (it's not the PostgreSQL in the [High-Level Architecture](#high-level-architecture)). Read more about the Apache Airflow database backend [here](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-up-database.html).
+    - Apache Airflow uses gitSync to sync DAGs from GitHub.
+3. Data Pipeline
+    - The data pipeline extracts data from a PostgreSQL database that runs inside the kind cluster, uploads the data into Google Cloud Storage (GCS) as a JSON file, and then loads it to BigQuery.
+    - Python is used to execute the above processes.
+4. Logging
+    - Apache Airflow stores the DAG logs into GCS and notifies Slack.
+
 ## Setup & Installation
 ### Disclaimer
 :warning: I tested this setup guide only on macOS Sequoia 15.0.1. If you are using a different OS, you might need to adjust several things.
@@ -23,8 +38,8 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 #### Environment Setup
 1. Fork this repository, then clone the forked repository to your device and open it using your favorite IDE.
 2. Create `.env` file from the [.env.template](.env.template). You can use the example value for `CLUSTER_NAME`, `AIRFLOW_FERNET_KEY`, and `AIRFLOW_WEBSERVER_SECRET_KEY`. But, if you want to have your own key, you can generate it using this [guide](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/fernet.html#generating-fernet-key) for `AIRFLOW_FERNET_KEY` and this [guide](https://airflow.apache.org/docs/helm-chart/stable/production-guide.html#webserver-secret-key) for `AIRFLOW_WEBSERVER_SECRET_KEY`.
-3. Create a Google Cloud Storage (GCS) bucket, then replace the `<your-bucket-name>` placeholder in the `AIRFLOW_REMOTE_BASE_LOG_FOLDER` value in the `.env` file value to the created bucket name.
-4. Create a GCP service account, that has read and write access to GCS (for remote logging), and save the service account key as `serviceaccount.json` in the `files/` directory.
+3. Create a GCS bucket, then replace the `<your-bucket-name>` placeholder in the `AIRFLOW_REMOTE_BASE_LOG_FOLDER` value in the `.env` file value to the created bucket name.
+4. Create a GCP service account, that has read and write access to GCS and BigQuery, and save the service account key as `serviceaccount.json` in the `files/` directory.
 5. Update the `<your-github-username>` placeholder in the `AIRFLOW_DAGS_GIT_SYNC_REPO` value in the `.env` file to your GitHub username, and make sure you don't skip **Step 1**!
 6. (Optional) To make the Airflow dependencies available in your local device, execute the following scripts.
     ```sh
