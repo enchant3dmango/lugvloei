@@ -45,14 +45,12 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 #### Cluster & Airflow Installation
 1. Build, tag, and push Airflow image to the cluster registry.
     ```sh
-    make build-airflow-image
-    make tag-airlfow-image
-    make push-airflow-image
+    make airflow-build
     ```
 
 2. Provision the cluster.
     ```sh
-    make provision-kind-cluster
+    make install
     ```
     The following is the expected result.
     ```sh
@@ -75,14 +73,9 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     secret/airflow-gcp-sa create
     ```
 
-3. Add Airflow helm repository.
+3. Install Airflow in the cluster.
     ```sh
-    make add-airflow-repo
-    ```
-
-4. Install Airflow in the cluster.
-    ```sh
-    make install-airflow
+    make airflow-install
     ```
     Check the pods.
     ```sh
@@ -100,9 +93,9 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     airflow-worker-0                     3/3     Running   0          3m23s
     ```
 
-5. Forward the Airflow Webserver port to your local so you can open the Airflow Webserver UI in your browser.
+4. Port-forward the Airflow Webserver to your local so you can open the Airflow Webserver UI using your browser.
     ```sh
-    make pf-airflow-webserver
+    make airflow-webserver-pf
     ```
     Go to http://localhost:8080/ to check Airflow Webserver UI. Try to login using **admin**:**admin** if you didn't change the default credentials.
 
@@ -111,14 +104,9 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     ![Airflow Webserver UI](docs/assets/airflow-webserver-ui.png)
 
 #### PostgreSQL Installation
-1. Add Bitnami helm repository.
+1. Install PostgreSQL in the cluster.
     ```sh
-    make add-bitnami-repo
-    ```
-
-2. Install PostgreSQL in the cluster.
-    ```sh
-    make install-postgresql-db
+    make pg-install
     ```
     Check the pods.
     ```sh
@@ -131,9 +119,9 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     ```
 
 ##### Populating the PostgreSQL Database
-1. Forward the PostgreSQL database port to your local so you can open the database using your favorite database manager.
+1. Port-forward the PostgreSQL database to your local so you can open the database using your favorite database manager.
     ```sh
-    make pf-postgresql-db
+    make pg-pf
     ```
     The following is the expected result.
     ```sh
@@ -142,9 +130,11 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     Forwarding from [::1]:5432 -> 5432
     ```
 
-2. Connect to the PostgreSQL database using your preferred way. Fill in the connection details using the value you used in step 8 in [Environment Setup](#environment-setup). It will look like this if you are also using **Beekeeper Studio**. Then, click the **Connect** button.
+2. Connect to the PostgreSQL database using your preferred method. Fill in the connection details using the value you used in step 8 in [Environment Setup](#environment-setup). Then, click the **Test** button. If you are also using **Beekeeper Studio**, it will look like this.
 
     ![Beekeeper Studio Connection Test](docs/assets/beekeeper-studio-connection-test.png)
+
+    If the connection looks good, then click **Connect** button.
 
 3. Copy and paste the query in [PostgreSQL-DDL](docs/ddl/postgresql-ddl.sql) to the query window, and run it to create two tables and populate dummy data for each table in schema **public**.
 
@@ -156,7 +146,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     Connection Type: Postgres
     # The format for the host is <svc>.<namespace>.svc.cluster.local
     # To get the svc name, you can run `kubectl get svc -n postgresql`
-    # You actually the details previously when you run `make install-postgresql-db`
+    # You actually got the details previously when you run `make pg-install`
     Host: postgresql-db.postgresql.svc.cluster.local
     Database: lugvloei
     Login: postgres
