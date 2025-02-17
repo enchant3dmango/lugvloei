@@ -14,7 +14,7 @@ The project sets up a local data pipeline system orchestrated using Apache Airfl
     - Helm manages the installation and configuration of all applications inside the kind cluster.
 2. Orchestration
     - Apache Airflow runs inside the kind cluster.
-    - Apache Airflow uses PostgreSQL as the database backend (it's not PostgreSQL in the [High-Level Architecture](#high-level-architecture)). Read more about it [here](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-up-database.html).
+    - Apache Airflow uses PostgreSQL as the metadata and result backend database that is defined in the [airflow.yaml](helm/values/airflow.yaml) (it's not PostgreSQL in the [High-Level Architecture](#high-level-architecture)). Read more about it [here](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-up-database.html).
     - Apache Airflow uses Git-sync to sync Directed Acyclic Graph (DAG) files from GitHub. Read more about it [here](https://airflow.apache.org/docs/helm-chart/stable/manage-dags-files.html#using-git-sync).
 3. Data Pipeline
     - The data pipeline extracts data from a PostgreSQL database that runs inside the kind cluster, uploads the data into Google Cloud Storage (GCS) as a JSON file, and then loads it to BigQuery. The processes are executed using Python.
