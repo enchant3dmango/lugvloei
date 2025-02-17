@@ -1,7 +1,7 @@
 # Lugvloei
 
 ## Background
-"Lugvloei" is Afrikaans for "Airflow." I chose Afrikaans randomly to make the repository name unique. This project serves both as a learning experience and a playground for experimentation.
+"Lugvloei" is Afrikaans for "Airflow." I chose Afrikaans randomly to make the repository name unique. This project serves both as my learning documentation and as a playground for experimentation.
 
 ## High-Level Architecture
 ![High-Level Architecture](docs/assets/hla.png)
