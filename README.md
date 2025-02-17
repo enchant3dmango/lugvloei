@@ -104,7 +104,9 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
     ![Airflow Webserver UI](docs/assets/airflow-webserver-ui.png)
 
 #### PostgreSQL Installation
-1. Install PostgreSQL in the cluster.
+1. Ensure you already fill in all the PostgreSQL-related var values in the `.env` file.
+
+2. Install PostgreSQL in the cluster.
     ```sh
     make pg-install
     ```
