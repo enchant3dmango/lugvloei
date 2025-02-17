@@ -9,17 +9,18 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 The project sets up a local data pipeline system orchestrated using Apache Airflow that runs inside Kubernetes in Docker (kind) cluster.
 
 1. Build & Deploy
-    - Helm manages the installation and configuration of all applications inside the kind cluster.
     - The Apache Airflow custom docker image is built, tagged, and then pushed to `kind-registry` so that the kind cluster can pull the image.
+    - Helm manages the installation and configuration of all applications inside the kind cluster.
 2. Orchestration
     - Apache Airflow runs inside the kind cluster.
     - Apache Airflow has its own PostgreSQL database to store its metadata (it's not the PostgreSQL in the [High-Level Architecture](#high-level-architecture)). Read more about the Apache Airflow database backend [here](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-up-database.html).
-    - Apache Airflow uses gitSync to sync Directed Acyclic Graph (DAG) files from GitHub.
+    - Apache Airflow uses Git-sync to sync Directed Acyclic Graph (DAG) files from GitHub. Read more about it [here](https://airflow.apache.org/docs/helm-chart/stable/manage-dags-files.html#using-git-sync).
 3. Data Pipeline
     - The data pipeline extracts data from a PostgreSQL database that runs inside the kind cluster, uploads the data into Google Cloud Storage (GCS) as a JSON file, and then loads it to BigQuery.
     - Python is used to execute the above processes.
 4. Logging
-    - Apache Airflow stores the DAG logs into GCS and notifies Slack.
+    - Apache Airflow stores the DAG logs into GCS.
+    - Apache Airflow sends notifications of DAG completion and failure to Slack.
 
 ## Setup & Installation
 ### Disclaimer
