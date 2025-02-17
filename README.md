@@ -9,7 +9,7 @@ Lugvloei is Afrikaans which Airflow, I randomly chose Afrikaans, the purpose onl
 The project sets up a local data pipeline system orchestrated using Apache Airflow that runs inside Kubernetes in Docker (kind) cluster.
 
 1. Build & Deployment
-    - The Kind cluster runs inside a Docker container.
+    - The kind cluster runs inside a Docker container.
     - The Apache Airflow custom image is built, tagged, and then pushed to `kind-registry` so that the kind cluster can pull the image.
     - Helm manages the installation and configuration of all applications inside the kind cluster.
 2. Orchestration
