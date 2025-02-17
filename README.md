@@ -10,7 +10,7 @@ The project sets up a local data pipeline system orchestrated using Apache Airfl
 
 1. Build & Deployment
     - The kind cluster runs inside a Docker container.
-    - The Apache Airflow custom image is built, tagged, and then pushed to `kind-registry` so that the kind cluster can pull the image.
+    - The Apache Airflow custom image is built, tagged, and then pushed to `kind-registry` so that the kind cluster can read the image.
     - Helm manages the installation and configuration of all applications inside the kind cluster.
 2. Orchestration
     - Apache Airflow runs inside the kind cluster.
