@@ -32,10 +32,9 @@ def generate_dag():
             }
         },
     )
-
     def test(**kwargs):
         print(kwargs)
 
-    test
+    test()
 
 generate_dag()
