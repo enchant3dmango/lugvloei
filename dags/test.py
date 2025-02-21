@@ -37,3 +37,5 @@ def generate_dag():
         print(kwargs)
 
     test
+
+generate_dag()
