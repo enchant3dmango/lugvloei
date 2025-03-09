@@ -4,7 +4,13 @@
 "Lugvloei" is Afrikaans for "Airflow." I chose Afrikaans randomly to make the repository name unique. This project serves both as my learning documentation and as a playground for experimentation.
 
 ## High-Level Architecture
-![High-Level Architecture](docs/assets/hla.png)
+<p align="center">
+<picture>
+    <source media="(prefers-color-scheme: dark)"  srcset="docs/assets/hla-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/hla-light.png">
+    <img alt="Lugvloei HLA" src="docs/assets/hla-light.png">
+</picture>
+</p>
 
 The project sets up a local data pipeline system orchestrated using Apache Airflow (referred to as **Airflow** in this documentation) that runs inside Kubernetes in Docker (kind) cluster.
 
